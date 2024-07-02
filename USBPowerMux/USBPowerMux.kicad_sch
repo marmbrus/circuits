@@ -1,0 +1,91 @@
+(kicad_sch
+	(version 20231120)
+	(generator "eeschema")
+	(generator_version "8.0")
+	(uuid "4ada6b97-3426-4461-9c61-3a669b502d50")
+	(paper "A4")
+	(lib_symbols)
+	(sheet
+		(at 22.86 29.21)
+		(size 12.7 11.43)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "49cec9b7-8671-4b97-a97b-5cf09a7586ee")
+		(property "Sheetname" "Protection"
+			(at 22.86 28.4984 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "protection.kicad_sch"
+			(at 22.86 41.2246 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "VIN" input
+			(at 22.86 31.75 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "9a9501fa-12bf-4783-872a-7dae4132a733")
+		)
+		(pin "IMON" output
+			(at 26.67 40.64 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "d03680c3-b1cd-43e2-aeb7-1d641f52c6a0")
+		)
+		(pin "PG" output
+			(at 30.48 40.64 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "2d507de1-2308-4fd4-8584-0ed20539ce2d")
+		)
+		(pin "VOUT" input
+			(at 35.56 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "f1a2622f-a89b-4f8c-851e-837d0fbaa31e")
+		)
+		(instances
+			(project "USBPowerMux"
+				(path "/4ada6b97-3426-4461-9c61-3a669b502d50"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+)
