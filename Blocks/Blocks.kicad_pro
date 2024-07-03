@@ -96,9 +96,9 @@
         "padstack": "warning",
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
-        "silk_edge_clearance": "ignore",
-        "silk_over_copper": "ignore",
-        "silk_overlap": "ignore",
+        "silk_edge_clearance": "warning",
+        "silk_over_copper": "warning",
+        "silk_overlap": "warning",
         "skew_out_of_range": "error",
         "solder_mask_bridge": "error",
         "starved_thermal": "error",
@@ -131,7 +131,7 @@
         "min_track_width": 0.0,
         "min_via_annular_width": 0.1,
         "min_via_diameter": 0.5,
-        "solder_mask_to_copper_clearance": 0.005,
+        "solder_mask_to_copper_clearance": 0.0,
         "use_height_for_length_calcs": true
       },
       "teardrop_options": [
@@ -444,7 +444,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "USBPowerMux.kicad_pro",
+    "filename": "Blocks.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -607,16 +607,12 @@
   },
   "sheets": [
     [
-      "4ada6b97-3426-4461-9c61-3a669b502d50",
+      "48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa",
       "Root"
     ],
     [
-      "49cec9b7-8671-4b97-a97b-5cf09a7586ee",
-      "Protection1"
-    ],
-    [
-      "612708d3-efe2-4137-aa5b-d16ad18bbc7b",
-      "Protection2"
+      "542ec963-64f2-405e-acad-a2c979ff5c5c",
+      "PP3V16V"
     ]
   ],
   "text_variables": {}
