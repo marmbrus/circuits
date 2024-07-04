@@ -6,8 +6,46 @@
 	(paper "A4")
 	(lib_symbols)
 	(sheet
-		(at 19.05 23.495)
-		(size 20.32 16.51)
+		(at 20.32 49.53)
+		(size 21.59 17.145)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "35e7cf5c-95fe-496c-867d-9a2129f85874")
+		(property "Sheetname" "BB6V"
+			(at 20.32 48.8184 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "bb6v.kicad_sch"
+			(at 20.32 67.2596 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "Blocks"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 20.32 19.05)
+		(size 21.59 16.51)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -18,7 +56,7 @@
 		)
 		(uuid "542ec963-64f2-405e-acad-a2c979ff5c5c")
 		(property "Sheetname" "PP3V16V"
-			(at 19.05 22.7834 0)
+			(at 20.32 18.3384 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27,13 +65,53 @@
 			)
 		)
 		(property "Sheetfile" "pp3v16v.kicad_sch"
-			(at 19.05 40.5896 0)
+			(at 20.32 36.1446 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left top)
 			)
+		)
+		(pin "VIN" input
+			(at 20.32 22.86 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "710b24a6-8275-4f15-9d50-7cc207ef412c")
+		)
+		(pin "PG" output
+			(at 26.67 35.56 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "204a5465-7d58-4883-946c-b0c55d113f0a")
+		)
+		(pin "VOUT" input
+			(at 41.91 22.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "55c5c443-1f27-4981-a672-50e71f601bf8")
+		)
+		(pin "IMON" output
+			(at 34.29 35.56 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "dc74a4fb-9bfb-411b-9331-c6f14ef76ceb")
 		)
 		(instances
 			(project "Blocks"

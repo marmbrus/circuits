@@ -429,7 +429,7 @@
       "no_connect_dangling": "warning",
       "pin_not_connected": "error",
       "pin_not_driven": "error",
-      "pin_to_pin": "warning",
+      "pin_to_pin": "error",
       "power_pin_not_driven": "error",
       "similar_labels": "warning",
       "simulation_model_issue": "ignore",
@@ -613,6 +613,10 @@
     [
       "542ec963-64f2-405e-acad-a2c979ff5c5c",
       "PP3V16V"
+    ],
+    [
+      "35e7cf5c-95fe-496c-867d-9a2129f85874",
+      "BB6V"
     ]
   ],
   "text_variables": {}
