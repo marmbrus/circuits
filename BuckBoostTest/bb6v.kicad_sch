@@ -1971,7 +1971,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "4c3d9857-8fce-4035-8815-52c9a1710bd5")
 		(property "Reference" "TP203"
@@ -2597,7 +2597,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "9c2c5321-18fe-4cef-884b-594150cd4b9f")
 		(property "Reference" "TP202"
@@ -3277,7 +3277,7 @@
 		(exclude_from_sim no)
 		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "df0a1981-a512-4975-8362-6c40d29d4760")
 		(property "Reference" "TP201"
