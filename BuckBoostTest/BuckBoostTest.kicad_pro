@@ -96,7 +96,7 @@
         "padstack": "warning",
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
+        "silk_edge_clearance": "ignore",
         "silk_over_copper": "warning",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
@@ -444,7 +444,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "Blocks.kicad_pro",
+    "filename": "BuckBoostTest.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -609,10 +609,6 @@
     [
       "48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa",
       "Root"
-    ],
-    [
-      "542ec963-64f2-405e-acad-a2c979ff5c5c",
-      "PP3V16V"
     ],
     [
       "35e7cf5c-95fe-496c-867d-9a2129f85874",

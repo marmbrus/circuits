@@ -35,6 +35,46 @@
 				(justify left top)
 			)
 		)
+		(pin "VIN" input
+			(at 20.32 54.61 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "85bc3b66-5a98-423b-829f-25b2a6a595fc")
+		)
+		(pin "VOUT" input
+			(at 41.91 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "5ec9ff85-af67-464b-9cbb-cb163c748259")
+		)
+		(pin "VLogic" input
+			(at 27.94 66.675 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "56a15830-00f2-4871-8115-323220ccf557")
+		)
+		(pin "PG" output
+			(at 33.02 66.675 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "898fa9f9-2f2e-43d3-9b65-98d7324ba691")
+		)
 		(instances
 			(project "Blocks"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
