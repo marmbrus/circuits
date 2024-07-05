@@ -154,7 +154,7 @@
 	(net 9 "Net-(U102-VREG)")
 	(net 10 "Net-(RF104-SIG)")
 	(net 11 "Net-(U102-BYP)")
-	(net 12 "Net-(RF103-SIG)")
+	(net 12 "Net-(RF102-SIG)")
 	(net 13 "unconnected-(USB101-D--Pad2)")
 	(net 14 "unconnected-(USB101-D+-Pad3)")
 	(net 15 "unconnected-(USB102-D+-Pad3)")
@@ -2474,7 +2474,7 @@
 		(layer "F.Cu")
 		(uuid "6873de52-0410-484e-81e2-1c960bf982aa")
 		(at 23.75 58.25 90)
-		(property "Reference" "RF103"
+		(property "Reference" "RF102"
 			(at 3.5 -0.37 180)
 			(layer "F.SilkS")
 			(uuid "2c7c2cd9-ea99-45e9-ae12-32c68b3f12ce")
@@ -2646,7 +2646,7 @@
 			(at 0 1.4)
 			(size 1.6 1)
 			(layers "F.Cu" "F.Paste" "F.Mask")
-			(net 12 "Net-(RF103-SIG)")
+			(net 12 "Net-(RF102-SIG)")
 			(pinfunction "SIG")
 			(pintype "unspecified")
 			(uuid "cf5dd406-4421-49f4-8840-25823948c456")
@@ -3361,7 +3361,7 @@
 			(at -3.5 -1.35)
 			(size 1.2 3)
 			(layers "F.Cu" "F.Paste" "F.Mask")
-			(net 12 "Net-(RF103-SIG)")
+			(net 12 "Net-(RF102-SIG)")
 			(pinfunction "VCC")
 			(pintype "input")
 			(uuid "66cebcbe-1157-43a0-aa67-09d57f931604")
@@ -3640,7 +3640,7 @@
 		(layer "F.Cu")
 		(uuid "7b0b4dfd-821d-439e-b8e7-b26bfbb9b398")
 		(at 75.25 24.15)
-		(property "Reference" "RF102"
+		(property "Reference" "RF103"
 			(at 0 -5.4 0)
 			(layer "F.SilkS")
 			(uuid "77f2060e-80be-42a3-82f8-e9c3d4135c06")
@@ -4279,7 +4279,7 @@
 		(at 29.775 56.5)
 		(descr "Capacitor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
-		(property "Reference" "C106"
+		(property "Reference" "C102"
 			(at 0 -1.43 0)
 			(layer "F.SilkS")
 			(uuid "cc28129d-306e-43c4-867b-447f5b644d7c")
@@ -4470,7 +4470,7 @@
 			(size 0.9 0.95)
 			(layers "F.Cu" "F.Paste" "F.Mask")
 			(roundrect_rratio 0.25)
-			(net 12 "Net-(RF103-SIG)")
+			(net 12 "Net-(RF102-SIG)")
 			(pintype "passive")
 			(uuid "98bf34b7-f707-4613-803a-4eef90fca50e")
 		)
@@ -5662,7 +5662,7 @@
 		(at 29.775 52)
 		(descr "Capacitor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
-		(property "Reference" "C107"
+		(property "Reference" "C101"
 			(at -3.775 0 0)
 			(layer "F.SilkS")
 			(uuid "207e7262-48bc-4902-9c4f-a822b6dc43d6")
@@ -6239,7 +6239,7 @@
 		(at 81 44.975 90)
 		(descr "Capacitor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
-		(property "Reference" "C102"
+		(property "Reference" "C106"
 			(at -0.025 1.75 90)
 			(layer "F.SilkS")
 			(uuid "9b5e6267-3007-4b4f-b725-5764c6fbc012")
@@ -7769,7 +7769,7 @@
 		(at 75.75 47.75 180)
 		(descr "Capacitor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
-		(property "Reference" "C101"
+		(property "Reference" "C107"
 			(at 0 1.5 0)
 			(layer "F.SilkS")
 			(uuid "d29c604c-c740-4937-bca0-402501fd8acb")
@@ -8243,7 +8243,7 @@
 			(at -3.42 2.29 180)
 			(size 2.41 0.98)
 			(layers "F.Cu" "F.Paste" "F.Mask")
-			(net 12 "Net-(RF103-SIG)")
+			(net 12 "Net-(RF102-SIG)")
 			(pinfunction "Output")
 			(pintype "unspecified")
 			(uuid "e613f7fb-f78a-4550-b891-974cbdaf8880")
