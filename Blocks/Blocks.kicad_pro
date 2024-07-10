@@ -617,6 +617,14 @@
     [
       "35e7cf5c-95fe-496c-867d-9a2129f85874",
       "BB6V"
+    ],
+    [
+      "40a89d48-d368-4e4b-908b-bb2f51f881bc",
+      "usb_serial"
+    ],
+    [
+      "b5433eff-cbf2-410e-979f-cffc33a90041",
+      "ESP12F"
     ]
   ],
   "text_variables": {}

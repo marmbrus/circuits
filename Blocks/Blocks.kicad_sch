@@ -84,6 +84,94 @@
 		)
 	)
 	(sheet
+		(at 20.32 76.2)
+		(size 21.59 20.32)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "40a89d48-d368-4e4b-908b-bb2f51f881bc")
+		(property "Sheetname" "usb_serial"
+			(at 20.32 75.4884 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "usb_serial.kicad_sch"
+			(at 20.32 97.1046 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "VUSB" input
+			(at 20.32 82.55 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "1f1f9d39-a506-46a8-bfa0-e2d0bd8938d4")
+		)
+		(pin "TXD" input
+			(at 41.91 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "7d64a3b4-90b9-4d9c-ae55-b7fa30f8a655")
+		)
+		(pin "RST" input
+			(at 27.94 96.52 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "7dae559b-cde3-44c4-9c50-461b5d51489b")
+		)
+		(pin "BOOT" input
+			(at 33.02 96.52 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "e853a0b0-0b0c-45bb-bac8-89e5fcd37528")
+		)
+		(pin "RXD" input
+			(at 41.91 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "e69c582d-eb5d-4a19-8d41-c42c234d87c7")
+		)
+		(instances
+			(project "Blocks"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 20.32 19.05)
 		(size 21.59 16.51)
 		(fields_autoplaced yes)
@@ -157,6 +245,44 @@
 			(project "Blocks"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
 					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 20.32 103.505)
+		(size 21.59 49.53)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "b5433eff-cbf2-410e-979f-cffc33a90041")
+		(property "Sheetname" "ESP12F"
+			(at 20.32 102.7934 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "esp12f.kicad_sch"
+			(at 20.32 153.6196 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "Blocks"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "5")
 				)
 			)
 		)
