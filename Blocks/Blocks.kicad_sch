@@ -279,6 +279,86 @@
 				(justify left top)
 			)
 		)
+		(pin "RXD" input
+			(at 20.32 118.11 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "9b6934f3-c5d2-480d-9558-150e7d5bfd79")
+		)
+		(pin "TXD" input
+			(at 20.32 121.92 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "3d6862ac-4293-4bce-aa0c-33a3e5d68a2e")
+		)
+		(pin "SDA" input
+			(at 41.91 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "193bf96e-a162-44e6-9991-883844134251")
+		)
+		(pin "BOOT" input
+			(at 20.32 125.73 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "3c01a3fb-8b1f-4546-8d58-a090ea30d3be")
+		)
+		(pin "SCL" input
+			(at 41.91 121.92 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "a567b117-2c6a-4f7b-ad3b-1cd4a1888805")
+		)
+		(pin "ONEW" input
+			(at 41.91 125.73 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "5dbb9a36-264d-4587-a648-c473d0e130ea")
+		)
+		(pin "RST" input
+			(at 20.32 129.54 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "b34f4ca4-5e3c-4f8b-86e7-eb5b4b51c1b2")
+		)
+		(pin "3V3" input
+			(at 20.32 107.95 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "733b6a8b-9f35-40ce-98ae-85aed761ed35")
+		)
 		(instances
 			(project "Blocks"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
