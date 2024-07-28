@@ -6,6 +6,44 @@
 	(paper "A4")
 	(lib_symbols)
 	(sheet
+		(at 55.88 17.78)
+		(size 19.05 17.78)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "1919e08e-dc1c-4651-8e5f-86fbb180c321")
+		(property "Sheetname" "LEDComparator"
+			(at 55.88 17.0684 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "LED_comparator.kicad_sch"
+			(at 55.88 36.1446 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "Blocks"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 20.32 49.53)
 		(size 21.59 17.145)
 		(fields_autoplaced yes)

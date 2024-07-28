@@ -625,6 +625,10 @@
     [
       "b5433eff-cbf2-410e-979f-cffc33a90041",
       "ESP12F"
+    ],
+    [
+      "1919e08e-dc1c-4651-8e5f-86fbb180c321",
+      "LEDComparator"
     ]
   ],
   "text_variables": {}
