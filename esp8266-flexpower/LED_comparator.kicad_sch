@@ -1443,6 +1443,18 @@
 		)
 		(uuid "c044ddf8-066f-464e-a031-64688a3a600e")
 	)
+	(hierarchical_label "Input"
+		(shape input)
+		(at 57.15 30.48 90)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "4d246945-f6b4-417f-90d1-8509da2ec78d")
+	)
 	(symbol
 		(lib_id "Comparator:LM339")
 		(at 119.38 43.18 0)

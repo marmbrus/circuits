@@ -1678,6 +1678,10 @@
 		(uuid "799c1a06-1aa0-440e-be58-fe824d2e8cab")
 	)
 	(no_connect
+		(at 119.38 86.36)
+		(uuid "a846d242-2d3b-408b-a1f6-67ca41186695")
+	)
+	(no_connect
 		(at 139.7 93.98)
 		(uuid "b7d5e3e8-6097-4ddc-8d66-5a8f4f9e4cc9")
 	)
@@ -2482,7 +2486,7 @@
 				)
 			)
 		)
-		(property "Value" "480"
+		(property "Value" "470"
 			(at 153.67 80.01 90)
 			(effects
 				(font
@@ -3563,7 +3567,7 @@
 				)
 			)
 		)
-		(property "Value" "480"
+		(property "Value" "470"
 			(at 153.416 91.44 90)
 			(effects
 				(font
