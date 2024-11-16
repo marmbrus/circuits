@@ -408,6 +408,151 @@
 				)
 			)
 		)
+		(symbol "Jumper:Jumper_2_Small_Open"
+			(pin_numbers hide)
+			(pin_names
+				(offset 0) hide)
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "JP"
+				(at 0 2.794 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Jumper_2_Small_Open"
+				(at 0 -2.286 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Jumper, 2-pole, small symbol, open"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "Jumper SPST"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Jumper* TestPoint*2Pads* TestPoint*Bridge*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Jumper_2_Small_Open_0_0"
+				(circle
+					(center -1.016 0)
+					(radius 0.254)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 1.016 0)
+					(radius 0.254)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Jumper_2_Small_Open_0_1"
+				(arc
+					(start 0.762 1.0196)
+					(mid 0 1.2729)
+					(end -0.762 1.0196)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Jumper_2_Small_Open_1_1"
+				(pin passive line
+					(at -2.54 0 0)
+					(length 1.27)
+					(name "A"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 2.54 0 180)
+					(length 1.27)
+					(name "B"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Power_Protection:RCLAMP0502B"
 			(pin_names hide)
 			(exclude_from_sim no)
@@ -1284,7 +1429,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "072e238b-e61c-4dda-a5ed-8fbc380163c5")
-		(property "Reference" "#PWR024"
+		(property "Reference" "#PWR03"
 			(at 143.51 41.91 0)
 			(effects
 				(font
@@ -1456,7 +1601,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2a28b2d3-e87e-4ae4-83ee-2299b3673d36")
-		(property "Reference" "U5"
+		(property "Reference" "U2"
 			(at 91.44 40.6399 0)
 			(effects
 				(font
@@ -1550,7 +1695,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2d1bc06b-37cc-4b1f-a3fe-1ecde4b150c8")
-		(property "Reference" "FB4"
+		(property "Reference" "FB1"
 			(at 73.7108 31.75 90)
 			(effects
 				(font
@@ -1639,7 +1784,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "41e0428a-e0f4-4067-b279-a53cb4f2158f")
-		(property "Reference" "#PWR022"
+		(property "Reference" "#PWR04"
 			(at 76.2 41.91 0)
 			(effects
 				(font
@@ -1718,7 +1863,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "45ad198a-eddb-4262-8a25-3cba5ba92e9c")
-		(property "Reference" "#PWR023"
+		(property "Reference" "#PWR05"
 			(at 118.11 48.26 0)
 			(effects
 				(font
@@ -1796,7 +1941,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "45b411d8-132f-4bdf-b9a4-843eceed6250")
-		(property "Reference" "R5"
+		(property "Reference" "R1"
 			(at 58.42 33.02 90)
 			(effects
 				(font
@@ -1954,7 +2099,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "71db30f1-9864-4acf-80a8-05885863ede3")
-		(property "Reference" "C16"
+		(property "Reference" "C1"
 			(at 49.53 34.2899 0)
 			(effects
 				(font
@@ -1963,7 +2108,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100nf"
+		(property "Value" "100nF"
 			(at 49.53 36.8299 0)
 			(effects
 				(font
@@ -2036,7 +2181,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7307db0d-810d-4645-9236-d67ef259b468")
-		(property "Reference" "C18"
+		(property "Reference" "C2"
 			(at 63.5 46.9899 0)
 			(effects
 				(font
@@ -2045,7 +2190,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100nf"
+		(property "Value" "100nF"
 			(at 63.5 49.5299 0)
 			(effects
 				(font
@@ -2118,7 +2263,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "75174735-73a1-4a5f-a00c-0f6c688b67bb")
-		(property "Reference" "#PWR021"
+		(property "Reference" "#PWR06"
 			(at 45.72 25.4 0)
 			(effects
 				(font
@@ -2181,6 +2326,84 @@
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/d0f4e225-c87a-4a52-8410-aab7f0d55970"
 					(reference "#PWR026")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 35.56 26.67 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "79f48eda-8b81-4c25-bf77-ec80ddab789e")
+		(property "Reference" "#PWR07"
+			(at 35.56 20.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 35.56 21.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 35.56 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 35.56 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 35.56 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "eb8040d2-7445-4e5b-86b4-353d113783e7")
+		)
+		(instances
+			(project "a2d"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/232cd66d-546f-435c-bf9c-c78f53eeb560"
+					(reference "#PWR07")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/b3d397fc-07a2-4d5d-89cf-6540d179c764"
+					(reference "#PWR030")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/bb9ec583-ffe0-424f-8b73-f086e991deca"
+					(reference "#PWR020")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/d0f4e225-c87a-4a52-8410-aab7f0d55970"
+					(reference "#PWR025")
 					(unit 1)
 				)
 			)
@@ -2283,7 +2506,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "1uf"
+		(property "Value" "1uF"
 			(at 53.34 49.5299 0)
 			(effects
 				(font
@@ -2347,6 +2570,89 @@
 		)
 	)
 	(symbol
+		(lib_id "Jumper:Jumper_2_Small_Open")
+		(at 35.56 29.21 90)
+		(unit 1)
+		(exclude_from_sim yes)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "bc483a0f-03f7-403c-81d9-57144733f0dd")
+		(property "Reference" "JP1"
+			(at 36.83 27.9399 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "Jumper_2_Small_Open"
+			(at 36.83 30.4799 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+			(at 35.56 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 35.56 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Jumper, 2-pole, small symbol, open"
+			(at 35.56 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "7b7a46e3-133a-4606-8f4a-29c18ba9432d")
+		)
+		(pin "1"
+			(uuid "55d41af4-8b51-46e1-9cf5-6fa337c4072c")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/232cd66d-546f-435c-bf9c-c78f53eeb560"
+					(reference "JP1")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/b3d397fc-07a2-4d5d-89cf-6540d179c764"
+					(reference "JP4")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/bb9ec583-ffe0-424f-8b73-f086e991deca"
+					(reference "JP2")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/d0f4e225-c87a-4a52-8410-aab7f0d55970"
+					(reference "JP3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R")
 		(at 35.56 35.56 0)
 		(unit 1)
@@ -2354,9 +2660,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "e20eaf47-007f-4b90-9a87-07c15484b7f0")
-		(property "Reference" "R4"
+		(property "Reference" "R2"
 			(at 38.1 34.2899 0)
 			(effects
 				(font
@@ -2365,8 +2670,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100k"
-			(at 38.1 36.8299 0)
+		(property "Value" "5.1M"
+			(at 38.1 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2438,7 +2743,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e7b8f417-b02c-42f7-9ef5-a2b0439c19ab")
-		(property "Reference" "C15"
+		(property "Reference" "C3"
 			(at 41.91 46.9899 0)
 			(effects
 				(font
@@ -2447,7 +2752,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10uf"
+		(property "Value" "10uF"
 			(at 41.91 49.5299 0)
 			(effects
 				(font
@@ -2677,84 +2982,6 @@
 		)
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 35.56 31.75 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "f5a51326-3752-4a23-8ee0-c59692370594")
-		(property "Reference" "#PWR020"
-			(at 35.56 25.4 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 35.56 26.67 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 35.56 31.75 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 35.56 31.75 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 35.56 31.75 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "6edede6a-223e-416b-9c82-a90cb528fdc1")
-		)
-		(instances
-			(project ""
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/232cd66d-546f-435c-bf9c-c78f53eeb560"
-					(reference "#PWR07")
-					(unit 1)
-				)
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/b3d397fc-07a2-4d5d-89cf-6540d179c764"
-					(reference "#PWR030")
-					(unit 1)
-				)
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/bb9ec583-ffe0-424f-8b73-f086e991deca"
-					(reference "#PWR020")
-					(unit 1)
-				)
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/d0f4e225-c87a-4a52-8410-aab7f0d55970"
-					(reference "#PWR025")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Power_Protection:RCLAMP0502B")
 		(at 123.19 41.91 0)
 		(unit 1)
@@ -2764,7 +2991,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "fd69b0c0-3a53-4dd5-b695-b756874b8470")
-		(property "Reference" "D2"
+		(property "Reference" "D1"
 			(at 123.2535 33.02 0)
 			(effects
 				(font
