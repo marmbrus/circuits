@@ -1502,7 +1502,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(property "Reference" "SW"
-			(at 0 5.08 0)
+			(at -0.508 5.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1515,6 +1515,7 @@
 				(font
 					(size 1.27 1.27)
 				)
+				(hide yes)
 			)
 		)
 		(property "Footprint" "easyeda2kicad:KEY-SMD_B3U-1000PM"
@@ -1536,7 +1537,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 0 0 0)
+			(at 1.27 0 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1553,10 +1554,18 @@
 				(hide yes)
 			)
 		)
+		(property "Label" "Button"
+			(at -0.254 2.286 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(symbol "B3U-1000P_0_1"
 			(polyline
 				(pts
-					(xy -5.84 0) (xy -2.79 0)
+					(xy -4.57 0) (xy -1.52 0)
 				)
 				(stroke
 					(width 0)
@@ -1568,7 +1577,7 @@
 			)
 			(polyline
 				(pts
-					(xy -4.57 0.76) (xy 0.76 0.76)
+					(xy -3.3 0.76) (xy 2.03 0.76)
 				)
 				(stroke
 					(width 0)
@@ -1580,7 +1589,7 @@
 			)
 			(polyline
 				(pts
-					(xy 0 0) (xy 3.05 0)
+					(xy 1.27 0) (xy 4.32 0)
 				)
 				(stroke
 					(width 0)
@@ -1592,7 +1601,7 @@
 			)
 			(polyline
 				(pts
-					(xy -2.29 0.76) (xy -2.29 1.02) (xy -1.27 1.02) (xy -1.27 0.76)
+					(xy -1.02 0.76) (xy -1.02 1.02) (xy 0 1.02) (xy 0 0.76)
 				)
 				(stroke
 					(width 0)
@@ -1603,7 +1612,7 @@
 				)
 			)
 			(pin unspecified line
-				(at -10.16 0 0)
+				(at -8.89 0 0)
 				(length 5.08)
 				(name "1"
 					(effects
@@ -1621,7 +1630,7 @@
 				)
 			)
 			(pin unspecified line
-				(at 7.62 0 180)
+				(at 8.89 0 180)
 				(length 5.08)
 				(name "2"
 					(effects

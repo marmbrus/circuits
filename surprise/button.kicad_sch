@@ -5,7 +5,7 @@
 	(uuid "80f5c8c9-f87f-40a6-a01e-38952c4263cf")
 	(paper "A4")
 	(lib_symbols
-		(symbol "Connector:Conn_01x02_Pin"
+		(symbol "Connector_Generic:Conn_01x02"
 			(pin_names
 				(offset 1.016) hide)
 			(exclude_from_sim no)
@@ -19,7 +19,7 @@
 					)
 				)
 			)
-			(property "Value" "Conn_01x02_Pin"
+			(property "Value" "Conn_01x02"
 				(at 0 -5.08 0)
 				(effects
 					(font
@@ -45,21 +45,13 @@
 					(hide yes)
 				)
 			)
-			(property "Description" "Generic connector, single row, 01x02, script generated"
+			(property "Description" "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
 				(at 0 0 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 					(hide yes)
-				)
-			)
-			(property "ki_locked" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
 				)
 			)
 			(property "ki_keywords" "connector"
@@ -80,55 +72,42 @@
 					(hide yes)
 				)
 			)
-			(symbol "Conn_01x02_Pin_1_1"
-				(polyline
-					(pts
-						(xy 1.27 -2.54) (xy 0.8636 -2.54)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 0) (xy 0.8636 0)
-					)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
+			(symbol "Conn_01x02_1_1"
 				(rectangle
-					(start 0.8636 -2.413)
+					(start -1.27 -2.413)
 					(end 0 -2.667)
 					(stroke
 						(width 0.1524)
 						(type default)
 					)
 					(fill
-						(type outline)
+						(type none)
 					)
 				)
 				(rectangle
-					(start 0.8636 0.127)
+					(start -1.27 0.127)
 					(end 0 -0.127)
 					(stroke
 						(width 0.1524)
 						(type default)
 					)
 					(fill
-						(type outline)
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 1.27)
+					(end 1.27 -3.81)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
 					)
 				)
 				(pin passive line
-					(at 5.08 0 180)
+					(at -5.08 0 0)
 					(length 3.81)
 					(name "Pin_1"
 						(effects
@@ -146,7 +125,7 @@
 					)
 				)
 				(pin passive line
-					(at 5.08 -2.54 180)
+					(at -5.08 -2.54 0)
 					(length 3.81)
 					(name "Pin_2"
 						(effects
@@ -1075,24 +1054,24 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:Conn_01x02_Pin")
-		(at 67.31 48.26 0)
+		(lib_id "Connector_Generic:Conn_01x02")
+		(at 31.75 40.64 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "8ad2308d-9318-4fbf-961e-44aad639b0c7")
-		(property "Reference" "J1202"
-			(at 67.945 43.18 0)
+		(uuid "a2ff77be-d3c7-447b-8f8b-3af4eb533b06")
+		(property "Reference" "J1001"
+			(at 30.226 35.306 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "PZ254V-11-02P"
-			(at 60.452 45.72 0)
+		(property "Value" "Conn_01x02"
+			(at 31.75 34.29 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1100,8 +1079,8 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
-			(at 67.31 48.26 0)
+		(property "Footprint" "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical"
+			(at 31.75 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1110,7 +1089,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 67.31 48.26 0)
+			(at 31.75 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1118,8 +1097,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Generic connector, single row, 01x02, script generated"
-			(at 67.31 48.26 0)
+		(property "Description" "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 31.75 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1128,27 +1107,27 @@
 			)
 		)
 		(pin "1"
-			(uuid "4022b1dc-741a-4521-a4b0-3334773f7e37")
+			(uuid "040ac805-31d6-471c-9e77-ab90f8a61de9")
 		)
 		(pin "2"
-			(uuid "51cf1b67-c8e6-4597-a817-6560c5251cbe")
+			(uuid "865ed6cb-107d-4854-b062-cc70ec3bc5f8")
 		)
 		(instances
-			(project "surprise"
+			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/409c5322-bd6f-4e6b-bfe4-3e9b40520b6d"
-					(reference "J1202")
+					(reference "J1201")
 					(unit 1)
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/7df7ab70-d5bf-4ea6-887f-48785a5f10ec"
-					(reference "J802")
+					(reference "J801")
 					(unit 1)
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/90233f0f-7bc6-43c6-a8d4-19c4675ca7cc"
-					(reference "J1102")
+					(reference "J1101")
 					(unit 1)
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9b8e4c3d-3a06-4fa6-95c4-ee47b699968c"
-					(reference "J1002")
+					(reference "J1001")
 					(unit 1)
 				)
 			)
@@ -1237,6 +1216,86 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector_Generic:Conn_01x02")
+		(at 67.31 50.8 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "d108921e-952a-4117-9e81-c08f35e558a0")
+		(property "Reference" "J802"
+			(at 65.786 45.466 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x02"
+			(at 67.31 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical"
+			(at 67.31 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 67.31 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 67.31 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7a176055-6137-403c-a2e9-9b743009ceb4")
+		)
+		(pin "2"
+			(uuid "5663324e-ddcc-4c61-9168-c121eb469395")
+		)
+		(instances
+			(project "surprise"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/409c5322-bd6f-4e6b-bfe4-3e9b40520b6d"
+					(reference "J1202")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/7df7ab70-d5bf-4ea6-887f-48785a5f10ec"
+					(reference "J802")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/90233f0f-7bc6-43c6-a8d4-19c4675ca7cc"
+					(reference "J1102")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9b8e4c3d-3a06-4fa6-95c4-ee47b699968c"
+					(reference "J1002")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Transistor_FET:AO3400A")
 		(at 69.85 38.1 0)
 		(unit 1)
@@ -1319,86 +1378,6 @@
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9b8e4c3d-3a06-4fa6-95c4-ee47b699968c"
 					(reference "Q1001")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:Conn_01x02_Pin")
-		(at 31.75 38.1 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "ff8672d5-11e2-4dac-9d96-82b44586a8f2")
-		(property "Reference" "J1201"
-			(at 32.385 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "PZ254V-11-02P"
-			(at 24.892 35.56 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
-			(at 31.75 38.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 31.75 38.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x02, script generated"
-			(at 31.75 38.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "a9bdafcd-bcae-42e8-9e40-a79e9d725dde")
-		)
-		(pin "2"
-			(uuid "82dad6a1-2a61-41bf-9f34-e27edea22f8e")
-		)
-		(instances
-			(project ""
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/409c5322-bd6f-4e6b-bfe4-3e9b40520b6d"
-					(reference "J1201")
-					(unit 1)
-				)
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/7df7ab70-d5bf-4ea6-887f-48785a5f10ec"
-					(reference "J801")
-					(unit 1)
-				)
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/90233f0f-7bc6-43c6-a8d4-19c4675ca7cc"
-					(reference "J1101")
-					(unit 1)
-				)
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9b8e4c3d-3a06-4fa6-95c4-ee47b699968c"
-					(reference "J1001")
 					(unit 1)
 				)
 			)

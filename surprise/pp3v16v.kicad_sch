@@ -2525,7 +2525,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2bbb4724-2356-41e2-b10f-28cffe7a7af3")
-		(property "Reference" "TP202"
+		(property "Reference" "TP201"
 			(at 30.48 41.4019 0)
 			(effects
 				(font
@@ -2576,11 +2576,11 @@
 		(instances
 			(project "surprise"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/542ec963-64f2-405e-acad-a2c979ff5c5c"
-					(reference "TP202")
+					(reference "TP201")
 					(unit 1)
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9d4f2f75-9e0d-4ff0-a99e-11be111d4b2b"
-					(reference "TP502")
+					(reference "TP501")
 					(unit 1)
 				)
 			)
@@ -2973,7 +2973,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "687cba84-7703-424d-af1d-0142f3f8b961")
-		(property "Reference" "TP201"
+		(property "Reference" "TP202"
 			(at 118.11 57.9119 0)
 			(effects
 				(font
@@ -3024,11 +3024,11 @@
 		(instances
 			(project "surprise"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/542ec963-64f2-405e-acad-a2c979ff5c5c"
-					(reference "TP201")
+					(reference "TP202")
 					(unit 1)
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9d4f2f75-9e0d-4ff0-a99e-11be111d4b2b"
-					(reference "TP501")
+					(reference "TP502")
 					(unit 1)
 				)
 			)

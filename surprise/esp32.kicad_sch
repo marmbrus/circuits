@@ -5,6 +5,158 @@
 	(uuid "68b0ac86-c66e-4d78-8f24-bd2fd7746e7c")
 	(paper "A4")
 	(lib_symbols
+		(symbol "B3U-1000P_1"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "SW"
+				(at -0.508 5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "B3U-1000P"
+				(at 0 -5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:KEY-SMD_B3U-1000PM"
+				(at 0 -7.62 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/Others_Omron-Electronics_B3U-1000P_Omron-Electronics-B3U-1000P_C231329.html"
+				(at 0 -10.16 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 1.27 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "LCSC Part" "C231329"
+				(at 0 -12.7 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Label" "Button"
+				(at -0.254 2.286 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "B3U-1000P_1_0_1"
+				(polyline
+					(pts
+						(xy -4.57 0) (xy -1.52 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -3.3 0.76) (xy 2.03 0.76)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 0) (xy 4.32 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.02 0.76) (xy -1.02 1.02) (xy 0 1.02) (xy 0 0.76)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin unspecified line
+					(at -8.89 0 0)
+					(length 5.08)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 8.89 0 180)
+					(length 5.08)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Device:C"
 			(pin_numbers hide)
 			(pin_names
@@ -1108,7 +1260,7 @@
 			(in_bom yes)
 			(on_board yes)
 			(property "Reference" "SW"
-				(at 0 5.08 0)
+				(at -0.508 5.08 0)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -1121,6 +1273,7 @@
 					(font
 						(size 1.27 1.27)
 					)
+					(hide yes)
 				)
 			)
 			(property "Footprint" "easyeda2kicad:KEY-SMD_B3U-1000PM"
@@ -1142,7 +1295,7 @@
 				)
 			)
 			(property "Description" ""
-				(at 0 0 0)
+				(at 1.27 0 0)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -1159,10 +1312,18 @@
 					(hide yes)
 				)
 			)
+			(property "Label" "Button"
+				(at -0.254 2.286 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
 			(symbol "B3U-1000P_0_1"
 				(polyline
 					(pts
-						(xy -5.84 0) (xy -2.79 0)
+						(xy -4.57 0) (xy -1.52 0)
 					)
 					(stroke
 						(width 0)
@@ -1174,7 +1335,7 @@
 				)
 				(polyline
 					(pts
-						(xy -4.57 0.76) (xy 0.76 0.76)
+						(xy -3.3 0.76) (xy 2.03 0.76)
 					)
 					(stroke
 						(width 0)
@@ -1186,7 +1347,7 @@
 				)
 				(polyline
 					(pts
-						(xy 0 0) (xy 3.05 0)
+						(xy 1.27 0) (xy 4.32 0)
 					)
 					(stroke
 						(width 0)
@@ -1198,7 +1359,7 @@
 				)
 				(polyline
 					(pts
-						(xy -2.29 0.76) (xy -2.29 1.02) (xy -1.27 1.02) (xy -1.27 0.76)
+						(xy -1.02 0.76) (xy -1.02 1.02) (xy 0 1.02) (xy 0 0.76)
 					)
 					(stroke
 						(width 0)
@@ -1209,7 +1370,7 @@
 					)
 				)
 				(pin unspecified line
-					(at -10.16 0 0)
+					(at -8.89 0 0)
 					(length 5.08)
 					(name "1"
 						(effects
@@ -1227,7 +1388,7 @@
 					)
 				)
 				(pin unspecified line
-					(at 7.62 0 180)
+					(at 8.89 0 180)
 					(length 5.08)
 					(name "2"
 						(effects
@@ -1344,10 +1505,10 @@
 		)
 	)
 	(junction
-		(at 68.58 92.71)
+		(at 64.77 35.56)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "0679e16c-4f8d-44f2-b50a-48ff0832900f")
+		(uuid "109a3017-4c76-478f-819f-f7cb38aa137b")
 	)
 	(junction
 		(at 140.97 78.74)
@@ -1356,16 +1517,16 @@
 		(uuid "21ecd4bd-04e4-44c3-a08a-517a8141b901")
 	)
 	(junction
+		(at 49.53 53.34)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "28c98d18-28ca-4632-85bf-d71d322a80a5")
+	)
+	(junction
 		(at 73.66 92.71)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "4cf1fad5-2e44-4c35-b48c-4a3ea49a8796")
-	)
-	(junction
-		(at 68.58 35.56)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "5b1660f1-3d34-4cda-b69a-093161a01237")
 	)
 	(junction
 		(at 97.79 20.32)
@@ -1396,6 +1557,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "bd398374-c973-4021-a29d-f88e575a74f1")
+	)
+	(junction
+		(at 64.77 92.71)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "bd5afed6-95a2-420b-9f4d-92f53185c0da")
 	)
 	(junction
 		(at 148.59 50.8)
@@ -1469,7 +1636,7 @@
 	)
 	(wire
 		(pts
-			(xy 49.53 40.64) (xy 49.53 54.61)
+			(xy 49.53 40.64) (xy 49.53 53.34)
 		)
 		(stroke
 			(width 0)
@@ -1499,6 +1666,16 @@
 	)
 	(wire
 		(pts
+			(xy 59.69 35.56) (xy 64.77 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "10c9173c-d9ef-4ea1-b58d-36af4d399289")
+	)
+	(wire
+		(pts
 			(xy 97.79 20.32) (xy 107.95 20.32)
 		)
 		(stroke
@@ -1509,7 +1686,7 @@
 	)
 	(wire
 		(pts
-			(xy 49.53 92.71) (xy 68.58 92.71)
+			(xy 49.53 92.71) (xy 64.77 92.71)
 		)
 		(stroke
 			(width 0)
@@ -1529,26 +1706,6 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 92.71) (xy 73.66 92.71)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2695fe0f-3767-4793-9eaa-89da4520245b")
-	)
-	(wire
-		(pts
-			(xy 92.71 35.56) (xy 68.58 35.56)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2f90e49e-d476-4b84-8d9d-0e99e1ed6682")
-	)
-	(wire
-		(pts
 			(xy 140.97 71.12) (xy 140.97 39.37)
 		)
 		(stroke
@@ -1559,7 +1716,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 72.39) (xy 68.58 92.71)
+			(xy 64.77 71.12) (xy 64.77 92.71)
 		)
 		(stroke
 			(width 0)
@@ -1616,6 +1773,16 @@
 			(type default)
 		)
 		(uuid "4c017f34-e8de-49a4-961e-c0a5da2711b2")
+	)
+	(wire
+		(pts
+			(xy 49.53 53.34) (xy 49.53 54.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4c33ff37-5e84-41e1-9e6a-f026e0624a55")
 	)
 	(wire
 		(pts
@@ -1719,6 +1886,16 @@
 	)
 	(wire
 		(pts
+			(xy 64.77 92.71) (xy 73.66 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c3d3b07a-b8c6-4676-88e0-c8ffc73c6802")
+	)
+	(wire
+		(pts
 			(xy 73.66 40.64) (xy 92.71 40.64)
 		)
 		(stroke
@@ -1736,26 +1913,6 @@
 			(type default)
 		)
 		(uuid "d47f9a82-1802-4e80-9473-bbabff6b9187")
-	)
-	(wire
-		(pts
-			(xy 68.58 35.56) (xy 68.58 54.61)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e1f8a629-13e1-466c-a7cf-b67f9057aea4")
-	)
-	(wire
-		(pts
-			(xy 68.58 35.56) (xy 59.69 35.56)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e2631916-75d9-49b8-bea3-3912482d4510")
 	)
 	(wire
 		(pts
@@ -1786,6 +1943,26 @@
 			(type default)
 		)
 		(uuid "ed067d29-4a6a-4f9e-9c49-f352bac4573d")
+	)
+	(wire
+		(pts
+			(xy 64.77 35.56) (xy 64.77 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f53769df-3738-499e-9f04-6a4c36d9611a")
+	)
+	(wire
+		(pts
+			(xy 64.77 35.56) (xy 92.71 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fa105a1c-1707-4a96-8e7c-bbeabd11da1b")
 	)
 	(global_label "3v3"
 		(shape input)
@@ -2189,7 +2366,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2b2b114b-ab90-4a09-83d8-09eff55bd832")
-		(property "Reference" "C603"
+		(property "Reference" "C601"
 			(at 77.47 43.1799 0)
 			(effects
 				(font
@@ -2243,7 +2420,7 @@
 		(instances
 			(project "surprise"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/1624c5bc-e31a-416c-b6e8-7f437a47bea0"
-					(reference "C603")
+					(reference "C601")
 					(unit 1)
 				)
 			)
@@ -2259,7 +2436,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "3a5778c8-4b28-4b83-8d1e-fd193b9270e8")
-		(property "Reference" "C605"
+		(property "Reference" "C603"
 			(at 101.6 22.8599 0)
 			(effects
 				(font
@@ -2313,7 +2490,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/1624c5bc-e31a-416c-b6e8-7f437a47bea0"
-					(reference "C605")
+					(reference "C603")
 					(unit 1)
 				)
 			)
@@ -2397,9 +2574,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "44797bb1-9ac7-4cc6-bf1b-4e79b68aecc4")
-		(property "Reference" "SW601"
+		(property "Reference" "SW602"
 			(at 50.8 62.3549 90)
 			(effects
 				(font
@@ -2408,13 +2584,14 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Boot"
+		(property "Value" "KEY-SMD_B3U-1000PM"
 			(at 50.8 64.8949 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
+				(hide yes)
 			)
 		)
 		(property "Footprint" "easyeda2kicad:KEY-SMD_B3U-1000PM"
@@ -2435,8 +2612,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
-			(at 49.53 62.23 0)
+		(property "Description" "Boot"
+			(at 46.482 64.008 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2453,6 +2630,14 @@
 				(hide yes)
 			)
 		)
+		(property "Label" "Boot"
+			(at 47.244 62.484 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "141dcf3c-5a70-4765-8c64-0639c2671e75")
 		)
@@ -2462,7 +2647,7 @@
 		(instances
 			(project "surprise"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/1624c5bc-e31a-416c-b6e8-7f437a47bea0"
-					(reference "SW601")
+					(reference "SW602")
 					(unit 1)
 				)
 			)
@@ -2478,7 +2663,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "5811daa0-2391-458e-8914-e603c09c404f")
-		(property "Reference" "C604"
+		(property "Reference" "C602"
 			(at 90.17 22.8599 0)
 			(effects
 				(font
@@ -2532,7 +2717,7 @@
 		(instances
 			(project "surprise"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/1624c5bc-e31a-416c-b6e8-7f437a47bea0"
-					(reference "C604")
+					(reference "C602")
 					(unit 1)
 				)
 			)
@@ -2609,17 +2794,17 @@
 		)
 	)
 	(symbol
+		(lib_name "B3U-1000P_1")
 		(lib_id "easyeda2kicad:B3U-1000P")
-		(at 68.58 62.23 90)
+		(at 64.77 62.23 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "70b632fe-b84d-4da5-b8e3-e964f36285a2")
-		(property "Reference" "SW602"
-			(at 69.85 62.3549 90)
+		(property "Reference" "SW603"
+			(at 66.04 62.3549 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2627,17 +2812,18 @@
 				(justify right)
 			)
 		)
-		(property "Value" "Reset"
-			(at 69.85 64.8949 90)
+		(property "Value" "KEY-SMD_B3U-1000PM"
+			(at 66.04 64.8949 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
+				(hide yes)
 			)
 		)
 		(property "Footprint" "easyeda2kicad:KEY-SMD_B3U-1000PM"
-			(at 76.2 62.23 0)
+			(at 72.39 62.23 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2646,7 +2832,7 @@
 			)
 		)
 		(property "Datasheet" "https://lcsc.com/product-detail/Others_Omron-Electronics_B3U-1000P_Omron-Electronics-B3U-1000P_C231329.html"
-			(at 78.74 62.23 0)
+			(at 74.93 62.23 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2654,8 +2840,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
-			(at 68.58 62.23 0)
+		(property "Description" "Reset"
+			(at 61.722 63.754 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2664,12 +2850,29 @@
 			)
 		)
 		(property "LCSC Part" "C231329"
-			(at 81.28 62.23 0)
+			(at 77.47 62.23 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
+			)
+		)
+		(property "Field6" "Reset"
+			(at 64.77 62.23 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" "Reset"
+			(at 62.484 62.484 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 			)
 		)
 		(pin "2"
@@ -2681,7 +2884,7 @@
 		(instances
 			(project "surprise"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/1624c5bc-e31a-416c-b6e8-7f437a47bea0"
-					(reference "SW602")
+					(reference "SW603")
 					(unit 1)
 				)
 			)
@@ -2748,6 +2951,93 @@
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/1624c5bc-e31a-416c-b6e8-7f437a47bea0"
 					(reference "#PWR0601")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:B3U-1000P")
+		(at 26.67 63.5 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "99ef5662-70df-4572-af5d-6db5b9a272bf")
+		(property "Reference" "SW601"
+			(at 27.94 63.6249 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "KEY-SMD_B3U-1000PM"
+			(at 27.94 66.1649 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:KEY-SMD_B3U-1000PM"
+			(at 34.29 63.5 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Others_Omron-Electronics_B3U-1000P_Omron-Electronics-B3U-1000P_C231329.html"
+			(at 36.83 63.5 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Boot"
+			(at 23.622 65.278 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C231329"
+			(at 39.37 63.5 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" "Test"
+			(at 24.384 63.754 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "cf14e1b8-b322-46a4-b6eb-d71bd0110d2b")
+		)
+		(pin "1"
+			(uuid "6a10dae6-5087-4b33-aeef-dd3b4a920a46")
+		)
+		(instances
+			(project "surprise"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/1624c5bc-e31a-416c-b6e8-7f437a47bea0"
+					(reference "SW601")
 					(unit 1)
 				)
 			)
