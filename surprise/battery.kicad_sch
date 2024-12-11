@@ -1810,6 +1810,26 @@
 	)
 	(wire
 		(pts
+			(xy 31.75 100.33) (xy 38.1 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2fd567c2-df26-48ae-906f-7ccc05e7af19")
+	)
+	(wire
+		(pts
+			(xy 35.56 74.93) (xy 35.56 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "364a333c-9684-4957-807c-699abb2fb3a2")
+	)
+	(wire
+		(pts
 			(xy 198.12 100.33) (xy 200.66 100.33)
 		)
 		(stroke
@@ -1887,16 +1907,6 @@
 			(type default)
 		)
 		(uuid "43771385-b039-4bde-aa20-3f27928bad69")
-	)
-	(wire
-		(pts
-			(xy 33.02 100.33) (xy 38.1 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "438bfad7-dc4c-4a17-ab3b-bdac90cfb19c")
 	)
 	(wire
 		(pts
@@ -1980,16 +1990,6 @@
 	)
 	(wire
 		(pts
-			(xy 35.56 76.2) (xy 35.56 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "50181fc1-2ae4-4082-8a98-ba6b6ce99f97")
-	)
-	(wire
-		(pts
 			(xy 236.22 45.72) (xy 236.22 66.04)
 		)
 		(stroke
@@ -2007,16 +2007,6 @@
 			(type default)
 		)
 		(uuid "56c21f1e-2fc2-4276-9f45-264d8c3277a2")
-	)
-	(wire
-		(pts
-			(xy 33.02 78.74) (xy 33.02 100.33)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5a320f3b-fd7d-4643-9258-3501b31e3c71")
 	)
 	(wire
 		(pts
@@ -2150,16 +2140,6 @@
 	)
 	(wire
 		(pts
-			(xy 33.02 76.2) (xy 35.56 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7aea04e4-e332-4a99-ab16-c060ec8dab8b")
-	)
-	(wire
-		(pts
 			(xy 83.82 74.93) (xy 90.17 74.93)
 		)
 		(stroke
@@ -2237,6 +2217,16 @@
 			(type default)
 		)
 		(uuid "94668f28-abf9-4746-99df-25c9b01301ff")
+	)
+	(wire
+		(pts
+			(xy 31.75 76.2) (xy 31.75 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "97e3a5fe-65bb-4b19-84b6-13655ab56627")
 	)
 	(wire
 		(pts
@@ -2510,6 +2500,16 @@
 	)
 	(wire
 		(pts
+			(xy 29.21 76.2) (xy 31.75 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f5bb9703-f907-4d38-a2e1-e663bf9cb267")
+	)
+	(wire
+		(pts
 			(xy 179.07 100.33) (xy 158.75 100.33)
 		)
 		(stroke
@@ -2537,6 +2537,16 @@
 			(type default)
 		)
 		(uuid "fa003afc-ae73-435d-821d-0ccde4c5e591")
+	)
+	(wire
+		(pts
+			(xy 35.56 78.74) (xy 29.21 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fd00416c-1471-402c-bd21-ffe139d428c3")
 	)
 	(label "battery+"
 		(at 36.83 59.69 0)
@@ -3601,7 +3611,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x02")
-		(at 27.94 78.74 180)
+		(at 24.13 78.74 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -3610,7 +3620,7 @@
 		(fields_autoplaced yes)
 		(uuid "79ce437b-1117-462e-9dfa-bd70863aa620")
 		(property "Reference" "J901"
-			(at 27.94 69.85 0)
+			(at 24.13 69.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3618,7 +3628,7 @@
 			)
 		)
 		(property "Value" "B2B-PH-K-S(LF)(SN)"
-			(at 27.94 72.39 0)
+			(at 24.13 72.39 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3626,7 +3636,7 @@
 			)
 		)
 		(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
-			(at 27.94 78.74 0)
+			(at 24.13 78.74 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3635,7 +3645,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 27.94 78.74 0)
+			(at 24.13 78.74 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3644,7 +3654,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 27.94 78.74 0)
+			(at 24.13 78.74 0)
 			(effects
 				(font
 					(size 1.27 1.27)

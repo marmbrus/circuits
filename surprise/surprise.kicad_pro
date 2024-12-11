@@ -661,6 +661,10 @@
     [
       "409c5322-bd6f-4e6b-bfe4-3e9b40520b6d",
       "button3"
+    ],
+    [
+      "c2000f2f-d27e-4899-a02c-884b00be53e2",
+      "i2c"
     ]
   ],
   "text_variables": {}

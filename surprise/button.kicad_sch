@@ -1062,7 +1062,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "a2ff77be-d3c7-447b-8f8b-3af4eb533b06")
-		(property "Reference" "J1001"
+		(property "Reference" "J1201"
 			(at 30.226 35.306 0)
 			(effects
 				(font
@@ -1224,7 +1224,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "d108921e-952a-4117-9e81-c08f35e558a0")
-		(property "Reference" "J802"
+		(property "Reference" "J1202"
 			(at 65.786 45.466 0)
 			(effects
 				(font

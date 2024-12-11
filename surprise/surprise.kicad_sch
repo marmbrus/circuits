@@ -2786,6 +2786,12 @@
 		(uuid "a243c47c-0736-4426-bf80-e3c73cb165d6")
 	)
 	(junction
+		(at 120.65 148.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "a85026e4-fb28-45e5-ac99-5812d1e45194")
+	)
+	(junction
 		(at 153.67 156.21)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2832,6 +2838,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f04afc71-a4b6-4a58-8ed3-9f07a47f5b33")
+	)
+	(junction
+		(at 118.11 151.13)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "f93e9c10-948e-459f-8b02-1ad68fe4be03")
 	)
 	(no_connect
 		(at 156.21 191.77)
@@ -3367,6 +3379,16 @@
 	)
 	(wire
 		(pts
+			(xy 74.93 153.67) (xy 80.01 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3e864050-b3b1-4b7b-be3d-813664cbaf0e")
+	)
+	(wire
+		(pts
 			(xy 210.82 29.21) (xy 223.52 29.21)
 		)
 		(stroke
@@ -3667,6 +3689,16 @@
 	)
 	(wire
 		(pts
+			(xy 93.98 148.59) (xy 120.65 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6ddfc9fc-9568-4f40-b4ae-70379ed3cc25")
+	)
+	(wire
+		(pts
 			(xy 20.32 39.37) (xy 17.78 39.37)
 		)
 		(stroke
@@ -3917,6 +3949,16 @@
 	)
 	(wire
 		(pts
+			(xy 105.41 153.67) (xy 105.41 151.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9ad5db0d-b375-46d7-80d4-35e5791abd62")
+	)
+	(wire
+		(pts
 			(xy 198.12 119.38) (xy 220.98 119.38)
 		)
 		(stroke
@@ -4004,6 +4046,16 @@
 			(type default)
 		)
 		(uuid "a220b090-efb6-4487-acd6-b53b5822b9d7")
+	)
+	(wire
+		(pts
+			(xy 71.12 148.59) (xy 81.28 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a2656d69-43d0-4174-b55c-21266cb2add7")
 	)
 	(wire
 		(pts
@@ -4144,6 +4196,16 @@
 			(type default)
 		)
 		(uuid "c2070f61-9038-486a-b11b-198723287260")
+	)
+	(wire
+		(pts
+			(xy 93.98 153.67) (xy 105.41 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c295b1d3-eb47-4751-ba67-e3498b3096f3")
 	)
 	(wire
 		(pts
@@ -4374,6 +4436,16 @@
 			(type default)
 		)
 		(uuid "ea8e0bf8-a402-45ff-a0c1-32f412b94272")
+	)
+	(wire
+		(pts
+			(xy 105.41 151.13) (xy 118.11 151.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "eb0be545-483b-4d1c-a6fb-97be5678d45e")
 	)
 	(wire
 		(pts
@@ -4690,6 +4762,28 @@
 		(uuid "b50e4ccd-ed6f-40cb-af6b-67c492c25fef")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 101.5782 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "3v3"
+		(shape input)
+		(at 74.93 153.67 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "c318a495-e65d-4cff-b07f-d665c7969e67")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 68.5582 153.67 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6655,6 +6749,73 @@
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
 					(reference "R101")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+5V")
+		(at 71.12 148.59 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "ac4701cd-d095-407c-8b79-ff2739620c84")
+		(property "Reference" "#PWR0116"
+			(at 74.93 148.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+5V"
+			(at 67.31 148.5899 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 71.12 148.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 71.12 148.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+5V\""
+			(at 71.12 148.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a1a032f0-84ff-4a87-8a62-9a9567bf3ed0")
+		)
+		(instances
+			(project "surprise"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "#PWR0116")
 					(unit 1)
 				)
 			)
@@ -8777,6 +8938,84 @@
 			(project "surprise"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
 					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 80.01 145.415)
+		(size 15.24 12.7)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "c2000f2f-d27e-4899-a02c-884b00be53e2")
+		(property "Sheetname" "i2c"
+			(at 80.01 144.7034 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "i2c.kicad_sch"
+			(at 80.01 158.6996 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "SDA" input
+			(at 95.25 148.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "84ee8da9-b201-4524-ae91-34694a09b599")
+		)
+		(pin "VCC" input
+			(at 80.01 148.59 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "769a2d0e-cd2a-4ddc-8f2e-bd1e46ddbb33")
+		)
+		(pin "3V3" input
+			(at 80.01 153.67 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "0c60b894-6b8c-4fa4-a50e-d6ec297f506b")
+		)
+		(pin "SCL" input
+			(at 95.25 153.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "c6d12b78-1dc1-41b4-b283-b86e1fd3b706")
+		)
+		(instances
+			(project "surprise"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "13")
 				)
 			)
 		)
