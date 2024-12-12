@@ -1106,6 +1106,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part" "C158012"
+			(at 31.75 40.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "040ac805-31d6-471c-9e77-ab90f8a61de9")
 		)
@@ -1260,6 +1269,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 67.31 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C158012"
 			(at 67.31 50.8 0)
 			(effects
 				(font
