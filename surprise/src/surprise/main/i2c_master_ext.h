@@ -27,7 +27,7 @@
  * @{
  *
  * ESP-IDF driver extension for i2c peripheral drivers
- * 
+ *
  * Ported from esp-open-rtos
  *
  * Copyright (c) 2024 Eric Gionet (gionet.c.eric@gmail.com)
@@ -41,6 +41,7 @@
 #include <stdbool.h>
 #include <esp_err.h>
 #include <driver/i2c_master.h>
+#include <driver/i2c.h>
 
 
 
@@ -99,7 +100,7 @@ typedef union {
 
 /**
  * @brief Converts `uint8_t` type to binary as a string.
- * 
+ *
  * @param n `uint8_t` to transform to binary string.
  * @return char* binary string representation.
  */
@@ -107,7 +108,7 @@ const char *uint8_to_binary(uint8_t n);
 
 /**
  * @brief Converts `uint16_t` type to binary as a string.
- * 
+ *
  * @param n `uint16_t` to transform to binary string.
  * @return char* binary string representation.
  */
@@ -115,7 +116,7 @@ const char *uint16_to_binary(uint16_t n);
 
 /**
  * @brief Converts `uint32_t` type to binary as a string.
- * 
+ *
  * @param n `uint32_t` to transform to binary string.
  * @return char* binary string representation.
  */
@@ -123,7 +124,7 @@ const char *uint32_to_binary(uint32_t n);
 
 /**
  * @brief I2C master bus device detection that prints the address (1-byte) of detected devices.
- * 
+ *
  * @param handle master bus handle.
  * @return esp_err_t ESP_OK on success.
  */
@@ -279,6 +280,8 @@ esp_err_t i2c_master_bus_write_uint8(i2c_master_dev_handle_t handle, const uint8
  * @return esp_err_t ESP_OK on success.
  */
 esp_err_t i2c_master_bus_write_uint16(i2c_master_dev_handle_t handle, const uint8_t reg_addr, const uint16_t data);
+
+esp_err_t i2c_master_init(i2c_master_bus_handle_t *i2c_handle);
 
 #ifdef __cplusplus
 }

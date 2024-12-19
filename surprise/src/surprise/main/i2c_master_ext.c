@@ -41,6 +41,8 @@
 #include <driver/i2c_master.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include "driver/i2c.h"
+#include "config.h"
 
 #define UINT8_TO_BINARY_BUFFER_SIZE     (9)     // 8 bits + 1 for null terminator
 #define UINT16_TO_BINARY_BUFFER_SIZE    (17)    // 16 bits + 1 for null ter
@@ -321,6 +323,28 @@ esp_err_t i2c_master_bus_write_uint16(i2c_master_dev_handle_t handle, const uint
     ESP_RETURN_ON_ERROR( i2c_master_transmit(handle, tx, I2C_UINT24_SIZE, I2C_XFR_TIMEOUT_MS), TAG, "i2c_master_bus_write_uint16 failed" );
 
     ESP_LOGD(TAG, "i2c_master_bus_write_uint8 - tx[0] %02x | tx[1] %02x | tx[2] %02x", tx[0], tx[1], tx[2]);
+
+    return ESP_OK;
+}
+
+esp_err_t i2c_master_init(i2c_master_bus_handle_t *i2c_handle) {
+    i2c_master_bus_config_t i2c_master_cfg = {
+        .i2c_port = I2C_MASTER_NUM,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .intr_priority = 0, // Default priority
+        .trans_queue_depth = 0, // Default queue depth
+        .flags = {
+            .enable_internal_pullup = true
+        }
+    };
+    esp_err_t err = i2c_new_master_bus(&i2c_master_cfg, i2c_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "I2C master initialization failed: %s", esp_err_to_name(err));
+        return err;
+    }
 
     return ESP_OK;
 }

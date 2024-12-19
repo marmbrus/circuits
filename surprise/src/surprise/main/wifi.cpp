@@ -5,11 +5,43 @@
 #include "nvs_flash.h"
 #include "config.h"
 #include "led_control.h"
+#include "esp_sntp.h"
+#include "time.h"
 
 static const char *TAG = "wifi";
 
 static volatile SystemState system_state = WIFI_CONNECTING;
 static esp_mqtt_client_handle_t mqtt_client;
+
+static void log_current_time(void) {
+    time_t now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+    ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo));
+}
+
+static void initialize_sntp(void) {
+    ESP_LOGI(TAG, "Initializing SNTP");
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_init();
+
+    // Wait for time to be set
+    time_t now = 0;
+    struct tm timeinfo = { 0 };
+    int retry = 0;
+    const int retry_count = 10;
+    while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
+        ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        time(&now);
+        localtime_r(&now, &timeinfo);
+    }
+
+    // Log the current time
+    log_current_time();
+}
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                          int32_t event_id, void* event_data)
@@ -38,6 +70,9 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             esp_mqtt_client_start(mqtt_client);
             mqtt_started = true;
         }
+
+        // Initialize SNTP to set time
+        initialize_sntp();
     }
     // Handle MQTT events
     else {
