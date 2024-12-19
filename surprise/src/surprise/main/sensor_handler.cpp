@@ -1,11 +1,14 @@
 #include "sensor_handler.h"
 #include "esp_log.h"
-#include "driver/i2c.h"
+#include "driver/i2c_master.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "config.h"
+#include <cstring>
 
 static const char *TAG = "sensor_handler";
+static i2c_master_dev_handle_t i2c_device = NULL;
+static i2c_master_bus_handle_t i2c_bus = NULL;
 
 static void sensor_task(void* pvParameters)
 {
@@ -14,13 +17,13 @@ static void sensor_task(void* pvParameters)
     // Scan I2C bus for devices
     printf("Scanning I2C bus...\n");
     for (uint8_t i = 1; i < 127; i++) {
-        i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-        i2c_master_start(cmd);
-        i2c_master_write_byte(cmd, (i << 1) | I2C_MASTER_WRITE, true);
-        i2c_master_stop(cmd);
-        esp_err_t ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, pdMS_TO_TICKS(50));
-        i2c_cmd_link_delete(cmd);
+        i2c_device_config_t dev_cfg = {
+            .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+            .device_address = i,
+            .scl_speed_hz = I2C_MASTER_FREQ_HZ,
+        };
 
+        esp_err_t ret = i2c_master_probe(i2c_bus, dev_cfg.device_address, -1);
         if (ret == ESP_OK) {
             printf("Found device at address 0x%02x\n", i);
         }
@@ -35,23 +38,26 @@ static void sensor_task(void* pvParameters)
 
 static esp_err_t i2c_master_init(void)
 {
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_MASTER_SDA_IO,
-        .scl_io_num = I2C_MASTER_SCL_IO,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master = {
-            .clk_speed = I2C_MASTER_FREQ_HZ
+    // Initialize I2C bus configuration
+    i2c_master_bus_config_t bus_config = {
+        .i2c_port = I2C_MASTER_NUM,                    // i2c_port
+        .sda_io_num = (gpio_num_t)I2C_MASTER_SDA_IO,  // sda_io_num
+        .scl_io_num = (gpio_num_t)I2C_MASTER_SCL_IO,  // scl_io_num
+        .clk_source = I2C_CLK_SRC_DEFAULT,            // clk_source
+        .glitch_ignore_cnt = 7,                       // glitch_ignore_cnt
+        .flags = {
+            .enable_internal_pullup = true
         }
     };
 
-    esp_err_t err = i2c_param_config(I2C_MASTER_NUM, &conf);
+    // Create I2C master bus
+    esp_err_t err = i2c_new_master_bus(&bus_config, &i2c_bus);
     if (err != ESP_OK) {
+        ESP_LOGE(TAG, "I2C bus creation failed: %s", esp_err_to_name(err));
         return err;
     }
 
-    return i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
+    return ESP_OK;
 }
 
 esp_err_t sensor_handler_init(void)
