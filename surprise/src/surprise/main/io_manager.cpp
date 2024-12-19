@@ -7,11 +7,13 @@ static const char* TAG = "IOManager";
 
 const gpio_num_t IOManager::BUTTON_GPIOS[NUM_BUTTONS] = {
     (gpio_num_t)BUTTON1_GPIO,  // Button 1
-    (gpio_num_t)BUTTON2_GPIO   // Button 2
+    (gpio_num_t)BUTTON2_GPIO,  // Button 2
+    (gpio_num_t)BUTTON3_GPIO,  // Button 3
+    (gpio_num_t)BUTTON4_GPIO   // Button 4
 };
 
 QueueHandle_t IOManager::eventQueue = nullptr;
-uint32_t IOManager::last_interrupt_times[NUM_BUTTONS] = {0, 0};
+uint32_t IOManager::last_interrupt_times[NUM_BUTTONS] = {0, 0, 0, 0};
 
 IOManager::IOManager(Application* app) : currentApp(app) {
     eventQueue = xQueueCreate(QUEUE_SIZE, sizeof(ButtonEvent));
@@ -24,21 +26,37 @@ IOManager::IOManager(Application* app) : currentApp(app) {
             currentApp->onButton1Pressed();
         } else if (wakeup_pin_mask & (1ULL << BUTTON2_GPIO)) {
             currentApp->onButton2Pressed();
+        } else if (wakeup_pin_mask & (1ULL << BUTTON3_GPIO)) {
+            currentApp->onButton3Pressed();
+        } else if (wakeup_pin_mask & (1ULL << BUTTON4_GPIO)) {
+            currentApp->onButton4Pressed();
         }
     }
 }
 
 void IRAM_ATTR IOManager::buttonIsrHandler(void* arg) {
     uint32_t gpio_num = (uint32_t)arg;
-    int button_idx = (gpio_num == BUTTON1_GPIO) ? 0 : 1;
+    int button_idx = -1;
 
-    uint32_t interrupt_time = xTaskGetTickCountFromISR();
-    if (interrupt_time - last_interrupt_times[button_idx] > pdMS_TO_TICKS(BUTTON_DEBOUNCE_TIME_MS)) {
-        ButtonEvent evt = (button_idx == 0) ? ButtonEvent::BUTTON1_PRESSED
-                                          : ButtonEvent::BUTTON2_PRESSED;
-        xQueueSendFromISR(eventQueue, &evt, NULL);
+    if (gpio_num == BUTTON1_GPIO) button_idx = 0;
+    else if (gpio_num == BUTTON2_GPIO) button_idx = 1;
+    else if (gpio_num == BUTTON3_GPIO) button_idx = 2;
+    else if (gpio_num == BUTTON4_GPIO) button_idx = 3;
+
+    if (button_idx != -1) {
+        uint32_t interrupt_time = xTaskGetTickCountFromISR();
+        if (interrupt_time - last_interrupt_times[button_idx] > pdMS_TO_TICKS(BUTTON_DEBOUNCE_TIME_MS)) {
+            ButtonEvent evt;
+            switch (button_idx) {
+                case 0: evt = ButtonEvent::BUTTON1_PRESSED; break;
+                case 1: evt = ButtonEvent::BUTTON2_PRESSED; break;
+                case 2: evt = ButtonEvent::BUTTON3_PRESSED; break;
+                case 3: evt = ButtonEvent::BUTTON4_PRESSED; break;
+            }
+            xQueueSendFromISR(eventQueue, &evt, NULL);
+        }
+        last_interrupt_times[button_idx] = interrupt_time;
     }
-    last_interrupt_times[button_idx] = interrupt_time;
 }
 
 void IOManager::initButtons() {
@@ -67,6 +85,12 @@ bool IOManager::processEvents() {
                 break;
             case ButtonEvent::BUTTON2_PRESSED:
                 currentApp->onButton2Pressed();
+                break;
+            case ButtonEvent::BUTTON3_PRESSED:
+                currentApp->onButton3Pressed();
+                break;
+            case ButtonEvent::BUTTON4_PRESSED:
+                currentApp->onButton4Pressed();
                 break;
         }
         return true; // Event processed

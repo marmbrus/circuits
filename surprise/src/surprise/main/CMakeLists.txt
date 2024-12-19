@@ -1,4 +1,4 @@
 idf_component_register(
-    SRCS "main.cpp" "wifi.cpp" "sensors.cpp" "io_manager.cpp" "logging_app.cpp" "led_control.cpp" "i2c_master_ext.c" "bq27441.cpp"
+    SRCS "main.cpp" "wifi.cpp" "sensors.cpp" "io_manager.cpp" "logging_app.cpp" "led_control.cpp" "i2c_master_ext.c" "bq27441.cpp" "ButtonsPuzzleApp.cpp" "FourColorLights.cpp" "ChristmasLights.cpp" "NoLights.cpp"
     INCLUDE_DIRS "."
 )

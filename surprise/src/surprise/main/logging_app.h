@@ -14,4 +14,12 @@ public:
     void onButton2Pressed() override {
         ESP_LOGI(TAG, "Button 2 was pressed!");
     }
+
+    void onButton3Pressed() override {
+        ESP_LOGI(TAG, "Button 3 was pressed!");
+    }
+
+    void onButton4Pressed() override {
+        ESP_LOGI(TAG, "Button 4 was pressed!");
+    }
 };

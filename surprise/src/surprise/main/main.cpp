@@ -9,6 +9,7 @@
 #include "sensors.h"
 #include "io_manager.h"
 #include "logging_app.h"
+#include "ButtonsPuzzleApp.h"
 #include "driver/gpio.h"
 #include "esp_sleep.h"
 #include "config.h"
@@ -38,7 +39,7 @@ extern "C" void app_main()
     ESP_ERROR_CHECK(ret);
 
     // Create application instance
-    LoggingApp app;
+    ButtonsPuzzleApp app;
 
     // Initialize IO manager with the application
     IOManager ioManager(&app);
@@ -67,7 +68,13 @@ extern "C" void app_main()
             led_control_stop();
 
             // Configure wakeup sources for low signal using button GPIOs
-            esp_sleep_enable_ext1_wakeup((1ULL << BUTTON1_GPIO) | (1ULL << BUTTON2_GPIO), ESP_EXT1_WAKEUP_ALL_LOW);
+            esp_sleep_enable_ext1_wakeup(
+                (1ULL << BUTTON1_GPIO) |
+                (1ULL << BUTTON2_GPIO) |
+                (1ULL << BUTTON3_GPIO) |
+                (1ULL << BUTTON4_GPIO),
+                ESP_EXT1_WAKEUP_ALL_LOW
+            );
 
             // Enter deep sleep
             esp_deep_sleep_start();

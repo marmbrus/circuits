@@ -6,6 +6,10 @@
 #include "led_strip_types.h"
 #include "config.h"
 #include "driver/gpio.h"
+#include "LEDBehavior.h"
+#include "ChristmasLights.cpp" // Include the implementation
+#include "NoLights.cpp"        // Include the NoLights implementation
+#include "FourColorLights.cpp" // Include the FourColorLights implementation
 
 static const char* TAG = "LED_Control";
 
@@ -14,6 +18,19 @@ static SystemState current_state = WIFI_CONNECTING;
 static uint8_t pulse_brightness = 0;
 static bool pulse_increasing = true;
 static TaskHandle_t led_update_task_handle = NULL; // Task handle for the LED update task
+
+static const gpio_num_t button_led_pins[] = BUTTON_LED_PINS;
+static bool button_led_status[NUM_BUTTON_LEDS] = {true, true, true, true}; // Default all to on
+
+extern uint8_t g_battery_soc; // Declare the global SOC variable
+
+// Create instances of LED behaviors
+static ChristmasLights christmas_lights;
+static NoLights no_lights;
+static FourColorLights four_color_lights;
+
+// Pointer to the current LED behavior
+static LEDBehavior* current_led_behavior = &no_lights; // Default to NoLights
 
 static void update_pulse_brightness() {
     if (pulse_increasing) {
@@ -52,32 +69,22 @@ static void update_status_led() {
     }
 }
 
-static void update_other_leds() {
-    // Pulse white on the next two LEDs
+static void update_battery_leds() {
+    // Cap the brightness based on the battery SOC
+    uint8_t capped_brightness = (pulse_brightness * g_battery_soc) / 100;
     for (int i = 1; i <= 2; ++i) {
-        led_strip_set_pixel(led_strip, i, pulse_brightness, pulse_brightness, pulse_brightness);
+        led_strip_set_pixel(led_strip, i, capped_brightness, capped_brightness, capped_brightness);
     }
+}
 
-    // Alternate green and red on the remaining LEDs, swapping only when brightness is zero
-    static bool swap_colors = false;
-    if (pulse_brightness == 0) {
-        swap_colors = !swap_colors;
-    }
+static void update_other_leds() {
+    // Use the current LED behavior to update the other LEDs
+    current_led_behavior->update(led_strip, pulse_brightness);
+}
 
-    for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
-        if (swap_colors) {
-            if (i % 2 == 0) {
-                led_strip_set_pixel(led_strip, i, pulse_brightness, 0, 0); // Red
-            } else {
-                led_strip_set_pixel(led_strip, i, 0, pulse_brightness, 0); // Green
-            }
-        } else {
-            if (i % 2 == 0) {
-                led_strip_set_pixel(led_strip, i, 0, pulse_brightness, 0); // Green
-            } else {
-                led_strip_set_pixel(led_strip, i, pulse_brightness, 0, 0); // Red
-            }
-        }
+static void update_button_leds() {
+    for (int i = 0; i < NUM_BUTTON_LEDS; ++i) {
+        gpio_set_level(button_led_pins[i], button_led_status[i] ? 1 : 0);
     }
 }
 
@@ -85,7 +92,9 @@ static void update_led_task(void* pvParameters) {
     while (1) {
         update_pulse_brightness();
         update_status_led();
-        update_other_leds();
+        update_battery_leds(); // Update the battery LEDs
+        update_other_leds();   // Update the other LEDs
+        update_button_leds();  // Update the button LEDs status
 
         led_strip_refresh(led_strip);
         vTaskDelay(pdMS_TO_TICKS(LED_UPDATE_INTERVAL_MS));
@@ -94,6 +103,18 @@ static void update_led_task(void* pvParameters) {
 
 void led_control_init(void) {
     ESP_LOGI(TAG, "Initializing LED Control");
+
+    // Initialize GPIOs for the button LEDs
+    gpio_config_t io_conf = {};
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+
+    for (int i = 0; i < NUM_BUTTON_LEDS; ++i) {
+        io_conf.pin_bit_mask = (1ULL << button_led_pins[i]);
+        gpio_config(&io_conf);
+    }
 
     // LED strip configuration
     led_strip_config_t strip_config = {
@@ -144,5 +165,18 @@ void led_control_stop() {
     if (led_update_task_handle != NULL) {
         vTaskDelete(led_update_task_handle);
         led_update_task_handle = NULL;
+    }
+}
+
+void led_control_set_button_led_status(int index, bool status) {
+    if (index >= 0 && index < NUM_BUTTON_LEDS) {
+        button_led_status[index] = status;
+        gpio_set_level(button_led_pins[index], status ? 1 : 0); // Immediately update the LED status
+    }
+}
+
+void led_control_set_behavior(LEDBehavior* behavior) {
+    if (behavior != nullptr) {
+        current_led_behavior = behavior;
     }
 }

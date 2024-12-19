@@ -8,12 +8,14 @@
 
 enum class ButtonEvent {
     BUTTON1_PRESSED,
-    BUTTON2_PRESSED
+    BUTTON2_PRESSED,
+    BUTTON3_PRESSED,
+    BUTTON4_PRESSED
 };
 
 class IOManager {
 private:
-    static const int NUM_BUTTONS = 2;
+    static const int NUM_BUTTONS = 4;
     static const gpio_num_t BUTTON_GPIOS[NUM_BUTTONS];
     static QueueHandle_t eventQueue;
     static uint32_t last_interrupt_times[NUM_BUTTONS];

@@ -8,11 +8,15 @@
 #include "mqtt_client.h"
 #include "cJSON.h"
 #include "wifi.h"
+#include "led_control.h"
 
 static const char *TAG = "sensors";
 
 static BatteryGaugeData battery_data; // Global variable to store battery data
 static i2c_master_bus_handle_t i2c_handle; // Declare i2c_handle as a static variable
+
+// Global variable for battery SOC
+uint8_t g_battery_soc = 100; // Default SOC to 100%
 
 // Declare the sensor_task function before its usage
 static void sensor_task(void* pvParameters);
@@ -57,6 +61,9 @@ static void sensor_task(void* pvParameters)
     while (1) {
         esp_err_t ret = bq27441_read_data(&battery_data);
         if (ret == ESP_OK) {
+            // Update the global SOC variable
+            g_battery_soc = battery_data.soc;
+
             // Create a JSON object
             cJSON *json = cJSON_CreateObject();
             cJSON_AddNumberToObject(json, "temperature", battery_data.temperature - 273);
