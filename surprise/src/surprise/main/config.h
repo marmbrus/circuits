@@ -7,10 +7,10 @@
 #define MQTT_OPERATION_TIMEOUT_MS 10000
 
 // I2C Configuration
-#define I2C_MASTER_SCL_IO           47      // GPIO number for I2C master clock
-#define I2C_MASTER_SDA_IO           21      // GPIO number for I2C master data
-#define I2C_MASTER_NUM              I2C_NUM_0   // I2C port number (using enum value)
-#define I2C_MASTER_FREQ_HZ          400000  // I2C master clock frequency
+#define I2C_MASTER_SCL_IO           ((gpio_num_t)47)      // GPIO number for I2C master clock
+#define I2C_MASTER_SDA_IO           ((gpio_num_t)21)      // GPIO number for I2C master data
+#define I2C_MASTER_NUM              I2C_NUM_0             // I2C port number (using enum value)
+#define I2C_MASTER_FREQ_HZ          400000                // I2C master clock frequency
 #define I2C_MASTER_TIMEOUT_MS       1000
 
 // Button Configuration
@@ -28,6 +28,6 @@
 
 // LED Configuration
 #define LED_STRIP_GPIO              GPIO_NUM_48
-#define LED_STRIP_NUM_PIXELS        1
-#define LED_UPDATE_TASK_STACK_SIZE  2048
+#define LED_STRIP_NUM_PIXELS        21
+#define LED_UPDATE_TASK_STACK_SIZE  4096
 #define LED_UPDATE_INTERVAL_MS      50

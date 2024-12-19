@@ -9,8 +9,21 @@
 #include "sensors.h"
 #include "io_manager.h"
 #include "logging_app.h"
+#include "driver/gpio.h"
 
 static const char *TAG = "main";
+
+void set_5V_pin(bool enable) {
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = (1ULL << GPIO_NUM_6);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    gpio_config(&io_conf);
+
+    gpio_set_level(GPIO_NUM_6, enable ? 1 : 0);
+}
 
 extern "C" void app_main()
 {
@@ -27,6 +40,9 @@ extern "C" void app_main()
 
     // Initialize IO manager with the application
     IOManager ioManager(&app);
+
+    // Enable 5V pin
+    set_5V_pin(true);
 
     // Initialize other components
     led_control_init();

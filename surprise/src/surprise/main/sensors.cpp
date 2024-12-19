@@ -4,26 +4,21 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "config.h"
+#include "i2c_master_ext.h"
 
 static const char *TAG = "sensors";
+
+static i2c_master_bus_handle_t i2c_handle; // Declare i2c_handle as a static variable
 
 static void sensor_task(void* pvParameters)
 {
     ESP_LOGI(TAG, "Sensor task started");
 
-    // Scan I2C bus for devices
+    // Scan I2C bus for devices using the new driver
     ESP_LOGI(TAG, "Scanning I2C bus...");
-    for (uint8_t i = 1; i < 127; i++) {
-        i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-        i2c_master_start(cmd);
-        i2c_master_write_byte(cmd, (i << 1) | I2C_MASTER_WRITE, true);
-        i2c_master_stop(cmd);
-        esp_err_t ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, pdMS_TO_TICKS(50));
-        i2c_cmd_link_delete(cmd);
-
-        if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "Found device at address 0x%02x", i);
-        }
+    esp_err_t ret = i2c_master_bus_detect_devices(i2c_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to scan I2C bus: %s", esp_err_to_name(ret));
     }
 
     // Main sensor reading loop
@@ -35,23 +30,25 @@ static void sensor_task(void* pvParameters)
 
 static esp_err_t i2c_master_init(void)
 {
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
+    i2c_master_bus_config_t i2c_master_cfg = {
+        .i2c_port = I2C_MASTER_NUM,
         .sda_io_num = I2C_MASTER_SDA_IO,
         .scl_io_num = I2C_MASTER_SCL_IO,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master = {
-            .clk_speed = I2C_MASTER_FREQ_HZ
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .intr_priority = 0, // Default priority
+        .trans_queue_depth = 0, // Default queue depth
+        .flags = {
+            .enable_internal_pullup = true
         }
     };
-
-    esp_err_t err = i2c_param_config(I2C_MASTER_NUM, &conf);
+    esp_err_t err = i2c_new_master_bus(&i2c_master_cfg, &i2c_handle);
     if (err != ESP_OK) {
+        ESP_LOGE(TAG, "I2C master initialization failed: %s", esp_err_to_name(err));
         return err;
     }
 
-    return i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
+    return ESP_OK;
 }
 
 esp_err_t sensors_init(void)
