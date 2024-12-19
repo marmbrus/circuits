@@ -13,6 +13,7 @@ static led_strip_handle_t led_strip;
 static SystemState current_state = WIFI_CONNECTING;
 static uint8_t pulse_brightness = 0;
 static bool pulse_increasing = true;
+static TaskHandle_t led_update_task_handle = NULL; // Task handle for the LED update task
 
 static void update_pulse_brightness() {
     if (pulse_increasing) {
@@ -123,11 +124,25 @@ void led_control_init(void) {
 
     // Create LED update task
     xTaskCreate(update_led_task, "led_update_task",
-                LED_UPDATE_TASK_STACK_SIZE, NULL, 5, NULL);
+                LED_UPDATE_TASK_STACK_SIZE, NULL, 5, &led_update_task_handle);
 
     ESP_LOGI(TAG, "LED Control initialized successfully");
 }
 
 void led_control_set_state(SystemState state) {
     current_state = state;
+}
+
+void led_control_clear() {
+    if (led_strip) {
+        led_strip_clear(led_strip);
+        led_strip_refresh(led_strip);
+    }
+}
+
+void led_control_stop() {
+    if (led_update_task_handle != NULL) {
+        vTaskDelete(led_update_task_handle);
+        led_update_task_handle = NULL;
+    }
 }

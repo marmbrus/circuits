@@ -9,6 +9,8 @@ extern "C" {
 
 void led_control_init(void);
 void led_control_set_state(SystemState state);
+void led_control_clear(void);
+void led_control_stop(void);
 
 #ifdef __cplusplus
 }

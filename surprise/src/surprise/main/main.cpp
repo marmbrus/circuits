@@ -10,6 +10,8 @@
 #include "io_manager.h"
 #include "logging_app.h"
 #include "driver/gpio.h"
+#include "esp_sleep.h"
+#include "config.h"
 
 static const char *TAG = "main";
 
@@ -50,8 +52,27 @@ extern "C" void app_main()
     ESP_ERROR_CHECK(sensors_init());
 
     // Main event loop
+    TickType_t lastEventTime = xTaskGetTickCount();
+
     while(1) {
-        ioManager.processEvents();
+        if (ioManager.processEvents()) {
+            lastEventTime = xTaskGetTickCount();
+        }
+
+        if ((xTaskGetTickCount() - lastEventTime) * portTICK_PERIOD_MS > INACTIVITY_THRESHOLD_MS) {
+            ESP_LOGI(TAG, "Entering deep sleep mode due to inactivity");
+
+            // Turn off all LEDs and stop the update task
+            led_control_clear();
+            led_control_stop();
+
+            // Configure wakeup sources for low signal using button GPIOs
+            esp_sleep_enable_ext1_wakeup((1ULL << BUTTON1_GPIO) | (1ULL << BUTTON2_GPIO), ESP_EXT1_WAKEUP_ALL_LOW);
+
+            // Enter deep sleep
+            esp_deep_sleep_start();
+        }
+
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

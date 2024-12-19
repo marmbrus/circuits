@@ -24,6 +24,6 @@ private:
 
 public:
     IOManager(Application* app);
-    void processEvents();
+    bool processEvents();
     static const int QUEUE_SIZE = IO_QUEUE_SIZE;
 };
