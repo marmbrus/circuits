@@ -6,31 +6,85 @@
 #include "led_strip_types.h"
 #include "config.h"
 #include "driver/gpio.h"
-#include "LEDBehavior.h"
-#include "ChristmasLights.cpp" // Include the implementation
-#include "NoLights.cpp"        // Include the NoLights implementation
-#include "FourColorLights.cpp" // Include the FourColorLights implementation
+#include "esp_timer.h"
 
 static const char* TAG = "LED_Control";
+
+// NoLights implementation
+void NoLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightness) {
+    for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
+        led_strip_set_pixel(led_strip, i, 0, 0, 0);
+    }
+}
+
+// FourColorLights implementation
+FourColorLights::FourColorLights() {
+    clearColors();
+}
+
+void FourColorLights::setColor(int index, uint8_t red, uint8_t green, uint8_t blue) {
+    if (index >= 0 && index < 4) {
+        colors[index][0] = red;
+        colors[index][1] = green;
+        colors[index][2] = blue;
+    }
+}
+
+void FourColorLights::clearColors() {
+    for (int i = 0; i < 4; ++i) {
+        colors[i][0] = 0;
+        colors[i][1] = 0;
+        colors[i][2] = 0;
+    }
+}
+
+void FourColorLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightness) {
+    for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
+        int colorIndex = i % 4;
+        led_strip_set_pixel(led_strip, i,
+                          colors[colorIndex][0],
+                          colors[colorIndex][1],
+                          colors[colorIndex][2]);
+    }
+}
+
+// ChristmasLights implementation
+void ChristmasLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightness) {
+    static bool phase = false;
+    static uint64_t last_update = 0;
+    uint64_t current_time = esp_timer_get_time(); // Get current time in microseconds
+
+    // Update phase every 500ms (2 times per second)
+    if (current_time - last_update >= 500000) {  // 500000 microseconds = 500ms
+        phase = !phase;
+        last_update = current_time;
+    }
+
+    for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
+        if ((i % 2 == 0) == phase) {  // XOR logic to alternate colors
+            led_strip_set_pixel(led_strip, i, pulse_brightness, 0, 0);  // Red
+        } else {
+            led_strip_set_pixel(led_strip, i, 0, pulse_brightness, 0);  // Green
+        }
+    }
+}
 
 static led_strip_handle_t led_strip;
 static SystemState current_state = WIFI_CONNECTING;
 static uint8_t pulse_brightness = 0;
 static bool pulse_increasing = true;
-static TaskHandle_t led_update_task_handle = NULL; // Task handle for the LED update task
+static TaskHandle_t led_update_task_handle = NULL;
 
 static const gpio_num_t button_led_pins[] = BUTTON_LED_PINS;
-static bool button_led_status[NUM_BUTTON_LEDS] = {true, true, true, true}; // Default all to on
+static bool button_led_status[NUM_BUTTON_LEDS] = {true, true, true, true};
 
-extern uint8_t g_battery_soc; // Declare the global SOC variable
+extern uint8_t g_battery_soc;
 
-// Create instances of LED behaviors
-static ChristmasLights christmas_lights;
+// Create static instances of LED behaviors
 static NoLights no_lights;
+static ChristmasLights christmas_lights;
 static FourColorLights four_color_lights;
-
-// Pointer to the current LED behavior
-static LEDBehavior* current_led_behavior = &no_lights; // Default to NoLights
+static LEDBehavior* current_behavior = &no_lights;
 
 static void update_pulse_brightness() {
     if (pulse_increasing) {
@@ -78,8 +132,9 @@ static void update_battery_leds() {
 }
 
 static void update_other_leds() {
-    // Use the current LED behavior to update the other LEDs
-    current_led_behavior->update(led_strip, pulse_brightness);
+    if (current_behavior) {
+        current_behavior->update(led_strip, pulse_brightness);
+    }
 }
 
 static void update_button_leds() {
@@ -177,6 +232,6 @@ void led_control_set_button_led_status(int index, bool status) {
 
 void led_control_set_behavior(LEDBehavior* behavior) {
     if (behavior != nullptr) {
-        current_led_behavior = behavior;
+        current_behavior = behavior;
     }
 }
