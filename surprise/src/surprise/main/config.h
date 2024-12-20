@@ -11,14 +11,14 @@
 #define I2C_MASTER_SDA_IO           ((gpio_num_t)21)      // GPIO number for I2C master data
 #define I2C_MASTER_NUM              I2C_NUM_0             // I2C port number
 #define I2C_MASTER_FREQ_HZ          400000                // I2C master clock frequency
-#define I2C_MASTER_TIMEOUT_MS       200
+#define I2C_MASTER_TIMEOUT_MS       100
 
 // Button Configuration
 #define BUTTON1_GPIO                15
 #define BUTTON2_GPIO                16
 #define BUTTON3_GPIO                17
 #define BUTTON4_GPIO                18
-#define BUTTON_DEBOUNCE_TIME_MS     1000
+#define BUTTON_DEBOUNCE_TIME_MS     300
 
 // Task Configuration
 #define SENSOR_TASK_STACK_SIZE      4096

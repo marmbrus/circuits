@@ -20,6 +20,7 @@ private:
     static QueueHandle_t eventQueue;
     static uint32_t last_interrupt_times[NUM_BUTTONS];
     Application* currentApp;
+    static bool button_released[NUM_BUTTONS];
 
     static void IRAM_ATTR buttonIsrHandler(void* arg);
     void initButtons();
