@@ -38,7 +38,7 @@
 #define BUTTON_LED_PINS             {GPIO_NUM_9, GPIO_NUM_10, GPIO_NUM_11, GPIO_NUM_12}
 #define NUM_BUTTON_LEDS             4
 
-#define INACTIVITY_THRESHOLD_MS 60000 // 10 seconds
+#define INACTIVITY_THRESHOLD_MS 604800000 // One week in milliseconds
 
 // Global variable for battery SOC
 extern uint8_t g_battery_soc;
