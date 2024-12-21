@@ -3,16 +3,11 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "driver/gpio.h"
-#include "application.h"
+#include "button_event.h"
 #include "config.h"
 
-enum class ButtonEvent {
-    BUTTON1_PRESSED,
-    BUTTON2_PRESSED,
-    BUTTON3_PRESSED,
-    BUTTON4_PRESSED,
-    MOVEMENT_DETECTED
-};
+// Forward declare Application
+class Application;
 
 class IOManager {
 private:
@@ -31,5 +26,6 @@ public:
     IOManager(Application* app);
     bool processEvents();
     void initMovementInterrupt();
+    void sendEvent(ButtonEvent evt) { xQueueSend(eventQueue, &evt, 0); }
     static const int QUEUE_SIZE = IO_QUEUE_SIZE;
 };

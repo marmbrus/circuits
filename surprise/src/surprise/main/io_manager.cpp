@@ -1,4 +1,5 @@
 #include "io_manager.h"
+#include "application.h"
 #include "esp_log.h"
 #include "config.h"
 #include "esp_sleep.h"
@@ -156,6 +157,15 @@ bool IOManager::processEvents() {
                 currentApp->onMovementDetected();
                 break;
             }
+            case ButtonEvent::ORIENTATION_UP:
+            case ButtonEvent::ORIENTATION_DOWN:
+            case ButtonEvent::ORIENTATION_LEFT:
+            case ButtonEvent::ORIENTATION_RIGHT:
+            case ButtonEvent::ORIENTATION_FRONT:
+            case ButtonEvent::ORIENTATION_BACK:
+            case ButtonEvent::ORIENTATION_UNKNOWN:
+                currentApp->onOrientationChanged(event);
+                break;
         }
         return true;
     }

@@ -13,8 +13,14 @@
 #include "driver/gpio.h"
 #include "esp_sleep.h"
 #include "config.h"
+#include "lis2dh.h"
 
 static const char *TAG = "main";
+
+extern "C" {
+    esp_err_t lis2dh12_configure_sleep_mode(void);
+    esp_err_t lis2dh12_configure_normal_mode(void);
+}
 
 void set_5V_pin(bool enable) {
     gpio_config_t io_conf;
@@ -63,9 +69,15 @@ extern "C" void app_main()
         if ((xTaskGetTickCount() - lastEventTime) * portTICK_PERIOD_MS > INACTIVITY_THRESHOLD_MS) {
             ESP_LOGI(TAG, "Entering deep sleep mode due to inactivity");
 
+            // Configure accelerometer for sleep mode
+            lis2dh12_configure_sleep_mode();
+
             // Turn off all LEDs and stop the update task
             led_control_clear();
             led_control_stop();
+
+            // Disable 5V pin before sleep
+            set_5V_pin(false);
 
             // Configure wakeup sources for low signal using button GPIOs
             esp_sleep_enable_ext1_wakeup(
@@ -75,6 +87,9 @@ extern "C" void app_main()
                 (1ULL << BUTTON4_GPIO),
                 ESP_EXT1_WAKEUP_ALL_LOW
             );
+
+            // Add motion wake-up source
+            esp_sleep_enable_ext0_wakeup(MOVEMENT_INT_GPIO, 1);  // Wake on high level
 
             // Enter deep sleep
             esp_deep_sleep_start();

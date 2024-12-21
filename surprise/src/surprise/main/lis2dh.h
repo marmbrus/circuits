@@ -161,6 +161,27 @@ esp_err_t lis2dh12_get_int1_source(uint8_t *src);
  */
 esp_err_t lis2dh12_check_interrupt_config(void);
 
+/**
+ * @brief Configure accelerometer for normal operation (absolute readings)
+ * Disables high-pass filter and configures for normal acceleration readings
+ */
+esp_err_t lis2dh12_configure_normal_mode(void);
+
+/**
+ * @brief Configure accelerometer for sleep preparation
+ * Enables high-pass filter and motion detection interrupt
+ */
+esp_err_t lis2dh12_configure_sleep_mode(void);
+
+/**
+ * @brief Read a register from the LIS2DH12 sensor
+ *
+ * @param reg Register address
+ * @param value Pointer to store the read value
+ * @return esp_err_t ESP_OK on success
+ */
+esp_err_t lis2dh12_read_register(uint8_t reg, uint8_t *value);
+
 #ifdef __cplusplus
 }
 #endif

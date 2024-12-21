@@ -1,7 +1,9 @@
+#include <math.h>
 #include "sensors.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "config.h"
 #include "bq27441.h"
 #include "i2c_master_ext.h"
@@ -20,6 +22,54 @@ static bool accelerometer_initialized = false; // Add flag to track acceleromete
 
 // Global variable for battery SOC
 uint8_t g_battery_soc = 100; // Default SOC to 100%
+
+// Add at the top with other static variables
+static float last_x = 0, last_y = 0, last_z = 0;  // For tracking movement
+static const float ORIENTATION_THRESHOLD = 0.8f;    // Consider axis aligned if > 0.8g
+static const float MOVEMENT_THRESHOLD = 0.1f;       // Minimum change to consider movement
+
+// Enum for orientation
+typedef enum {
+    ORIENTATION_UP,
+    ORIENTATION_DOWN,
+    ORIENTATION_LEFT,
+    ORIENTATION_RIGHT,
+    ORIENTATION_FRONT,
+    ORIENTATION_BACK,
+    ORIENTATION_UNKNOWN
+} device_orientation_t;
+
+static device_orientation_t current_orientation = ORIENTATION_UNKNOWN;
+
+// Function to determine orientation from accelerometer data
+static device_orientation_t determine_orientation(float x, float y, float z) {
+    // Check if any axis has a strong enough reading
+    if (fabsf(x) > ORIENTATION_THRESHOLD) {
+        return (x > 0) ? ORIENTATION_RIGHT : ORIENTATION_LEFT;
+    }
+    if (fabsf(y) > ORIENTATION_THRESHOLD) {
+        return (y > 0) ? ORIENTATION_BACK : ORIENTATION_FRONT;
+    }
+    if (fabsf(z) > ORIENTATION_THRESHOLD) {
+        return (z > 0) ? ORIENTATION_UP : ORIENTATION_DOWN;
+    }
+    return ORIENTATION_UNKNOWN;
+}
+
+// Function to check if movement is significant
+static bool is_significant_movement(float x, float y, float z) {
+    bool significant = (
+        fabsf(x - last_x) > MOVEMENT_THRESHOLD ||
+        fabsf(y - last_y) > MOVEMENT_THRESHOLD ||
+        fabsf(z - last_z) > MOVEMENT_THRESHOLD
+    );
+
+    last_x = x;
+    last_y = y;
+    last_z = z;
+
+    return significant;
+}
 
 // Declare the sensor_task function before its usage
 static void sensor_task(void* pvParameters);
@@ -51,13 +101,13 @@ esp_err_t sensors_init(IOManager* ioManager)
                 err = lis2dh12_set_mode(LIS2DH12_HR_12BIT);
             }
             if (err == ESP_OK) {
-                err = lis2dh12_configure_movement_interrupt();
-            }
-
-            if (err == ESP_OK) {
-                accelerometer_initialized = true;
-                ESP_LOGI(TAG, "LIS2DH12 initialized successfully");
-                break;
+                // Only configure normal mode initially
+                err = lis2dh12_configure_normal_mode();
+                if (err == ESP_OK) {
+                    accelerometer_initialized = true;
+                    ESP_LOGI(TAG, "LIS2DH12 initialized successfully in normal mode");
+                    break;
+                }
             }
         }
 
@@ -106,22 +156,64 @@ static void sensor_task(void* pvParameters)
         ioManager->initMovementInterrupt();
     }
 
-    TickType_t last_interrupt_check = xTaskGetTickCount();
-    const TickType_t interrupt_check_interval = pdMS_TO_TICKS(30000); // Check every 30 seconds
+    TickType_t last_interrupt_check = xTaskGetTickCount();  // Keep this for future use if needed
+
+    // Change the polling interval to 1 second for accelerometer
+    const TickType_t accel_interval = pdMS_TO_TICKS(1000);
+    TickType_t last_accel_time = xTaskGetTickCount();
 
     // Main sensor reading loop
     while (1) {
-        // Check and reconfigure interrupt periodically
-        if ((xTaskGetTickCount() - last_interrupt_check) >= interrupt_check_interval) {
+        TickType_t now = xTaskGetTickCount();
+
+        // Read accelerometer every second
+        if ((now - last_accel_time) >= accel_interval) {
             if (accelerometer_initialized) {
-                esp_err_t check_ret = lis2dh12_check_interrupt_config();
-                if (check_ret != ESP_OK) {
-                    ESP_LOGW(TAG, "Motion interrupt configuration check failed: %s", esp_err_to_name(check_ret));
+                lis2dh12_accel_t accel_data;
+                esp_err_t accel_ret = lis2dh12_get_accel(&accel_data);
+                if (accel_ret == ESP_OK) {
+                    // Check orientation
+                    device_orientation_t new_orientation = determine_orientation(
+                        accel_data.x, accel_data.y, accel_data.z);
+
+                    // If orientation changed or if it's unknown and there's significant movement
+                    if (new_orientation != current_orientation &&
+                        (new_orientation != ORIENTATION_UNKNOWN ||
+                         is_significant_movement(accel_data.x, accel_data.y, accel_data.z))) {
+
+                        // Initialize ButtonEvent with a default value
+                        ButtonEvent evt = ButtonEvent::ORIENTATION_UNKNOWN;
+
+                        // Map the orientation to ButtonEvent
+                        switch (new_orientation) {
+                            case ORIENTATION_UP:     evt = ButtonEvent::ORIENTATION_UP; break;
+                            case ORIENTATION_DOWN:   evt = ButtonEvent::ORIENTATION_DOWN; break;
+                            case ORIENTATION_LEFT:   evt = ButtonEvent::ORIENTATION_LEFT; break;
+                            case ORIENTATION_RIGHT:  evt = ButtonEvent::ORIENTATION_RIGHT; break;
+                            case ORIENTATION_FRONT:  evt = ButtonEvent::ORIENTATION_FRONT; break;
+                            case ORIENTATION_BACK:   evt = ButtonEvent::ORIENTATION_BACK; break;
+                            case ORIENTATION_UNKNOWN: evt = ButtonEvent::ORIENTATION_UNKNOWN; break;
+                        }
+
+                        ioManager->sendEvent(evt);
+                        current_orientation = new_orientation;
+
+                        // Log the orientation change
+                        const char* orientation_str[] = {
+                            "Up", "Down", "Left", "Right", "Front", "Back", "Unknown"
+                        };
+                        ESP_LOGI(TAG, "Orientation changed to: %s", orientation_str[new_orientation]);
+                    }
+
+                    // Log the accelerometer values
+                    ESP_LOGI(TAG, "Accelerometer: X=%.3fg, Y=%.3fg, Z=%.3fg",
+                            accel_data.x, accel_data.y, accel_data.z);
                 }
             }
-            last_interrupt_check = xTaskGetTickCount();
+            last_accel_time = now;
         }
 
+        // Read battery data
         esp_err_t ret = bq27441_read_data(&battery_data);
         if (ret == ESP_OK) {
             // Update the global SOC variable
@@ -169,6 +261,6 @@ static void sensor_task(void* pvParameters)
             ESP_LOGE(TAG, "Failed to read BQ27441 data: %s", esp_err_to_name(ret));
         }
 
-        vTaskDelay(pdMS_TO_TICKS(SENSOR_TASK_INTERVAL_MS));
+        vTaskDelay(pdMS_TO_TICKS(100));  // Short delay to prevent tight loop
     }
 }

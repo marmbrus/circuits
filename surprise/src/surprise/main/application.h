@@ -1,5 +1,7 @@
 #pragma once
 
+#include "button_event.h"
+
 class Application {
 public:
     virtual ~Application() = default;
@@ -10,4 +12,5 @@ public:
     virtual void onButton3Pressed() = 0;
     virtual void onButton4Pressed() = 0;
     virtual void onMovementDetected() = 0;
+    virtual void onOrientationChanged(ButtonEvent orientation) = 0;
 };

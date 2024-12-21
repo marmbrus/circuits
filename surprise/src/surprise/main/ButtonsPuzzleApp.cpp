@@ -20,7 +20,8 @@ ButtonsPuzzleApp::ButtonsPuzzleApp()
       rainbowChasing(&globalRainbowChasing),
       flashingLights(&globalFlashingLights),
       pulsingLights(&globalPulsingLights),
-      currentColorIndex(0) {
+      currentColorIndex(0),
+      lastOrientation(ButtonEvent::ORIENTATION_UNKNOWN) {
     currentBehavior = fourColorLights;
     led_control_set_behavior(currentBehavior);
     resetState();
@@ -160,4 +161,43 @@ void ButtonsPuzzleApp::resetState() {
 void ButtonsPuzzleApp::onMovementDetected() {
     ESP_LOGI(TAG, "Movement detected in ButtonsPuzzleApp");
     // Add your movement detection handling logic here
+}
+
+void ButtonsPuzzleApp::onOrientationChanged(ButtonEvent orientation) {
+    const char* orientation_str;
+    switch (orientation) {
+        case ButtonEvent::ORIENTATION_UP:     orientation_str = "Up"; break;
+        case ButtonEvent::ORIENTATION_DOWN:   orientation_str = "Down"; break;
+        case ButtonEvent::ORIENTATION_LEFT:   orientation_str = "Left"; break;
+        case ButtonEvent::ORIENTATION_RIGHT:  orientation_str = "Right"; break;
+        case ButtonEvent::ORIENTATION_FRONT:  orientation_str = "Front"; break;
+        case ButtonEvent::ORIENTATION_BACK:   orientation_str = "Back"; break;
+        case ButtonEvent::ORIENTATION_UNKNOWN: orientation_str = "Unknown"; break;
+        default: orientation_str = "Invalid"; break;
+    }
+
+    ESP_LOGI(TAG, "Orientation changed to: %s", orientation_str);
+    lastOrientation = orientation;
+
+    // You can add special behaviors based on orientation here
+    // For example:
+    switch (orientation) {
+        case ButtonEvent::ORIENTATION_UP:
+            pulsingLights->setColor(0, 255, 0);  // Green when up
+            currentBehavior = pulsingLights;
+            break;
+        case ButtonEvent::ORIENTATION_DOWN:
+            pulsingLights->setColor(255, 0, 0);  // Red when down
+            currentBehavior = pulsingLights;
+            break;
+        case ButtonEvent::ORIENTATION_UNKNOWN:
+            // Return to previous behavior or set a default one
+            currentBehavior = fourColorLights;
+            break;
+        default:
+            // Optional: handle other orientations
+            break;
+    }
+
+    led_control_set_behavior(currentBehavior);
 }

@@ -286,3 +286,41 @@ esp_err_t lis2dh12_get_int1_source(uint8_t *src)
     // Reading INT1_SRC register clears the interrupt
     return read_register(LIS2DH12_INT1_SRC, src);
 }
+
+esp_err_t lis2dh12_configure_normal_mode(void)
+{
+    esp_err_t ret;
+
+    // Disable interrupts temporarily
+    ret = write_register(LIS2DH12_CTRL_REG3, 0x00);
+    if (ret != ESP_OK) return ret;
+
+    // Configure CTRL_REG2 to disable high-pass filter
+    ret = write_register(LIS2DH12_CTRL_REG2, 0x00);
+    if (ret != ESP_OK) return ret;
+
+    // Set data rate and enable all axes in CTRL_REG1
+    // 0x57 = 01010111b (50Hz, all axes enabled)
+    ret = write_register(LIS2DH12_CTRL_REG1, 0x57);
+    if (ret != ESP_OK) return ret;
+
+    // Configure CTRL_REG4 for high resolution mode and ±2g range
+    // 0x88 = 10001000b (BDU enabled, HR mode, ±2g range)
+    ret = write_register(LIS2DH12_CTRL_REG4, 0x88);
+    if (ret != ESP_OK) return ret;
+
+    return ESP_OK;
+}
+
+esp_err_t lis2dh12_configure_sleep_mode(void)
+{
+    // This is essentially the same as configure_movement_interrupt
+    // but we'll make it explicit for clarity
+    return lis2dh12_configure_movement_interrupt();
+}
+
+// Make the read_register function public
+esp_err_t lis2dh12_read_register(uint8_t reg, uint8_t *value)
+{
+    return read_register(reg, value);
+}

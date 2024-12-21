@@ -18,6 +18,7 @@ private:
     int currentColorIndex;
     int buttonPresses[4];
     int patternIndex;
+    ButtonEvent lastOrientation;
 
     void checkPattern();
     void handleButtonPress(int buttonIndex, uint8_t red, uint8_t green, uint8_t blue);
@@ -30,4 +31,5 @@ public:
     void onButton3Pressed() override;
     void onButton4Pressed() override;
     void onMovementDetected() override;
+    void onOrientationChanged(ButtonEvent orientation) override;
 };
