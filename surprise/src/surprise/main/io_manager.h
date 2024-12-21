@@ -10,7 +10,8 @@ enum class ButtonEvent {
     BUTTON1_PRESSED,
     BUTTON2_PRESSED,
     BUTTON3_PRESSED,
-    BUTTON4_PRESSED
+    BUTTON4_PRESSED,
+    MOVEMENT_DETECTED
 };
 
 class IOManager {
@@ -23,10 +24,12 @@ private:
     static bool button_released[NUM_BUTTONS];
 
     static void IRAM_ATTR buttonIsrHandler(void* arg);
+    static void IRAM_ATTR movementIsrHandler(void* arg);
     void initButtons();
 
 public:
     IOManager(Application* app);
     bool processEvents();
+    void initMovementInterrupt();
     static const int QUEUE_SIZE = IO_QUEUE_SIZE;
 };

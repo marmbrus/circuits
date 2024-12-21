@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include "config.h"
 #include "esp_sleep.h"
+#include "lis2dh.h"
 
 static const char* TAG = "IOManager";
 
@@ -19,6 +20,7 @@ bool IOManager::button_released[NUM_BUTTONS] = {true, true, true, true};
 IOManager::IOManager(Application* app) : currentApp(app) {
     eventQueue = xQueueCreate(QUEUE_SIZE, sizeof(ButtonEvent));
     initButtons();
+    initMovementInterrupt();
 
     // Check if waking up from deep sleep
     if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT1) {
@@ -93,6 +95,39 @@ void IOManager::initButtons() {
     ESP_LOGI(TAG, "Button GPIOs initialized with pull-up resistors enabled");
 }
 
+void IRAM_ATTR IOManager::movementIsrHandler(void* arg) {
+    static uint32_t last_interrupt_time = 0;
+    uint32_t current_time = xTaskGetTickCountFromISR();
+
+    // Basic debouncing
+    if ((current_time - last_interrupt_time) < pdMS_TO_TICKS(50)) {
+        return;
+    }
+    last_interrupt_time = current_time;
+
+    ButtonEvent evt = ButtonEvent::MOVEMENT_DETECTED;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    xQueueSendFromISR(eventQueue, &evt, &xHigherPriorityTaskWoken);
+    if (xHigherPriorityTaskWoken) {
+        portYIELD_FROM_ISR();
+    }
+}
+
+void IOManager::initMovementInterrupt() {
+    gpio_config_t io_conf = {};
+    io_conf.intr_type = GPIO_INTR_NEGEDGE;  // Change to falling edge
+    io_conf.mode = GPIO_MODE_INPUT;
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;  // Keep line low when inactive
+    io_conf.pin_bit_mask = (1ULL << MOVEMENT_INT_GPIO);
+
+    gpio_config(&io_conf);
+    gpio_isr_handler_add(MOVEMENT_INT_GPIO, movementIsrHandler, NULL);
+
+    ESP_LOGI(TAG, "Movement interrupt initialized on GPIO %d", MOVEMENT_INT_GPIO);
+}
+
 bool IOManager::processEvents() {
     ButtonEvent event;
     if (xQueueReceive(eventQueue, &event, 0)) {
@@ -113,6 +148,14 @@ bool IOManager::processEvents() {
                 ESP_LOGI(TAG, "Button 4 press processed");
                 currentApp->onButton4Pressed();
                 break;
+            case ButtonEvent::MOVEMENT_DETECTED: {
+                uint8_t int_source;
+                ESP_LOGI(TAG, "Movement detected");
+                // Clear the interrupt here, in the main task context
+                lis2dh12_get_int1_source(&int_source);
+                currentApp->onMovementDetected();
+                break;
+            }
         }
         return true;
     }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esp_err.h"
+#include "io_manager.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +12,7 @@ extern "C" {
  *
  * @return ESP_OK if successful, appropriate error code otherwise
  */
-esp_err_t sensors_init(void);
+esp_err_t sensors_init(IOManager* ioManager);
 
 #ifdef __cplusplus
 }

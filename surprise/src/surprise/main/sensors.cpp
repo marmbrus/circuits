@@ -9,11 +9,14 @@
 #include "cJSON.h"
 #include "wifi.h"
 #include "led_control.h"
+#include "lis2dh.h"
+#include "io_manager.h"
 
 static const char *TAG = "sensors";
 
 static BatteryGaugeData battery_data; // Global variable to store battery data
 static i2c_master_bus_handle_t i2c_handle; // Declare i2c_handle as a static variable
+static bool accelerometer_initialized = false; // Add flag to track accelerometer state
 
 // Global variable for battery SOC
 uint8_t g_battery_soc = 100; // Default SOC to 100%
@@ -21,7 +24,7 @@ uint8_t g_battery_soc = 100; // Default SOC to 100%
 // Declare the sensor_task function before its usage
 static void sensor_task(void* pvParameters);
 
-esp_err_t sensors_init(void)
+esp_err_t sensors_init(IOManager* ioManager)
 {
     esp_err_t err = i2c_master_init(&i2c_handle);
     if (err != ESP_OK) {
@@ -29,15 +32,52 @@ esp_err_t sensors_init(void)
         return err;
     }
 
-    // Pass the initialized i2c_handle to bq27441
+    // Initialize BQ27441 first
     bq27441_set_i2c_handle(i2c_handle);
+
+    // Initialize LIS2DH12 with retry mechanism
+    int retry_count = 0;
+    const int max_retries = 3;
+
+    while (retry_count < max_retries) {
+        err = lis2dh12_init(i2c_handle);
+        if (err == ESP_OK) {
+            // Configure the sensor only if initialization succeeded
+            err = lis2dh12_set_data_rate(LIS2DH12_ODR_50Hz);
+            if (err == ESP_OK) {
+                err = lis2dh12_set_scale(LIS2DH12_2G);
+            }
+            if (err == ESP_OK) {
+                err = lis2dh12_set_mode(LIS2DH12_HR_12BIT);
+            }
+            if (err == ESP_OK) {
+                err = lis2dh12_configure_movement_interrupt();
+            }
+
+            if (err == ESP_OK) {
+                accelerometer_initialized = true;
+                ESP_LOGI(TAG, "LIS2DH12 initialized successfully");
+                break;
+            }
+        }
+
+        ESP_LOGW(TAG, "Failed to initialize LIS2DH12 (attempt %d/%d): %s",
+                 retry_count + 1, max_retries, esp_err_to_name(err));
+        retry_count++;
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Wait 1 second between retries
+    }
+
+    if (!accelerometer_initialized) {
+        ESP_LOGE(TAG, "Failed to initialize LIS2DH12 after %d attempts", max_retries);
+        // Continue anyway, just without accelerometer functionality
+    }
 
     // Create the sensor task
     BaseType_t ret = xTaskCreate(
         sensor_task,
         "sensor_task",
         SENSOR_TASK_STACK_SIZE,           // Stack size in words
-        NULL,           // Task parameters
+        ioManager,           // Pass IOManager as task parameter
         SENSOR_TASK_PRIORITY,              // Task priority
         NULL           // Task handle
     );
@@ -52,13 +92,36 @@ esp_err_t sensors_init(void)
 
 static void sensor_task(void* pvParameters)
 {
+    IOManager* ioManager = static_cast<IOManager*>(pvParameters);
     ESP_LOGI(TAG, "Sensor task started");
 
     // Retrieve the MQTT client handle
     esp_mqtt_client_handle_t mqtt_client = get_mqtt_client();
 
+    // Pass the initialized i2c_handle to bq27441
+    bq27441_set_i2c_handle(i2c_handle);
+
+    // Only initialize movement interrupt if accelerometer was initialized
+    if (accelerometer_initialized) {
+        ioManager->initMovementInterrupt();
+    }
+
+    TickType_t last_interrupt_check = xTaskGetTickCount();
+    const TickType_t interrupt_check_interval = pdMS_TO_TICKS(30000); // Check every 30 seconds
+
     // Main sensor reading loop
     while (1) {
+        // Check and reconfigure interrupt periodically
+        if ((xTaskGetTickCount() - last_interrupt_check) >= interrupt_check_interval) {
+            if (accelerometer_initialized) {
+                esp_err_t check_ret = lis2dh12_check_interrupt_config();
+                if (check_ret != ESP_OK) {
+                    ESP_LOGW(TAG, "Motion interrupt configuration check failed: %s", esp_err_to_name(check_ret));
+                }
+            }
+            last_interrupt_check = xTaskGetTickCount();
+        }
+
         esp_err_t ret = bq27441_read_data(&battery_data);
         if (ret == ESP_OK) {
             // Update the global SOC variable
@@ -106,6 +169,6 @@ static void sensor_task(void* pvParameters)
             ESP_LOGE(TAG, "Failed to read BQ27441 data: %s", esp_err_to_name(ret));
         }
 
-        vTaskDelay(pdMS_TO_TICKS(SENSOR_TASK_INTERVAL_MS)); // Sleep for 10 seconds
+        vTaskDelay(pdMS_TO_TICKS(SENSOR_TASK_INTERVAL_MS));
     }
 }

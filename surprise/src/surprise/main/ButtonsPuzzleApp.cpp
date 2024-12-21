@@ -156,3 +156,8 @@ void ButtonsPuzzleApp::resetState() {
     currentBehavior = fourColorLights;
     led_control_set_behavior(currentBehavior);
 }
+
+void ButtonsPuzzleApp::onMovementDetected() {
+    ESP_LOGI(TAG, "Movement detected in ButtonsPuzzleApp");
+    // Add your movement detection handling logic here
+}

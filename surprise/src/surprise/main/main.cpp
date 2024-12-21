@@ -50,7 +50,7 @@ extern "C" void app_main()
     // Initialize other components
     led_control_init();
     wifi_mqtt_init();
-    ESP_ERROR_CHECK(sensors_init());
+    ESP_ERROR_CHECK(sensors_init(&ioManager));
 
     // Main event loop
     TickType_t lastEventTime = xTaskGetTickCount();

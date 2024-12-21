@@ -29,4 +29,5 @@ public:
     void onButton2Pressed() override;
     void onButton3Pressed() override;
     void onButton4Pressed() override;
+    void onMovementDetected() override;
 };

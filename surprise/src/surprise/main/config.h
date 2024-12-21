@@ -1,6 +1,7 @@
 #pragma once
 
 #include "credentials.h"
+#include <stdint.h>
 
 // MQTT Configuration
 #define MQTT_RECONNECT_TIMEOUT_MS 5000
@@ -42,3 +43,6 @@
 
 // Global variable for battery SOC
 extern uint8_t g_battery_soc;
+
+// Movement Interrupt Configuration
+#define MOVEMENT_INT_GPIO           GPIO_NUM_1  // GPIO number for movement interrupt
