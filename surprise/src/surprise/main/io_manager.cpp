@@ -4,6 +4,7 @@
 #include "config.h"
 #include "esp_sleep.h"
 #include "lis2dh.h"
+#include "led_control.h"
 
 static const char* TAG = "IOManager";
 
@@ -19,22 +20,45 @@ uint32_t IOManager::last_interrupt_times[NUM_BUTTONS] = {0, 0, 0, 0};
 bool IOManager::button_released[NUM_BUTTONS] = {true, true, true, true};
 
 IOManager::IOManager(Application* app) : currentApp(app) {
+    ESP_LOGI(TAG, "Initializing IOManager");
     eventQueue = xQueueCreate(QUEUE_SIZE, sizeof(ButtonEvent));
     initButtons();
     initMovementInterrupt();
 
+    // Set the IOManager pointer in the application first
+    app->setIOManager(this);
+
     // Check if waking up from deep sleep
-    if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT1) {
+    esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
+    if (wakeup_cause == ESP_SLEEP_WAKEUP_EXT1) {
+        ESP_LOGI(TAG, "Waking up from deep sleep");
         uint64_t wakeup_pin_mask = esp_sleep_get_ext1_wakeup_status();
-        if (wakeup_pin_mask & (1ULL << BUTTON1_GPIO)) {
-            currentApp->onButton1Pressed();
-        } else if (wakeup_pin_mask & (1ULL << BUTTON2_GPIO)) {
-            currentApp->onButton2Pressed();
-        } else if (wakeup_pin_mask & (1ULL << BUTTON3_GPIO)) {
-            currentApp->onButton3Pressed();
-        } else if (wakeup_pin_mask & (1ULL << BUTTON4_GPIO)) {
-            currentApp->onButton4Pressed();
+
+        // Only process if it was actually a button that caused the wake-up
+        if (wakeup_pin_mask & ((1ULL << BUTTON1_GPIO) |
+                              (1ULL << BUTTON2_GPIO) |
+                              (1ULL << BUTTON3_GPIO) |
+                              (1ULL << BUTTON4_GPIO))) {
+            ButtonEvent evt;
+            if (wakeup_pin_mask & (1ULL << BUTTON1_GPIO)) {
+                ESP_LOGI(TAG, "Wakeup caused by Button 1");
+                evt = ButtonEvent::BUTTON1_PRESSED;
+            } else if (wakeup_pin_mask & (1ULL << BUTTON2_GPIO)) {
+                ESP_LOGI(TAG, "Wakeup caused by Button 2");
+                evt = ButtonEvent::BUTTON2_PRESSED;
+            } else if (wakeup_pin_mask & (1ULL << BUTTON3_GPIO)) {
+                ESP_LOGI(TAG, "Wakeup caused by Button 3");
+                evt = ButtonEvent::BUTTON3_PRESSED;
+            } else if (wakeup_pin_mask & (1ULL << BUTTON4_GPIO)) {
+                ESP_LOGI(TAG, "Wakeup caused by Button 4");
+                evt = ButtonEvent::BUTTON4_PRESSED;
+            }
+            xQueueSend(eventQueue, &evt, 0);
+        } else {
+            ESP_LOGI(TAG, "Wakeup not caused by a button");
         }
+    } else {
+        ESP_LOGI(TAG, "Normal boot (not waking from deep sleep)");
     }
 }
 
@@ -77,7 +101,7 @@ void IOManager::initButtons() {
     gpio_config_t io_conf = {};
     io_conf.intr_type = GPIO_INTR_ANYEDGE;  // Changed to detect both edges temporarily for debugging
     io_conf.mode = GPIO_MODE_INPUT;
-    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pin_bit_mask = 0;
 
@@ -127,6 +151,12 @@ void IOManager::initMovementInterrupt() {
     gpio_isr_handler_add(MOVEMENT_INT_GPIO, movementIsrHandler, NULL);
 
     ESP_LOGI(TAG, "Movement interrupt initialized on GPIO %d", MOVEMENT_INT_GPIO);
+}
+
+void IOManager::setButtonLED(int buttonIndex, bool state) {
+    if (buttonIndex >= 0 && buttonIndex < NUM_BUTTONS) {
+        led_control_set_button_led_status(buttonIndex, state);
+    }
 }
 
 bool IOManager::processEvents() {

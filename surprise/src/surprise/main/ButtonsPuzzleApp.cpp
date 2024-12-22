@@ -2,6 +2,7 @@
 #include "led_control.h"
 #include "wifi.h"
 #include "cJSON.h"
+#include "io_manager.h"
 
 // Declare global variables for light behaviors
 FourColorLights globalFourColorLights;
@@ -23,7 +24,8 @@ ButtonsPuzzleApp::ButtonsPuzzleApp()
       flashingLights(&globalFlashingLights),
       pulsingLights(&globalPulsingLights),
       currentColorIndex(0),
-      lastOrientation(ButtonEvent::ORIENTATION_UNKNOWN) {
+      lastOrientation(ButtonEvent::ORIENTATION_UNKNOWN),
+      ioManager(nullptr) {
     currentBehavior = fourColorLights;
     led_control_set_behavior(currentBehavior);
     resetState();
@@ -36,20 +38,15 @@ void ButtonsPuzzleApp::handleButtonPress(int buttonIndex, uint8_t red, uint8_t g
     cJSON *button_json = cJSON_CreateObject();
     cJSON_AddNumberToObject(button_json, "index", buttonIndex);
 
-    // Determine color name based on RGB values
+    // Determine color name based on button index
     const char* colorName;
-    if (red == 0 && green == 255 && blue == 0) {
-        colorName = "green";
-    } else if (red == 0 && green == 0 && blue == 255) {
-        colorName = "blue";
-    } else if (red == 255 && green == 0 && blue == 0) {
-        colorName = "red";
-    } else if (red == 255 && green == 255 && blue == 0) {
-        colorName = "yellow";
-    } else {
-        colorName = "unknown";
+    switch (buttonIndex) {
+        case 0: colorName = "green"; break;
+        case 1: colorName = "blue"; break;
+        case 2: colorName = "red"; break;
+        case 3: colorName = "yellow"; break;
+        default: colorName = "unknown"; break;
     }
-
     cJSON_AddStringToObject(button_json, "color", colorName);
 
     char *button_string = cJSON_Print(button_json);
@@ -64,7 +61,14 @@ void ButtonsPuzzleApp::handleButtonPress(int buttonIndex, uint8_t red, uint8_t g
         resetState();
     }
 
-    // Record the button press and set the LED
+    // Turn on the button LED and record the press
+    ESP_LOGI(TAG, "Setting button %d LED to ON", buttonIndex);
+    if (ioManager == nullptr) {
+        ESP_LOGE(TAG, "IOManager is null!");
+    } else {
+        ioManager->setButtonLED(buttonIndex, true);
+    }
+
     buttonPresses[currentColorIndex] = buttonIndex;
     fourColorLights->setColor(currentColorIndex, red, green, blue);
 
@@ -129,12 +133,14 @@ void ButtonsPuzzleApp::checkPattern() {
     cJSON_free(pattern_string);
     cJSON_Delete(pattern_json);
 
+    bool pattern_recognized = false;
+
     // Check for the Red, Green, Red, Green pattern (original pattern)
     if (buttonPresses[0] == 2 && buttonPresses[1] == 0 &&
         buttonPresses[2] == 2 && buttonPresses[3] == 0) {
         ESP_LOGI(TAG, "Pattern recognized: Red, Green, Red, Green");
         currentBehavior = christmasLights;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     // Check for the Green, Red, Green, Red pattern (new pattern)
     else if (buttonPresses[0] == 0 && buttonPresses[1] == 2 &&
@@ -145,28 +151,28 @@ void ButtonsPuzzleApp::checkPattern() {
             100, 0, 0     // Red
         );
         currentBehavior = chasingLights;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     // Check for Red, Yellow, Green, Blue pattern
     else if (buttonPresses[0] == 2 && buttonPresses[1] == 3 &&
              buttonPresses[2] == 0 && buttonPresses[3] == 1) {
         ESP_LOGI(TAG, "Pattern recognized: Red, Yellow, Green, Blue");
         currentBehavior = rainbowLights;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     // Check for Blue, Green, Yellow, Red pattern
     else if (buttonPresses[0] == 1 && buttonPresses[1] == 0 &&
              buttonPresses[2] == 3 && buttonPresses[3] == 2) {
         ESP_LOGI(TAG, "Pattern recognized: Blue, Green, Yellow, Red");
         currentBehavior = rainbowChasing;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     // Check for Red, Blue, Red, Blue pattern
     else if (buttonPresses[0] == 2 && buttonPresses[1] == 1 &&
              buttonPresses[2] == 2 && buttonPresses[3] == 1) {
         ESP_LOGI(TAG, "Pattern recognized: Red, Blue, Red, Blue");
         currentBehavior = flashingLights;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     // Check for all Red pattern
     else if (buttonPresses[0] == 2 && buttonPresses[1] == 2 &&
@@ -174,7 +180,7 @@ void ButtonsPuzzleApp::checkPattern() {
         ESP_LOGI(TAG, "Pattern recognized: All Red");
         pulsingLights->setColor(255, 0, 0);  // Red
         currentBehavior = pulsingLights;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     // Check for all Green pattern
     else if (buttonPresses[0] == 0 && buttonPresses[1] == 0 &&
@@ -182,7 +188,7 @@ void ButtonsPuzzleApp::checkPattern() {
         ESP_LOGI(TAG, "Pattern recognized: All Green");
         pulsingLights->setColor(0, 255, 0);  // Green
         currentBehavior = pulsingLights;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     // Check for all Blue pattern
     else if (buttonPresses[0] == 1 && buttonPresses[1] == 1 &&
@@ -190,7 +196,7 @@ void ButtonsPuzzleApp::checkPattern() {
         ESP_LOGI(TAG, "Pattern recognized: All Blue");
         pulsingLights->setColor(0, 0, 255);  // Blue
         currentBehavior = pulsingLights;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     // Check for all Yellow pattern
     else if (buttonPresses[0] == 3 && buttonPresses[1] == 3 &&
@@ -198,12 +204,20 @@ void ButtonsPuzzleApp::checkPattern() {
         ESP_LOGI(TAG, "Pattern recognized: All Yellow");
         pulsingLights->setColor(255, 255, 0);  // Yellow
         currentBehavior = pulsingLights;
-        led_control_set_behavior(currentBehavior);
+        pattern_recognized = true;
     }
     else {
         ESP_LOGI(TAG, "Pattern not recognized, showing entered pattern");
         currentBehavior = fourColorLights;
-        led_control_set_behavior(currentBehavior);
+    }
+
+    led_control_set_behavior(currentBehavior);
+
+    // Turn off button LEDs if pattern was not recognized
+    if (!pattern_recognized) {
+        for (int i = 0; i < 4; ++i) {
+            ioManager->setButtonLED(i, false);
+        }
     }
 }
 
@@ -211,6 +225,10 @@ void ButtonsPuzzleApp::resetState() {
     currentColorIndex = 0;
     for (int i = 0; i < 4; ++i) {
         buttonPresses[i] = -1;
+        // Make sure to turn off all button LEDs when resetting
+        if (ioManager != nullptr) {
+            ioManager->setButtonLED(i, false);
+        }
     }
     fourColorLights->clearColors();
     currentBehavior = fourColorLights;

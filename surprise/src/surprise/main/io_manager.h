@@ -13,6 +13,7 @@ class IOManager {
 private:
     static const int NUM_BUTTONS = 4;
     static const gpio_num_t BUTTON_GPIOS[NUM_BUTTONS];
+    static const gpio_num_t BUTTON_LED_GPIOS[NUM_BUTTONS];
     static QueueHandle_t eventQueue;
     static uint32_t last_interrupt_times[NUM_BUTTONS];
     Application* currentApp;
@@ -21,11 +22,13 @@ private:
     static void IRAM_ATTR buttonIsrHandler(void* arg);
     static void IRAM_ATTR movementIsrHandler(void* arg);
     void initButtons();
+    void initButtonLEDs();
 
 public:
     IOManager(Application* app);
     bool processEvents();
     void initMovementInterrupt();
     void sendEvent(ButtonEvent evt) { xQueueSend(eventQueue, &evt, 0); }
+    void setButtonLED(int buttonIndex, bool state);
     static const int QUEUE_SIZE = IO_QUEUE_SIZE;
 };

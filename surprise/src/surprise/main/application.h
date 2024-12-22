@@ -2,9 +2,13 @@
 
 #include "button_event.h"
 
+// Forward declare IOManager
+class IOManager;
+
 class Application {
 public:
     virtual ~Application() = default;
+    virtual void setIOManager(IOManager* manager) = 0;
 
     // Abstract methods for button handlers
     virtual void onButton1Pressed() = 0;

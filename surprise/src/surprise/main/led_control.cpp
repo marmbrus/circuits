@@ -139,6 +139,7 @@ static void update_other_leds() {
 
 static void update_button_leds() {
     for (int i = 0; i < NUM_BUTTON_LEDS; ++i) {
+        // Set high when LED should be on, low when it should be off
         gpio_set_level(button_led_pins[i], button_led_status[i] ? 1 : 0);
     }
 }
@@ -166,9 +167,18 @@ void led_control_init(void) {
     io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
 
+    // Initialize all button LEDs at once with a single bitmask
+    uint64_t button_led_mask = 0;
     for (int i = 0; i < NUM_BUTTON_LEDS; ++i) {
-        io_conf.pin_bit_mask = (1ULL << button_led_pins[i]);
-        gpio_config(&io_conf);
+        button_led_mask |= (1ULL << button_led_pins[i]);
+    }
+    io_conf.pin_bit_mask = button_led_mask;
+    gpio_config(&io_conf);
+
+    // Initialize all button LEDs to low (off)
+    for (int i = 0; i < NUM_BUTTON_LEDS; ++i) {
+        gpio_set_level(button_led_pins[i], 0);  // Set low (off) initially
+        button_led_status[i] = false;
     }
 
     // LED strip configuration
@@ -226,7 +236,8 @@ void led_control_stop() {
 void led_control_set_button_led_status(int index, bool status) {
     if (index >= 0 && index < NUM_BUTTON_LEDS) {
         button_led_status[index] = status;
-        gpio_set_level(button_led_pins[index], status ? 1 : 0); // Immediately update the LED status
+        // Set high when LED should be on, low when it should be off
+        gpio_set_level(button_led_pins[index], status ? 1 : 0);
     }
 }
 
