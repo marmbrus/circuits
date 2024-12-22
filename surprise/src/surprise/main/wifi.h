@@ -17,3 +17,7 @@ enum SystemState {
 void wifi_mqtt_init(void);
 SystemState get_system_state(void);
 esp_mqtt_client_handle_t get_mqtt_client(void);
+const uint8_t* get_device_mac(void);
+
+// Add new MQTT publish helper function
+esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos = 1, int retain = 0);

@@ -1,5 +1,7 @@
 #include "ButtonsPuzzleApp.h"
 #include "led_control.h"
+#include "wifi.h"
+#include "cJSON.h"
 
 // Declare global variables for light behaviors
 FourColorLights globalFourColorLights;
@@ -29,6 +31,32 @@ ButtonsPuzzleApp::ButtonsPuzzleApp()
 
 void ButtonsPuzzleApp::handleButtonPress(int buttonIndex, uint8_t red, uint8_t green, uint8_t blue) {
     ESP_LOGI(TAG, "Button %d pressed at position %d", buttonIndex + 1, currentColorIndex);
+
+    // Create and publish MQTT message for button press
+    cJSON *button_json = cJSON_CreateObject();
+    cJSON_AddNumberToObject(button_json, "index", buttonIndex);
+
+    // Determine color name based on RGB values
+    const char* colorName;
+    if (red == 0 && green == 255 && blue == 0) {
+        colorName = "green";
+    } else if (red == 0 && green == 0 && blue == 255) {
+        colorName = "blue";
+    } else if (red == 255 && green == 0 && blue == 0) {
+        colorName = "red";
+    } else if (red == 255 && green == 255 && blue == 0) {
+        colorName = "yellow";
+    } else {
+        colorName = "unknown";
+    }
+
+    cJSON_AddStringToObject(button_json, "color", colorName);
+
+    char *button_string = cJSON_Print(button_json);
+    publish_to_topic("buttons", button_string);
+
+    cJSON_free(button_string);
+    cJSON_Delete(button_json);
 
     // If this is the first press after a completed sequence, clear everything
     if (buttonPresses[3] != -1) {
@@ -70,6 +98,37 @@ void ButtonsPuzzleApp::onButton4Pressed() {
 }
 
 void ButtonsPuzzleApp::checkPattern() {
+    // First, publish the complete pattern
+    cJSON *pattern_json = cJSON_CreateObject();
+    cJSON *indices_array = cJSON_CreateArray();
+    cJSON *colors_array = cJSON_CreateArray();
+
+    // Add each button press to the arrays
+    for (int i = 0; i < 4; i++) {
+        // Add index to indices array
+        cJSON_AddItemToArray(indices_array, cJSON_CreateNumber(buttonPresses[i]));
+
+        // Determine color name based on button index and add to colors array
+        const char* colorName;
+        switch (buttonPresses[i]) {
+            case 0: colorName = "green"; break;
+            case 1: colorName = "blue"; break;
+            case 2: colorName = "red"; break;
+            case 3: colorName = "yellow"; break;
+            default: colorName = "unknown"; break;
+        }
+        cJSON_AddItemToArray(colors_array, cJSON_CreateString(colorName));
+    }
+
+    cJSON_AddItemToObject(pattern_json, "indices", indices_array);
+    cJSON_AddItemToObject(pattern_json, "colors", colors_array);
+
+    char *pattern_string = cJSON_Print(pattern_json);
+    publish_to_topic("patterns", pattern_string);
+
+    cJSON_free(pattern_string);
+    cJSON_Delete(pattern_json);
+
     // Check for the Red, Green, Red, Green pattern (original pattern)
     if (buttonPresses[0] == 2 && buttonPresses[1] == 0 &&
         buttonPresses[2] == 2 && buttonPresses[3] == 0) {
@@ -179,25 +238,25 @@ void ButtonsPuzzleApp::onOrientationChanged(ButtonEvent orientation) {
     ESP_LOGI(TAG, "Orientation changed to: %s", orientation_str);
     lastOrientation = orientation;
 
-    // You can add special behaviors based on orientation here
-    // For example:
-    switch (orientation) {
-        case ButtonEvent::ORIENTATION_UP:
-            pulsingLights->setColor(0, 255, 0);  // Green when up
-            currentBehavior = pulsingLights;
-            break;
-        case ButtonEvent::ORIENTATION_DOWN:
-            pulsingLights->setColor(255, 0, 0);  // Red when down
-            currentBehavior = pulsingLights;
-            break;
-        case ButtonEvent::ORIENTATION_UNKNOWN:
-            // Return to previous behavior or set a default one
-            currentBehavior = fourColorLights;
-            break;
-        default:
-            // Optional: handle other orientations
-            break;
-    }
+    // // You can add special behaviors based on orientation here
+    // // For example:
+    // switch (orientation) {
+    //     case ButtonEvent::ORIENTATION_UP:
+    //         pulsingLights->setColor(0, 255, 0);  // Green when up
+    //         currentBehavior = pulsingLights;
+    //         break;
+    //     case ButtonEvent::ORIENTATION_DOWN:
+    //         pulsingLights->setColor(255, 0, 0);  // Red when down
+    //         currentBehavior = pulsingLights;
+    //         break;
+    //     case ButtonEvent::ORIENTATION_UNKNOWN:
+    //         // Return to previous behavior or set a default one
+    //         currentBehavior = fourColorLights;
+    //         break;
+    //     default:
+    //         // Optional: handle other orientations
+    //         break;
+    // }
 
-    led_control_set_behavior(currentBehavior);
+    // led_control_set_behavior(currentBehavior);
 }

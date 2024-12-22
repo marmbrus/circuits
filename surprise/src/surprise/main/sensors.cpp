@@ -156,11 +156,13 @@ static void sensor_task(void* pvParameters)
         ioManager->initMovementInterrupt();
     }
 
-    TickType_t last_interrupt_check = xTaskGetTickCount();  // Keep this for future use if needed
+    // Setup all the timing intervals
+    const TickType_t accel_interval = pdMS_TO_TICKS(1000);  // Read accelerometer every 1 second
+    const TickType_t mqtt_publish_interval = pdMS_TO_TICKS(10000);  // Publish sensor data every 10 seconds
 
-    // Change the polling interval to 1 second for accelerometer
-    const TickType_t accel_interval = pdMS_TO_TICKS(1000);
     TickType_t last_accel_time = xTaskGetTickCount();
+    TickType_t last_mqtt_publish = xTaskGetTickCount();
+    TickType_t last_battery_publish = xTaskGetTickCount();  // Add this
 
     // Main sensor reading loop
     while (1) {
@@ -205,60 +207,70 @@ static void sensor_task(void* pvParameters)
                         ESP_LOGI(TAG, "Orientation changed to: %s", orientation_str[new_orientation]);
                     }
 
-                    // Log the accelerometer values
+                    // Log the accelerometer values locally every second
                     ESP_LOGI(TAG, "Accelerometer: X=%.3fg, Y=%.3fg, Z=%.3fg",
                             accel_data.x, accel_data.y, accel_data.z);
+
+                    // Publish to MQTT every 10 seconds
+                    if ((now - last_mqtt_publish) >= mqtt_publish_interval) {
+                        cJSON *accel_json = cJSON_CreateObject();
+                        cJSON_AddNumberToObject(accel_json, "x", accel_data.x);
+                        cJSON_AddNumberToObject(accel_json, "y", accel_data.y);
+                        cJSON_AddNumberToObject(accel_json, "z", accel_data.z);
+
+                        char *accel_string = cJSON_Print(accel_json);
+                        publish_to_topic("accelerometer", accel_string);
+
+                        cJSON_free(accel_string);
+                        cJSON_Delete(accel_json);
+
+                        last_mqtt_publish = now;
+                    }
                 }
             }
             last_accel_time = now;
         }
 
-        // Read battery data
-        esp_err_t ret = bq27441_read_data(&battery_data);
-        if (ret == ESP_OK) {
-            // Update the global SOC variable
-            g_battery_soc = battery_data.soc;
+        // Read and publish battery data every 10 seconds
+        if ((now - last_battery_publish) >= mqtt_publish_interval) {
+            esp_err_t ret = bq27441_read_data(&battery_data);
+            if (ret == ESP_OK) {
+                // Update the global SOC variable
+                g_battery_soc = battery_data.soc;
 
-            // Create a JSON object
-            cJSON *json = cJSON_CreateObject();
-            cJSON_AddNumberToObject(json, "temperature", battery_data.temperature - 273);
-            cJSON_AddNumberToObject(json, "voltage", battery_data.voltage);
-            cJSON_AddNumberToObject(json, "flags", battery_data.flags);
-            cJSON_AddNumberToObject(json, "nominal_capacity", battery_data.nominal_capacity);
-            cJSON_AddNumberToObject(json, "available_capacity", battery_data.available_capacity);
-            cJSON_AddNumberToObject(json, "remaining_capacity", battery_data.remaining_capacity);
-            cJSON_AddNumberToObject(json, "full_capacity", battery_data.full_capacity);
-            cJSON_AddNumberToObject(json, "average_current", battery_data.average_current);
-            cJSON_AddNumberToObject(json, "standby_current", battery_data.standby_current);
-            cJSON_AddNumberToObject(json, "max_current", battery_data.max_current);
-            cJSON_AddNumberToObject(json, "average_power", battery_data.average_power);
-            cJSON_AddNumberToObject(json, "soc", battery_data.soc);
-            cJSON_AddNumberToObject(json, "internal_temperature", battery_data.internal_temperature - 273);
-            cJSON_AddNumberToObject(json, "soh", battery_data.soh);
-            cJSON_AddNumberToObject(json, "remaining_capacity_unfiltered", battery_data.remaining_capacity_unfiltered);
-            cJSON_AddNumberToObject(json, "remaining_capacity_filtered", battery_data.remaining_capacity_filtered);
-            cJSON_AddNumberToObject(json, "full_capacity_unfiltered", battery_data.full_capacity_unfiltered);
-            cJSON_AddNumberToObject(json, "full_capacity_filtered", battery_data.full_capacity_filtered);
-            cJSON_AddNumberToObject(json, "soc_unfiltered", battery_data.soc_unfiltered);
+                // Create a JSON object
+                cJSON *json = cJSON_CreateObject();
+                cJSON_AddNumberToObject(json, "temperature", battery_data.temperature - 273);
+                cJSON_AddNumberToObject(json, "voltage", battery_data.voltage);
+                cJSON_AddNumberToObject(json, "flags", battery_data.flags);
+                cJSON_AddNumberToObject(json, "nominal_capacity", battery_data.nominal_capacity);
+                cJSON_AddNumberToObject(json, "available_capacity", battery_data.available_capacity);
+                cJSON_AddNumberToObject(json, "remaining_capacity", battery_data.remaining_capacity);
+                cJSON_AddNumberToObject(json, "full_capacity", battery_data.full_capacity);
+                cJSON_AddNumberToObject(json, "average_current", battery_data.average_current);
+                cJSON_AddNumberToObject(json, "standby_current", battery_data.standby_current);
+                cJSON_AddNumberToObject(json, "max_current", battery_data.max_current);
+                cJSON_AddNumberToObject(json, "average_power", battery_data.average_power);
+                cJSON_AddNumberToObject(json, "soc", battery_data.soc);
+                cJSON_AddNumberToObject(json, "internal_temperature", battery_data.internal_temperature - 273);
+                cJSON_AddNumberToObject(json, "soh", battery_data.soh);
+                cJSON_AddNumberToObject(json, "remaining_capacity_unfiltered", battery_data.remaining_capacity_unfiltered);
+                cJSON_AddNumberToObject(json, "remaining_capacity_filtered", battery_data.remaining_capacity_filtered);
+                cJSON_AddNumberToObject(json, "full_capacity_unfiltered", battery_data.full_capacity_unfiltered);
+                cJSON_AddNumberToObject(json, "full_capacity_filtered", battery_data.full_capacity_filtered);
+                cJSON_AddNumberToObject(json, "soc_unfiltered", battery_data.soc_unfiltered);
 
-            // Convert JSON object to string
-            char *json_string = cJSON_Print(json);
+                // Convert JSON object to string
+                char *json_string = cJSON_Print(json);
 
-            // Get MAC address and construct the topic
-            uint8_t mac[6];
-            esp_wifi_get_mac(WIFI_IF_STA, mac);
-            char topic[64];
-            snprintf(topic, sizeof(topic), "surprise/%02x%02x%02x%02x%02x%02x/battery",
-                     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+                publish_to_topic("battery", json_string);
 
-            // Publish the JSON string to the MQTT topic
-            esp_mqtt_client_publish(mqtt_client, topic, json_string, 0, 1, 0);
-
-            // Free the JSON string and object
-            cJSON_free(json_string);
-            cJSON_Delete(json);
-        } else {
-            ESP_LOGE(TAG, "Failed to read BQ27441 data: %s", esp_err_to_name(ret));
+                cJSON_free(json_string);
+                cJSON_Delete(json);
+            } else {
+                ESP_LOGE(TAG, "Failed to read BQ27441 data: %s", esp_err_to_name(ret));
+            }
+            last_battery_publish = now;
         }
 
         vTaskDelay(pdMS_TO_TICKS(100));  // Short delay to prevent tight loop
