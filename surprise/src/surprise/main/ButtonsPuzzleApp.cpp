@@ -12,6 +12,7 @@ RainbowLights globalRainbowLights;
 RainbowChasing globalRainbowChasing;
 FlashingLights globalFlashingLights;
 PulsingLights globalPulsingLights;
+SolidLights globalSolidLights;
 
 const char* ButtonsPuzzleApp::TAG = "ButtonsPuzzleApp";
 
@@ -23,11 +24,11 @@ ButtonsPuzzleApp::ButtonsPuzzleApp()
       rainbowChasing(&globalRainbowChasing),
       flashingLights(&globalFlashingLights),
       pulsingLights(&globalPulsingLights),
+      solidLights(&globalSolidLights),
+      currentBehavior(fourColorLights),
       currentColorIndex(0),
-      lastOrientation(ButtonEvent::ORIENTATION_UNKNOWN),
+      currentOrientation(DeviceOrientation::UNKNOWN),
       ioManager(nullptr) {
-    currentBehavior = fourColorLights;
-    led_control_set_behavior(currentBehavior);
     resetState();
 }
 
@@ -240,41 +241,54 @@ void ButtonsPuzzleApp::onMovementDetected() {
     // Add your movement detection handling logic here
 }
 
-void ButtonsPuzzleApp::onOrientationChanged(ButtonEvent orientation) {
-    const char* orientation_str;
-    switch (orientation) {
-        case ButtonEvent::ORIENTATION_UP:     orientation_str = "Up"; break;
-        case ButtonEvent::ORIENTATION_DOWN:   orientation_str = "Down"; break;
-        case ButtonEvent::ORIENTATION_LEFT:   orientation_str = "Left"; break;
-        case ButtonEvent::ORIENTATION_RIGHT:  orientation_str = "Right"; break;
-        case ButtonEvent::ORIENTATION_FRONT:  orientation_str = "Front"; break;
-        case ButtonEvent::ORIENTATION_BACK:   orientation_str = "Back"; break;
-        case ButtonEvent::ORIENTATION_UNKNOWN: orientation_str = "Unknown"; break;
-        default: orientation_str = "Invalid"; break;
+void ButtonsPuzzleApp::onOrientationChanged(DeviceOrientation newOrientation) {
+    const char* orientation_str = "Unknown";
+
+    // Only change lights if no pattern has been entered
+    bool patternEmpty = true;
+    for (int i = 0; i < 4; i++) {
+        if (buttonPresses[i] != -1) {
+            patternEmpty = false;
+            break;
+        }
+    }
+
+    if (patternEmpty) {
+        switch (newOrientation) {
+            case DeviceOrientation::LEFT:
+                solidLights->setColor(255, 0, 0);  // Red
+                currentBehavior = solidLights;
+                break;
+            case DeviceOrientation::RIGHT:
+                solidLights->setColor(0, 255, 0);  // Green
+                currentBehavior = solidLights;
+                break;
+            case DeviceOrientation::TOP:
+                solidLights->setColor(0, 0, 255);  // Blue
+                currentBehavior = solidLights;
+                break;
+            case DeviceOrientation::BOTTOM:
+                solidLights->setColor(255, 255, 0);  // Yellow
+                currentBehavior = solidLights;
+                break;
+            default:
+                // For UP, DOWN, and UNKNOWN orientations, use default behavior
+                currentBehavior = fourColorLights;
+                break;
+        }
+        led_control_set_behavior(currentBehavior);
+    }
+
+    switch (newOrientation) {
+        case DeviceOrientation::UP:     orientation_str = "Up"; break;
+        case DeviceOrientation::DOWN:   orientation_str = "Down"; break;
+        case DeviceOrientation::LEFT:   orientation_str = "Left"; break;
+        case DeviceOrientation::RIGHT:  orientation_str = "Right"; break;
+        case DeviceOrientation::TOP:    orientation_str = "Top"; break;
+        case DeviceOrientation::BOTTOM: orientation_str = "Bottom"; break;
+        case DeviceOrientation::UNKNOWN: orientation_str = "Unknown"; break;
     }
 
     ESP_LOGI(TAG, "Orientation changed to: %s", orientation_str);
-    lastOrientation = orientation;
-
-    // // You can add special behaviors based on orientation here
-    // // For example:
-    // switch (orientation) {
-    //     case ButtonEvent::ORIENTATION_UP:
-    //         pulsingLights->setColor(0, 255, 0);  // Green when up
-    //         currentBehavior = pulsingLights;
-    //         break;
-    //     case ButtonEvent::ORIENTATION_DOWN:
-    //         pulsingLights->setColor(255, 0, 0);  // Red when down
-    //         currentBehavior = pulsingLights;
-    //         break;
-    //     case ButtonEvent::ORIENTATION_UNKNOWN:
-    //         // Return to previous behavior or set a default one
-    //         currentBehavior = fourColorLights;
-    //         break;
-    //     default:
-    //         // Optional: handle other orientations
-    //         break;
-    // }
-
-    // led_control_set_behavior(currentBehavior);
+    currentOrientation = newOrientation;
 }

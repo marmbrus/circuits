@@ -3,6 +3,8 @@
 #include "application.h"
 #include "esp_log.h"
 #include "led_control.h"
+#include "sensors.h"
+#include "SolidLights.h"
 
 // Forward declare IOManager
 class IOManager;
@@ -17,11 +19,12 @@ private:
     RainbowChasing* rainbowChasing;
     FlashingLights* flashingLights;
     PulsingLights* pulsingLights;
+    SolidLights* solidLights;
     LEDBehavior* currentBehavior;
     int currentColorIndex;
     int buttonPresses[4];
     int patternIndex;
-    ButtonEvent lastOrientation;
+    DeviceOrientation currentOrientation;
     IOManager* ioManager;
 
     void checkPattern();
@@ -36,5 +39,5 @@ public:
     void onButton3Pressed() override;
     void onButton4Pressed() override;
     void onMovementDetected() override;
-    void onOrientationChanged(ButtonEvent orientation) override;
+    void onOrientationChanged(DeviceOrientation newOrientation) override;
 };

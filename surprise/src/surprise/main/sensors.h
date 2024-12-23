@@ -14,6 +14,16 @@ extern "C" {
  */
 esp_err_t sensors_init(IOManager* ioManager);
 
+enum class DeviceOrientation {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTOM,
+    UNKNOWN
+};
+
 #ifdef __cplusplus
 }
 #endif

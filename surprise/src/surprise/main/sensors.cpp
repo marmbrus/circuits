@@ -13,6 +13,7 @@
 #include "led_control.h"
 #include "lis2dh.h"
 #include "io_manager.h"
+#include "button_event.h"
 
 static const char *TAG = "sensors";
 
@@ -34,8 +35,8 @@ typedef enum {
     ORIENTATION_DOWN,
     ORIENTATION_LEFT,
     ORIENTATION_RIGHT,
-    ORIENTATION_FRONT,
-    ORIENTATION_BACK,
+    ORIENTATION_TOP,
+    ORIENTATION_BOTTOM,
     ORIENTATION_UNKNOWN
 } device_orientation_t;
 
@@ -45,13 +46,13 @@ static device_orientation_t current_orientation = ORIENTATION_UNKNOWN;
 static device_orientation_t determine_orientation(float x, float y, float z) {
     // Check if any axis has a strong enough reading
     if (fabsf(x) > ORIENTATION_THRESHOLD) {
-        return (x > 0) ? ORIENTATION_RIGHT : ORIENTATION_LEFT;
+        return (x > 0) ? ORIENTATION_TOP : ORIENTATION_BOTTOM;  // X axis for top/bottom
     }
     if (fabsf(y) > ORIENTATION_THRESHOLD) {
-        return (y > 0) ? ORIENTATION_BACK : ORIENTATION_FRONT;
+        return (y > 0) ? ORIENTATION_RIGHT : ORIENTATION_LEFT;  // Y axis for left/right
     }
     if (fabsf(z) > ORIENTATION_THRESHOLD) {
-        return (z > 0) ? ORIENTATION_UP : ORIENTATION_DOWN;
+        return (z > 0) ? ORIENTATION_UP : ORIENTATION_DOWN;     // Z axis remains up/down
     }
     return ORIENTATION_UNKNOWN;
 }
@@ -192,8 +193,8 @@ static void sensor_task(void* pvParameters)
                             case ORIENTATION_DOWN:   evt = ButtonEvent::ORIENTATION_DOWN; break;
                             case ORIENTATION_LEFT:   evt = ButtonEvent::ORIENTATION_LEFT; break;
                             case ORIENTATION_RIGHT:  evt = ButtonEvent::ORIENTATION_RIGHT; break;
-                            case ORIENTATION_FRONT:  evt = ButtonEvent::ORIENTATION_FRONT; break;
-                            case ORIENTATION_BACK:   evt = ButtonEvent::ORIENTATION_BACK; break;
+                            case ORIENTATION_TOP:    evt = ButtonEvent::ORIENTATION_TOP; break;
+                            case ORIENTATION_BOTTOM: evt = ButtonEvent::ORIENTATION_BOTTOM; break;
                             case ORIENTATION_UNKNOWN: evt = ButtonEvent::ORIENTATION_UNKNOWN; break;
                         }
 
@@ -202,7 +203,7 @@ static void sensor_task(void* pvParameters)
 
                         // Log the orientation change
                         const char* orientation_str[] = {
-                            "Up", "Down", "Left", "Right", "Front", "Back", "Unknown"
+                            "Up", "Down", "Left", "Right", "Top", "Bottom", "Unknown"
                         };
                         ESP_LOGI(TAG, "Orientation changed to: %s", orientation_str[new_orientation]);
                     }

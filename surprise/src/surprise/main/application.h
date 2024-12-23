@@ -1,6 +1,7 @@
 #pragma once
 
 #include "button_event.h"
+#include "sensors.h"
 
 // Forward declare IOManager
 class IOManager;
@@ -16,5 +17,5 @@ public:
     virtual void onButton3Pressed() = 0;
     virtual void onButton4Pressed() = 0;
     virtual void onMovementDetected() = 0;
-    virtual void onOrientationChanged(ButtonEvent orientation) = 0;
+    virtual void onOrientationChanged(DeviceOrientation newOrientation) = 0;
 };

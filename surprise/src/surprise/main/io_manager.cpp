@@ -205,7 +205,6 @@ bool IOManager::processEvents() {
             case ButtonEvent::MOVEMENT_DETECTED: {
                 uint8_t int_source;
                 ESP_LOGI(TAG, "Movement detected");
-                // Clear the interrupt here, in the main task context
                 lis2dh12_get_int1_source(&int_source);
                 currentApp->onMovementDetected();
                 break;
@@ -214,11 +213,23 @@ bool IOManager::processEvents() {
             case ButtonEvent::ORIENTATION_DOWN:
             case ButtonEvent::ORIENTATION_LEFT:
             case ButtonEvent::ORIENTATION_RIGHT:
-            case ButtonEvent::ORIENTATION_FRONT:
-            case ButtonEvent::ORIENTATION_BACK:
-            case ButtonEvent::ORIENTATION_UNKNOWN:
-                currentApp->onOrientationChanged(event);
+            case ButtonEvent::ORIENTATION_TOP:
+            case ButtonEvent::ORIENTATION_BOTTOM:
+            case ButtonEvent::ORIENTATION_UNKNOWN: {
+                // Convert ButtonEvent to DeviceOrientation
+                DeviceOrientation orientation;
+                switch (event) {
+                    case ButtonEvent::ORIENTATION_UP:     orientation = DeviceOrientation::UP; break;
+                    case ButtonEvent::ORIENTATION_DOWN:   orientation = DeviceOrientation::DOWN; break;
+                    case ButtonEvent::ORIENTATION_LEFT:   orientation = DeviceOrientation::LEFT; break;
+                    case ButtonEvent::ORIENTATION_RIGHT:  orientation = DeviceOrientation::RIGHT; break;
+                    case ButtonEvent::ORIENTATION_TOP:    orientation = DeviceOrientation::TOP; break;
+                    case ButtonEvent::ORIENTATION_BOTTOM: orientation = DeviceOrientation::BOTTOM; break;
+                    default:                             orientation = DeviceOrientation::UNKNOWN; break;
+                }
+                currentApp->onOrientationChanged(orientation);
                 break;
+            }
         }
         return true;
     }
