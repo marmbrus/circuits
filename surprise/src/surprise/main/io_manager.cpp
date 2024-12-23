@@ -32,6 +32,39 @@ IOManager::IOManager(Application* app) : currentApp(app) {
 
     app->setIOManager(this);
 
+    // Check if waking up from deep sleep
+    esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
+    if (wakeup_cause == ESP_SLEEP_WAKEUP_EXT1) {
+        ESP_LOGI(TAG, "Waking up from deep sleep");
+        uint64_t wakeup_pin_mask = esp_sleep_get_ext1_wakeup_status();
+
+        // Only process if it was actually a button that caused the wake-up
+        if (wakeup_pin_mask & ((1ULL << BUTTON1_GPIO) |
+                              (1ULL << BUTTON2_GPIO) |
+                              (1ULL << BUTTON3_GPIO) |
+                              (1ULL << BUTTON4_GPIO))) {
+            ButtonEvent evt;
+            if (wakeup_pin_mask & (1ULL << BUTTON1_GPIO)) {
+                ESP_LOGI(TAG, "Wakeup caused by Button 1");
+                evt = ButtonEvent::BUTTON1_PRESSED;
+            } else if (wakeup_pin_mask & (1ULL << BUTTON2_GPIO)) {
+                ESP_LOGI(TAG, "Wakeup caused by Button 2");
+                evt = ButtonEvent::BUTTON2_PRESSED;
+            } else if (wakeup_pin_mask & (1ULL << BUTTON3_GPIO)) {
+                ESP_LOGI(TAG, "Wakeup caused by Button 3");
+                evt = ButtonEvent::BUTTON3_PRESSED;
+            } else if (wakeup_pin_mask & (1ULL << BUTTON4_GPIO)) {
+                ESP_LOGI(TAG, "Wakeup caused by Button 4");
+                evt = ButtonEvent::BUTTON4_PRESSED;
+            }
+            xQueueSend(eventQueue, &evt, 0);
+        } else {
+            ESP_LOGI(TAG, "Wakeup not caused by a button");
+        }
+    } else {
+        ESP_LOGI(TAG, "Normal boot (not waking from deep sleep)");
+    }
+
     xTaskCreate(&IOManager::buttonPollingTask, "button_polling_task", 2048, this, 5, NULL);
 }
 
