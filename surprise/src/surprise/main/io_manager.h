@@ -16,13 +16,15 @@ private:
     static const gpio_num_t BUTTON_LED_GPIOS[NUM_BUTTONS];
     static QueueHandle_t eventQueue;
     static uint32_t last_interrupt_times[NUM_BUTTONS];
-    Application* currentApp;
     static bool button_released[NUM_BUTTONS];
+    static bool last_button_states[NUM_BUTTONS];
+    Application* currentApp;
 
     static void IRAM_ATTR buttonIsrHandler(void* arg);
     static void IRAM_ATTR movementIsrHandler(void* arg);
     void initButtons();
     void initButtonLEDs();
+    static void buttonPollingTask(void* arg);
 
 public:
     IOManager(Application* app);
