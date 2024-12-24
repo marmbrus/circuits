@@ -12,6 +12,12 @@ class LEDBehavior {
 public:
     virtual ~LEDBehavior() = default;
     virtual void update(led_strip_handle_t led_strip, uint8_t pulse_brightness) = 0;
+
+protected:
+    // Helper function to scale brightness according to LED_STRIP_NUM_BRIGHTNESS
+    static uint8_t scale_brightness(uint8_t value) {
+        return (value * LED_STRIP_NUM_BRIGHTNESS) / 100;
+    }
 };
 
 // NoLights behavior
@@ -111,6 +117,9 @@ void led_control_set_state(SystemState state);
 void led_control_clear(void);
 void led_control_stop(void);
 void led_control_set_button_led_status(int index, bool status);
+
+// Add this helper that wraps led_strip_set_pixel
+esp_err_t led_control_set_pixel(led_strip_handle_t led_strip, uint32_t index, uint8_t red, uint8_t green, uint8_t blue);
 
 #ifdef __cplusplus
 void led_control_set_behavior(LEDBehavior* behavior);

@@ -12,21 +12,16 @@ void RainbowChasing::update(led_strip_handle_t led_strip, uint8_t pulse_brightne
     static uint64_t last_update = 0;
     uint64_t current_time = esp_timer_get_time();
 
-    // Update base hue every 20ms (50 times per second)
     if (current_time - last_update >= 20000) {
-        baseHue = (baseHue + 2) % 255;
+        baseHue = (baseHue + 1) % 255;
         last_update = current_time;
     }
 
-    // Set each LED to its rainbow color
-    // We want the rainbow to complete over ~20 LEDs
-    const uint8_t HUE_STEP = 255 / 20;  // Amount to advance hue per LED
-
     for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
         uint8_t r, g, b;
-        uint8_t pixelHue = (baseHue + ((i - 3) * HUE_STEP)) % 255;
-        hsvToRgb(pixelHue, 255, 255, &r, &g, &b);
-        led_strip_set_pixel(led_strip, i, r, g, b);
+        uint8_t hue = (baseHue + (i * 255 / LED_STRIP_NUM_PIXELS)) % 255;
+        hsvToRgb(hue, 255, 255, &r, &g, &b);
+        led_control_set_pixel(led_strip, i, r, g, b);
     }
 }
 

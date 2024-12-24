@@ -13,7 +13,7 @@ static const char* TAG = "LED_Control";
 // NoLights implementation
 void NoLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightness) {
     for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
-        led_strip_set_pixel(led_strip, i, 0, 0, 0);
+        led_control_set_pixel(led_strip, i, 0, 0, 0);
     }
 }
 
@@ -41,7 +41,7 @@ void FourColorLights::clearColors() {
 void FourColorLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightness) {
     for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
         int colorIndex = i % 4;
-        led_strip_set_pixel(led_strip, i,
+        led_control_set_pixel(led_strip, i,
                           colors[colorIndex][0],
                           colors[colorIndex][1],
                           colors[colorIndex][2]);
@@ -62,9 +62,9 @@ void ChristmasLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightn
 
     for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
         if ((i % 2 == 0) == phase) {  // XOR logic to alternate colors
-            led_strip_set_pixel(led_strip, i, pulse_brightness, 0, 0);  // Red
+            led_control_set_pixel(led_strip, i, pulse_brightness, 0, 0);  // Red
         } else {
-            led_strip_set_pixel(led_strip, i, 0, pulse_brightness, 0);  // Green
+            led_control_set_pixel(led_strip, i, 0, pulse_brightness, 0);  // Green
         }
     }
 }
@@ -102,32 +102,24 @@ static void update_pulse_brightness() {
 static void update_status_led() {
     switch (current_state) {
         case WIFI_CONNECTING:
-            // Pulse blue on the first LED
-            led_strip_set_pixel(led_strip, 0, 0, 0, pulse_brightness);
+            led_control_set_pixel(led_strip, 0, 0, 0, pulse_brightness);
             break;
-
         case WIFI_CONNECTED_MQTT_CONNECTING:
-            // Pulse orange on the first LED
-            led_strip_set_pixel(led_strip, 0, pulse_brightness, pulse_brightness/2, 0);
+            led_control_set_pixel(led_strip, 0, pulse_brightness, pulse_brightness/2, 0);
             break;
-
         case FULLY_CONNECTED:
-            // Solid green on the first LED
-            led_strip_set_pixel(led_strip, 0, 0, 100, 0);
+            led_control_set_pixel(led_strip, 0, 0, 100, 0);
             break;
-
         case MQTT_ERROR_STATE:
-            // Solid red on the first LED
-            led_strip_set_pixel(led_strip, 0, 100, 0, 0);
+            led_control_set_pixel(led_strip, 0, 100, 0, 0);
             break;
     }
 }
 
 static void update_battery_leds() {
-    // Cap the brightness based on the battery SOC
     uint8_t capped_brightness = (pulse_brightness * g_battery_soc) / 100;
     for (int i = 1; i <= 2; ++i) {
-        led_strip_set_pixel(led_strip, i, capped_brightness, capped_brightness, capped_brightness);
+        led_control_set_pixel(led_strip, i, capped_brightness, capped_brightness, capped_brightness);
     }
 }
 
@@ -155,6 +147,73 @@ static void update_led_task(void* pvParameters) {
         led_strip_refresh(led_strip);
         vTaskDelay(pdMS_TO_TICKS(LED_UPDATE_INTERVAL_MS));
     }
+}
+
+static void count_leds_task(void* pvParameters) {
+    ESP_LOGI(TAG, "Starting LED counting test...");
+
+    // Wait for a moment to ensure system is stable
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    // Temporarily disable the regular LED update task
+    if (led_update_task_handle != NULL) {
+        vTaskSuspend(led_update_task_handle);
+    }
+
+    // Turn all LEDs off first and ensure RMT is in good state
+    esp_err_t err = led_strip_clear(led_strip);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to clear LED strip: %s", esp_err_to_name(err));
+        goto cleanup;
+    }
+
+    err = led_strip_refresh(led_strip);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to refresh LED strip: %s", esp_err_to_name(err));
+        goto cleanup;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Turn on LEDs one by one
+    for (int i = 0; i < 1024; i++) {
+        ESP_LOGI(TAG, "Turning on LED %d", i);
+
+        // Set single LED
+        err = led_strip_set_pixel(led_strip, i, 20, 20, 20);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to set LED %d: %s", i, esp_err_to_name(err));
+            break;
+        }
+
+        err = led_strip_refresh(led_strip);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to refresh strip at LED %d: %s", i, esp_err_to_name(err));
+            break;
+        }
+
+        // Every 10 LEDs, log a summary
+        if (i % 10 == 9) {
+            ESP_LOGI(TAG, "LEDs 0-%d are now on", i);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+
+cleanup:
+    ESP_LOGI(TAG, "LED counting test complete");
+
+    // Clear all LEDs before resuming normal operation
+    led_strip_clear(led_strip);
+    led_strip_refresh(led_strip);
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Resume the LED update task
+    if (led_update_task_handle != NULL) {
+        vTaskResume(led_update_task_handle);
+    }
+
+    vTaskDelete(NULL);
 }
 
 void led_control_init(void) {
@@ -207,6 +266,27 @@ void led_control_init(void) {
 
     // Clear LED strip initially
     led_strip_clear(led_strip);
+    led_strip_refresh(led_strip);
+
+    // LED counting test code - run once to determine number of LEDs (found 42)
+    if (false) {
+        ESP_LOGI(TAG, "Starting LED counting test...");
+        for (int i = 0; i < 1024; i++) {
+            ESP_LOGI(TAG, "Testing LED %d", i);
+            led_strip_set_pixel(led_strip, i, 20, 20, 20);  // Dim white
+            led_strip_refresh(led_strip);
+            vTaskDelay(pdMS_TO_TICKS(500));  // Half second delay
+
+            if (i % 10 == 9) {
+                ESP_LOGI(TAG, "LEDs 0-%d tested", i);
+            }
+        }
+        ESP_LOGI(TAG, "LED counting test complete");
+
+        // Clear LEDs after test
+        led_strip_clear(led_strip);
+        led_strip_refresh(led_strip);
+    }
 
     // Create LED update task
     xTaskCreate(update_led_task, "led_update_task",
@@ -245,4 +325,13 @@ void led_control_set_behavior(LEDBehavior* behavior) {
     if (behavior != nullptr) {
         current_behavior = behavior;
     }
+}
+
+esp_err_t led_control_set_pixel(led_strip_handle_t led_strip, uint32_t index, uint8_t red, uint8_t green, uint8_t blue) {
+    // Scale all color components according to LED_STRIP_NUM_BRIGHTNESS
+    red = (red * LED_STRIP_NUM_BRIGHTNESS) / 100;
+    green = (green * LED_STRIP_NUM_BRIGHTNESS) / 100;
+    blue = (blue * LED_STRIP_NUM_BRIGHTNESS) / 100;
+
+    return led_strip_set_pixel(led_strip, index, red, green, blue);
 }

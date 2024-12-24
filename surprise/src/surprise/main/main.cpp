@@ -55,12 +55,19 @@ extern "C" void app_main()
 
     // Initialize other components
     led_control_init();
-    wifi_mqtt_init();
     ESP_ERROR_CHECK(sensors_init(&ioManager));
 
-    // Main event loop
-    TickType_t lastEventTime = xTaskGetTickCount();
 
+    TickType_t lastEventTime = xTaskGetTickCount();
+    // Update the UI before doing slow wifi setup.
+    while (ioManager.processEvents()) {
+        lastEventTime = xTaskGetTickCount();
+    }
+
+    // Now start WIFI.
+    wifi_mqtt_init();
+
+    // Main event loop
     while(1) {
         if (ioManager.processEvents()) {
             lastEventTime = xTaskGetTickCount();

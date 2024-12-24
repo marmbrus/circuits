@@ -20,28 +20,25 @@ void PulsingLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightnes
     static uint64_t last_update = 0;
     uint64_t current_time = esp_timer_get_time();
 
-    // Update every 2ms for fast ramping (same as FlashingLights)
     if (current_time - last_update >= 2000) {
         if (increasing) {
-            brightness += 15;  // Increase quickly
+            brightness += 15;
             if (brightness >= 255) {
                 brightness = 255;
                 increasing = false;
             }
         } else {
-            brightness -= 15;  // Decrease quickly
+            brightness -= 15;
             if (brightness <= 15) {
                 brightness = 0;
                 increasing = true;
             }
         }
-
         last_update = current_time;
     }
 
-    // Set all LEDs to current color and brightness
     for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
-        led_strip_set_pixel(led_strip, i,
+        led_control_set_pixel(led_strip, i,
             (color[0] * brightness) / 255,
             (color[1] * brightness) / 255,
             (color[2] * brightness) / 255);

@@ -13,25 +13,20 @@ void FlashingLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightne
     static uint64_t last_update = 0;
     uint64_t current_time = esp_timer_get_time();
 
-    // Update every 2ms for smooth, fast ramping (500 times per second)
     if (current_time - last_update >= 2000) {
-        brightness += 15;  // Increase quickly
-
-        // When we reach full brightness, reset and switch colors
+        brightness += 15;
         if (brightness >= 255) {
             brightness = 0;
             isRed = !isRed;
         }
-
         last_update = current_time;
     }
 
-    // Set all LEDs to current color and brightness
     for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
         if (isRed) {
-            led_strip_set_pixel(led_strip, i, brightness, 0, 0);  // Red pulse up
+            led_control_set_pixel(led_strip, i, brightness, 0, 0);
         } else {
-            led_strip_set_pixel(led_strip, i, 0, 0, brightness);  // Blue pulse up
+            led_control_set_pixel(led_strip, i, 0, 0, brightness);
         }
     }
 }

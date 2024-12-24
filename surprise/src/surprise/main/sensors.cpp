@@ -75,6 +75,9 @@ static bool is_significant_movement(float x, float y, float z) {
 // Declare the sensor_task function before its usage
 static void sensor_task(void* pvParameters);
 
+// Add these function declarations at the top with other declarations
+static esp_err_t read_accelerometer(IOManager* ioManager, bool publish_mqtt = false);
+
 esp_err_t sensors_init(IOManager* ioManager)
 {
     esp_err_t err = i2c_master_init(&i2c_handle);
@@ -123,6 +126,15 @@ esp_err_t sensors_init(IOManager* ioManager)
         // Continue anyway, just without accelerometer functionality
     }
 
+    if (accelerometer_initialized) {
+        // Read accelerometer synchronously once at startup
+        esp_err_t accel_ret = read_accelerometer(ioManager);
+        if (accel_ret != ESP_OK) {
+            ESP_LOGW(TAG, "Initial accelerometer reading failed: %s", esp_err_to_name(accel_ret));
+            // Continue anyway as this is not critical
+        }
+    }
+
     // Create the sensor task
     BaseType_t ret = xTaskCreate(
         sensor_task,
@@ -139,6 +151,62 @@ esp_err_t sensors_init(IOManager* ioManager)
     }
 
     return ESP_OK;
+}
+
+// Consolidated accelerometer reading function
+static esp_err_t read_accelerometer(IOManager* ioManager, bool publish_mqtt) {
+    lis2dh12_accel_t accel_data;
+    esp_err_t accel_ret = lis2dh12_get_accel(&accel_data);
+    if (accel_ret == ESP_OK) {
+        // Check orientation
+        device_orientation_t new_orientation = determine_orientation(
+            accel_data.x, accel_data.y, accel_data.z);
+
+        // If orientation changed or if it's unknown and there's significant movement
+        if (new_orientation != current_orientation &&
+            (new_orientation != ORIENTATION_UNKNOWN ||
+             is_significant_movement(accel_data.x, accel_data.y, accel_data.z))) {
+
+            ButtonEvent evt = ButtonEvent::ORIENTATION_UNKNOWN;
+
+            // Map the orientation to ButtonEvent
+            switch (new_orientation) {
+                case ORIENTATION_UP:     evt = ButtonEvent::ORIENTATION_UP; break;
+                case ORIENTATION_DOWN:   evt = ButtonEvent::ORIENTATION_DOWN; break;
+                case ORIENTATION_LEFT:   evt = ButtonEvent::ORIENTATION_LEFT; break;
+                case ORIENTATION_RIGHT:  evt = ButtonEvent::ORIENTATION_RIGHT; break;
+                case ORIENTATION_TOP:    evt = ButtonEvent::ORIENTATION_TOP; break;
+                case ORIENTATION_BOTTOM: evt = ButtonEvent::ORIENTATION_BOTTOM; break;
+                case ORIENTATION_UNKNOWN: evt = ButtonEvent::ORIENTATION_UNKNOWN; break;
+            }
+
+            ioManager->sendEvent(evt);
+            current_orientation = new_orientation;
+
+            const char* orientation_str[] = {
+                "Up", "Down", "Left", "Right", "Top", "Bottom", "Unknown"
+            };
+            ESP_LOGI(TAG, "Orientation changed to: %s", orientation_str[new_orientation]);
+        }
+
+        ESP_LOGI(TAG, "Accelerometer: X=%.3fg, Y=%.3fg, Z=%.3fg",
+                accel_data.x, accel_data.y, accel_data.z);
+
+        // Only publish to MQTT if requested (during periodic updates)
+        if (publish_mqtt) {
+            cJSON *accel_json = cJSON_CreateObject();
+            cJSON_AddNumberToObject(accel_json, "x", accel_data.x);
+            cJSON_AddNumberToObject(accel_json, "y", accel_data.y);
+            cJSON_AddNumberToObject(accel_json, "z", accel_data.z);
+
+            char *accel_string = cJSON_Print(accel_json);
+            publish_to_topic("accelerometer", accel_string);
+
+            cJSON_free(accel_string);
+            cJSON_Delete(accel_json);
+        }
+    }
+    return accel_ret;
 }
 
 static void sensor_task(void* pvParameters)
@@ -161,72 +229,23 @@ static void sensor_task(void* pvParameters)
     const TickType_t accel_interval = pdMS_TO_TICKS(1000);  // Read accelerometer every 1 second
     const TickType_t mqtt_publish_interval = pdMS_TO_TICKS(10000);  // Publish sensor data every 10 seconds
 
-    TickType_t last_accel_time = xTaskGetTickCount();
-    TickType_t last_mqtt_publish = xTaskGetTickCount();
-    TickType_t last_battery_publish = xTaskGetTickCount();  // Add this
+    TickType_t last_accel_time = 0;
+    TickType_t last_mqtt_publish = 0;
+    TickType_t last_battery_publish = 0;  // Add this
 
     // Main sensor reading loop
     while (1) {
         TickType_t now = xTaskGetTickCount();
 
+        static TickType_t last_mqtt_publish = 0;
+        bool should_publish = (now - last_mqtt_publish) >= mqtt_publish_interval;
+
         // Read accelerometer every second
         if ((now - last_accel_time) >= accel_interval) {
             if (accelerometer_initialized) {
-                lis2dh12_accel_t accel_data;
-                esp_err_t accel_ret = lis2dh12_get_accel(&accel_data);
-                if (accel_ret == ESP_OK) {
-                    // Check orientation
-                    device_orientation_t new_orientation = determine_orientation(
-                        accel_data.x, accel_data.y, accel_data.z);
-
-                    // If orientation changed or if it's unknown and there's significant movement
-                    if (new_orientation != current_orientation &&
-                        (new_orientation != ORIENTATION_UNKNOWN ||
-                         is_significant_movement(accel_data.x, accel_data.y, accel_data.z))) {
-
-                        // Initialize ButtonEvent with a default value
-                        ButtonEvent evt = ButtonEvent::ORIENTATION_UNKNOWN;
-
-                        // Map the orientation to ButtonEvent
-                        switch (new_orientation) {
-                            case ORIENTATION_UP:     evt = ButtonEvent::ORIENTATION_UP; break;
-                            case ORIENTATION_DOWN:   evt = ButtonEvent::ORIENTATION_DOWN; break;
-                            case ORIENTATION_LEFT:   evt = ButtonEvent::ORIENTATION_LEFT; break;
-                            case ORIENTATION_RIGHT:  evt = ButtonEvent::ORIENTATION_RIGHT; break;
-                            case ORIENTATION_TOP:    evt = ButtonEvent::ORIENTATION_TOP; break;
-                            case ORIENTATION_BOTTOM: evt = ButtonEvent::ORIENTATION_BOTTOM; break;
-                            case ORIENTATION_UNKNOWN: evt = ButtonEvent::ORIENTATION_UNKNOWN; break;
-                        }
-
-                        ioManager->sendEvent(evt);
-                        current_orientation = new_orientation;
-
-                        // Log the orientation change
-                        const char* orientation_str[] = {
-                            "Up", "Down", "Left", "Right", "Top", "Bottom", "Unknown"
-                        };
-                        ESP_LOGI(TAG, "Orientation changed to: %s", orientation_str[new_orientation]);
-                    }
-
-                    // Log the accelerometer values locally every second
-                    ESP_LOGI(TAG, "Accelerometer: X=%.3fg, Y=%.3fg, Z=%.3fg",
-                            accel_data.x, accel_data.y, accel_data.z);
-
-                    // Publish to MQTT every 10 seconds
-                    if ((now - last_mqtt_publish) >= mqtt_publish_interval) {
-                        cJSON *accel_json = cJSON_CreateObject();
-                        cJSON_AddNumberToObject(accel_json, "x", accel_data.x);
-                        cJSON_AddNumberToObject(accel_json, "y", accel_data.y);
-                        cJSON_AddNumberToObject(accel_json, "z", accel_data.z);
-
-                        char *accel_string = cJSON_Print(accel_json);
-                        publish_to_topic("accelerometer", accel_string);
-
-                        cJSON_free(accel_string);
-                        cJSON_Delete(accel_json);
-
-                        last_mqtt_publish = now;
-                    }
+                read_accelerometer(ioManager, should_publish);
+                if (should_publish) {
+                    last_mqtt_publish = now;
                 }
             }
             last_accel_time = now;
