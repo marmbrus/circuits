@@ -8494,6 +8494,44 @@
 		)
 	)
 	(sheet
+		(at 63.5 26.67)
+		(size 16.51 13.97)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "512f127d-6a37-4bff-9bc1-964726628fac")
+		(property "Sheetname" "components"
+			(at 63.5 25.9584 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "components.kicad_sch"
+			(at 63.5 41.2246 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "surprise"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "14")
+				)
+			)
+		)
+	)
+	(sheet
 		(at 59.69 83.82)
 		(size 21.59 16.51)
 		(fields_autoplaced yes)

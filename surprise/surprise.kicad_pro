@@ -665,6 +665,10 @@
     [
       "c2000f2f-d27e-4899-a02c-884b00be53e2",
       "i2c"
+    ],
+    [
+      "512f127d-6a37-4bff-9bc1-964726628fac",
+      "components"
     ]
   ],
   "text_variables": {}
