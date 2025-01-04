@@ -135,14 +135,21 @@ esp_err_t sensors_init(IOManager* ioManager)
         }
     }
 
+    // Scan I2C bus for devices after sensors are initialized
+    err = i2c_master_bus_detect_devices(i2c_handle);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "I2C bus scan failed: %s", esp_err_to_name(err));
+        // Continue anyway as this is not critical
+    }
+
     // Create the sensor task
     BaseType_t ret = xTaskCreate(
         sensor_task,
         "sensor_task",
-        SENSOR_TASK_STACK_SIZE,           // Stack size in words
-        ioManager,           // Pass IOManager as task parameter
-        SENSOR_TASK_PRIORITY,              // Task priority
-        NULL           // Task handle
+        SENSOR_TASK_STACK_SIZE,
+        ioManager,
+        SENSOR_TASK_PRIORITY,
+        NULL
     );
 
     if (ret != pdPASS) {
