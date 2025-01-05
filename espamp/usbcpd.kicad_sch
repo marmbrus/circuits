@@ -293,6 +293,108 @@
 				)
 			)
 		)
+		(symbol "Connector:TestPoint"
+			(pin_numbers hide)
+			(pin_names
+				(offset 0.762) hide)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "TP"
+				(at 0 6.858 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "TestPoint"
+				(at 0 5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "test point"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "test point tp"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Pin* Test*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "TestPoint_0_1"
+				(circle
+					(center 0 3.302)
+					(radius 0.762)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "TestPoint_1_1"
+				(pin passive line
+					(at 0 0 90)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Device:C"
 			(pin_numbers hide)
 			(pin_names
@@ -2295,6 +2397,12 @@
 		(uuid "20cce1d3-794c-4784-92d2-7a1bf929db97")
 	)
 	(junction
+		(at 266.7 72.39)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "25dfe04d-59a6-4cf8-93b4-ff1d2faab05c")
+	)
+	(junction
 		(at 251.46 72.39)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2367,10 +2475,22 @@
 		(uuid "61ca3ae9-cf5f-4616-bda0-7683fe083f02")
 	)
 	(junction
+		(at 186.69 134.62)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "7a9925e4-0d32-40ea-9b05-4cff40549cc6")
+	)
+	(junction
 		(at 163.83 62.23)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "7c202447-c9d6-4773-b5b8-6403c4be4d16")
+	)
+	(junction
+		(at 68.58 52.07)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8602e5fe-4de2-4785-88a6-7a06c18b6777")
 	)
 	(junction
 		(at 130.81 110.49)
@@ -2962,7 +3082,7 @@
 	)
 	(wire
 		(pts
-			(xy 262.89 72.39) (xy 274.32 72.39)
+			(xy 262.89 72.39) (xy 266.7 72.39)
 		)
 		(stroke
 			(width 0)
@@ -3242,7 +3362,17 @@
 	)
 	(wire
 		(pts
-			(xy 213.36 134.62) (xy 161.29 134.62)
+			(xy 266.7 72.39) (xy 274.32 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6695e28b-97be-470c-89fd-e40a50c71746")
+	)
+	(wire
+		(pts
+			(xy 213.36 134.62) (xy 186.69 134.62)
 		)
 		(stroke
 			(width 0)
@@ -3272,7 +3402,7 @@
 	)
 	(wire
 		(pts
-			(xy 63.5 52.07) (xy 135.89 52.07)
+			(xy 63.5 52.07) (xy 68.58 52.07)
 		)
 		(stroke
 			(width 0)
@@ -4022,6 +4152,16 @@
 	)
 	(wire
 		(pts
+			(xy 186.69 134.62) (xy 161.29 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e25703ce-783f-42af-8bbb-07dc7edbdb66")
+	)
+	(wire
+		(pts
 			(xy 82.55 80.01) (xy 80.01 80.01)
 		)
 		(stroke
@@ -4152,6 +4292,16 @@
 	)
 	(wire
 		(pts
+			(xy 68.58 52.07) (xy 135.89 52.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f10ec44b-e848-485d-8f34-ebc1eccc7a77")
+	)
+	(wire
+		(pts
 			(xy 228.6 82.55) (xy 231.14 82.55)
 		)
 		(stroke
@@ -4229,6 +4379,46 @@
 			(type default)
 		)
 		(uuid "fc09ec69-9f95-4ad5-adeb-70e9d655ee86")
+	)
+	(text "AIN1=0\nMIN=5V"
+		(exclude_from_sim no)
+		(at 161.036 138.176 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "b1274249-e715-4ec4-a739-39bc2f366891")
+	)
+	(text "AIN3=1\nImin=1A"
+		(exclude_from_sim no)
+		(at 141.224 138.684 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "b416b383-b3cf-4c50-943d-ea4371fc38ee")
+	)
+	(text "AIN4=3\nImax=5A"
+		(exclude_from_sim no)
+		(at 131.318 138.43 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "b8abd403-e62e-43fe-a2af-52834bb78519")
+	)
+	(text "AIN2=7\nMAX=20V"
+		(exclude_from_sim no)
+		(at 151.13 138.43 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "e79af596-e46b-4133-a808-3d9fa60c3461")
 	)
 	(label "fault"
 		(at 231.14 97.79 0)
@@ -4696,7 +4886,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "162k"
+		(property "Value" "190k"
 			(at 143.51 107.9499 0)
 			(effects
 				(font
@@ -4733,10 +4923,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99ef")
+			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99f0")
 		)
 		(pin "1"
-			(uuid "0984d622-0536-440a-8342-9962b404508d")
+			(uuid "0984d622-0536-440a-8342-9962b404508e")
 		)
 		(instances
 			(project ""
@@ -5162,6 +5352,73 @@
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/60655049-fbf3-4dfc-8be5-e92116ff6bf0"
 					(reference "U301")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 68.58 52.07 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "1bd496fa-ad43-40ae-a8f1-f4542cd1f468")
+		(property "Reference" "TP301"
+			(at 71.12 47.4979 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "VBUS"
+			(at 71.12 50.0379 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Connector_Pin:Pin_D1.0mm_L10.0mm"
+			(at 73.66 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 73.66 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 68.58 52.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "e65362c9-7810-42c7-99c2-67b9edf41f8d")
+		)
+		(instances
+			(project "espamp"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/60655049-fbf3-4dfc-8be5-e92116ff6bf0"
+					(reference "TP301")
 					(unit 1)
 				)
 			)
@@ -5733,7 +5990,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "9.5k"
+		(property "Value" "38k"
 			(at 133.35 115.5699 0)
 			(effects
 				(font
@@ -5770,10 +6027,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99ef")
+			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99f1")
 		)
 		(pin "1"
-			(uuid "0984d622-0536-440a-8342-9962b404508d")
+			(uuid "0984d622-0536-440a-8342-9962b404508f")
 		)
 		(instances
 			(project ""
@@ -5840,10 +6097,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99ef")
+			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99f2")
 		)
 		(pin "1"
-			(uuid "0984d622-0536-440a-8342-9962b404508d")
+			(uuid "0984d622-0536-440a-8342-9962b4045090")
 		)
 		(instances
 			(project ""
@@ -5980,10 +6237,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "a0694782-14e9-4a50-ab41-118a6ed9bdd8")
+			(uuid "a0694782-14e9-4a50-ab41-118a6ed9bdd9")
 		)
 		(pin "2"
-			(uuid "85f439d2-f52c-4c80-b42d-c7b06ddfc23d")
+			(uuid "85f439d2-f52c-4c80-b42d-c7b06ddfc23e")
 		)
 		(instances
 			(project ""
@@ -6188,10 +6445,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99ef")
+			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99f3")
 		)
 		(pin "1"
-			(uuid "0984d622-0536-440a-8342-9962b404508d")
+			(uuid "0984d622-0536-440a-8342-9962b4045091")
 		)
 		(instances
 			(project ""
@@ -6337,10 +6594,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "817f5126-7127-4db9-b9c7-84710bbbcdae")
+			(uuid "817f5126-7127-4db9-b9c7-84710bbbcdaf")
 		)
 		(pin "1"
-			(uuid "85ae1305-11a5-4b7c-a8ba-155d19634c3d")
+			(uuid "85ae1305-11a5-4b7c-a8ba-155d19634c3e")
 		)
 		(instances
 			(project ""
@@ -6370,7 +6627,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "38k"
+		(property "Value" "9.5k"
 			(at 143.51 115.5699 0)
 			(effects
 				(font
@@ -6407,10 +6664,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99ef")
+			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99f4")
 		)
 		(pin "1"
-			(uuid "0984d622-0536-440a-8342-9962b404508d")
+			(uuid "0984d622-0536-440a-8342-9962b4045092")
 		)
 		(instances
 			(project ""
@@ -6613,10 +6870,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99ef")
+			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99f5")
 		)
 		(pin "1"
-			(uuid "0984d622-0536-440a-8342-9962b404508d")
+			(uuid "0984d622-0536-440a-8342-9962b4045093")
 		)
 		(instances
 			(project ""
@@ -6646,7 +6903,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "190k"
+		(property "Value" "162k"
 			(at 133.35 107.9499 0)
 			(effects
 				(font
@@ -6683,10 +6940,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99ef")
+			(uuid "70cf4021-546c-4519-b9bb-6b64c7ef99f6")
 		)
 		(pin "1"
-			(uuid "0984d622-0536-440a-8342-9962b404508d")
+			(uuid "0984d622-0536-440a-8342-9962b4045094")
 		)
 		(instances
 			(project ""
@@ -6753,10 +7010,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "a0694782-14e9-4a50-ab41-118a6ed9bdd8")
+			(uuid "a0694782-14e9-4a50-ab41-118a6ed9bdda")
 		)
 		(pin "2"
-			(uuid "85f439d2-f52c-4c80-b42d-c7b06ddfc23d")
+			(uuid "85f439d2-f52c-4c80-b42d-c7b06ddfc23f")
 		)
 		(instances
 			(project ""
@@ -6823,10 +7080,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "817f5126-7127-4db9-b9c7-84710bbbcdae")
+			(uuid "817f5126-7127-4db9-b9c7-84710bbbcdb0")
 		)
 		(pin "1"
-			(uuid "85ae1305-11a5-4b7c-a8ba-155d19634c3d")
+			(uuid "85ae1305-11a5-4b7c-a8ba-155d19634c3f")
 		)
 		(instances
 			(project ""
@@ -6963,15 +7220,82 @@
 			)
 		)
 		(pin "2"
-			(uuid "817f5126-7127-4db9-b9c7-84710bbbcdae")
+			(uuid "817f5126-7127-4db9-b9c7-84710bbbcdb1")
 		)
 		(pin "1"
-			(uuid "85ae1305-11a5-4b7c-a8ba-155d19634c3d")
+			(uuid "85ae1305-11a5-4b7c-a8ba-155d19634c40")
 		)
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/60655049-fbf3-4dfc-8be5-e92116ff6bf0"
 					(reference "C304")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 186.69 134.62 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "f6381668-9c3e-4eee-a957-c03905d18b1a")
+		(property "Reference" "TP303"
+			(at 189.23 130.0479 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GND"
+			(at 189.23 132.5879 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Connector_Pin:Pin_D1.0mm_L10.0mm"
+			(at 191.77 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 191.77 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 186.69 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "5a2abf29-9e11-4fb2-b34e-cd97c9c3e099")
+		)
+		(instances
+			(project "espamp"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/60655049-fbf3-4dfc-8be5-e92116ff6bf0"
+					(reference "TP303")
 					(unit 1)
 				)
 			)
@@ -7033,10 +7357,10 @@
 			)
 		)
 		(pin "2"
-			(uuid "817f5126-7127-4db9-b9c7-84710bbbcdae")
+			(uuid "817f5126-7127-4db9-b9c7-84710bbbcdb2")
 		)
 		(pin "1"
-			(uuid "85ae1305-11a5-4b7c-a8ba-155d19634c3d")
+			(uuid "85ae1305-11a5-4b7c-a8ba-155d19634c41")
 		)
 		(instances
 			(project ""
@@ -7103,15 +7427,82 @@
 			)
 		)
 		(pin "1"
-			(uuid "3097d8bd-662f-4776-a59e-46cb7ca9b3fc")
+			(uuid "3097d8bd-662f-4776-a59e-46cb7ca9b3fd")
 		)
 		(pin "2"
-			(uuid "99895b8d-7d68-437c-9f60-924e2f535960")
+			(uuid "99895b8d-7d68-437c-9f60-924e2f535961")
 		)
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/60655049-fbf3-4dfc-8be5-e92116ff6bf0"
 					(reference "C314")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 266.7 72.39 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "fd57c635-a82e-4329-843a-f4e153a82762")
+		(property "Reference" "TP302"
+			(at 269.24 67.8179 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "VSYS"
+			(at 269.24 70.3579 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Connector_Pin:Pin_D1.0mm_L10.0mm"
+			(at 271.78 72.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 271.78 72.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 266.7 72.39 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "5f0fd7ec-5ccb-4139-b155-10a3eda912fb")
+		)
+		(instances
+			(project "espamp"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/60655049-fbf3-4dfc-8be5-e92116ff6bf0"
+					(reference "TP302")
 					(unit 1)
 				)
 			)
