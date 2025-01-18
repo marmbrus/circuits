@@ -1,0 +1,101 @@
+(kicad_sch
+	(version 20231120)
+	(generator "eeschema")
+	(generator_version "8.0")
+	(uuid "48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa")
+	(paper "A4")
+	(lib_symbols)
+	(sheet
+		(at 52.07 54.61)
+		(size 21.59 20.32)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "40a89d48-d368-4e4b-908b-bb2f51f881bc")
+		(property "Sheetname" "usb_serial"
+			(at 52.07 53.8984 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "usb_serial.kicad_sch"
+			(at 52.07 75.5146 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "VUSB" input
+			(at 52.07 60.96 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "1f1f9d39-a506-46a8-bfa0-e2d0bd8938d4")
+		)
+		(pin "TXD" input
+			(at 73.66 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "7d64a3b4-90b9-4d9c-ae55-b7fa30f8a655")
+		)
+		(pin "RST" input
+			(at 59.69 74.93 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "7dae559b-cde3-44c4-9c50-461b5d51489b")
+		)
+		(pin "BOOT" input
+			(at 64.77 74.93 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "e853a0b0-0b0c-45bb-bac8-89e5fcd37528")
+		)
+		(pin "RXD" input
+			(at 73.66 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "e69c582d-eb5d-4a19-8d41-c42c234d87c7")
+		)
+		(instances
+			(project "usbserial"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+)
