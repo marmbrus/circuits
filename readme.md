@@ -2,6 +2,10 @@
 - [Fabrication Toolkit](https://github.com/bennymeg/Fabrication-Toolkit)
 - [Replicate Layout](https://github.com/MitjaNemec/ReplicateLayout)
 
+# Template Setup
+## Preferences -> Configure Paths...
+- KICAD_USER_TEMPLATE_DIR=~/workspace/circuits/templates
+
 # Component Setup
 ## easyeda2kicad
  - [github](https://github.com/uPesy/easyeda2kicad.py)
