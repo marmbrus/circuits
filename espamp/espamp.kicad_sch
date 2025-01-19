@@ -149,6 +149,26 @@
 				(justify left top)
 			)
 		)
+		(pin "VIN" input
+			(at 35.56 137.16 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "930f4030-57da-4afc-acaf-9d365a8b6e51")
+		)
+		(pin "VOUT" input
+			(at 62.23 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "8ce6d441-b14b-4f04-8f38-ac6f36611354")
+		)
 		(instances
 			(project "espamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
