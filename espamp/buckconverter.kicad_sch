@@ -1978,6 +1978,24 @@
 				(hide yes)
 			)
 		)
+		(property "Label" ""
+			(at 120.65 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C336246"
+			(at 120.65 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "9f46f899-9fd5-47d5-a11a-c171f8e3d3b7")
 		)
@@ -2140,7 +2158,7 @@
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
-		(at 109.22 36.83 180)
+		(at 109.22 36.83 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -2149,25 +2167,25 @@
 		(fields_autoplaced yes)
 		(uuid "c1fadfe1-00b8-44f8-b904-359fefd1b13d")
 		(property "Reference" "C4"
-			(at 113.03 36.4489 0)
+			(at 113.03 34.6709 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
+				(justify left)
 			)
 		)
 		(property "Value" "22uF"
-			(at 113.03 38.9889 0)
+			(at 113.03 37.2109 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
+				(justify left)
 			)
 		)
 		(property "Footprint" "Capacitor_SMD:C_Elec_5x5.8"
-			(at 108.2548 33.02 0)
+			(at 110.1852 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2185,6 +2203,24 @@
 			)
 		)
 		(property "Description" "Polarized capacitor"
+			(at 109.22 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" ""
+			(at 109.22 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C336246"
 			(at 109.22 36.83 0)
 			(effects
 				(font

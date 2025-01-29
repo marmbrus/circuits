@@ -4850,7 +4850,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "198.2k"
+		(property "Value" "196k"
 			(at 163.83 107.9499 0)
 			(effects
 				(font
@@ -4990,7 +4990,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "190k"
+		(property "Value" "191k"
 			(at 143.51 107.9499 0)
 			(effects
 				(font
@@ -6094,7 +6094,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "38k"
+		(property "Value" "37.4"
 			(at 133.35 115.5699 0)
 			(effects
 				(font
@@ -6164,7 +6164,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "2.28k"
+		(property "Value" "2.2k"
 			(at 163.83 115.5699 0)
 			(effects
 				(font
@@ -6402,6 +6402,24 @@
 			)
 		)
 		(property "Description" "Polarized capacitor"
+			(at 274.32 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" ""
+			(at 274.32 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C336246"
 			(at 274.32 78.74 0)
 			(effects
 				(font
@@ -6661,7 +6679,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "9.5k"
+		(property "Value" "9.31k"
 			(at 143.51 115.5699 0)
 			(effects
 				(font
@@ -6867,7 +6885,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "9.4k"
+		(property "Value" "9.31k"
 			(at 153.67 107.9499 0)
 			(effects
 				(font
@@ -7175,6 +7193,24 @@
 			)
 		)
 		(property "Description" "Polarized capacitor"
+			(at 262.89 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" ""
+			(at 262.89 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C336246"
 			(at 262.89 78.74 0)
 			(effects
 				(font
