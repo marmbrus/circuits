@@ -2554,7 +2554,6 @@
 	)
 	(label "DN"
 		(at 76.2 90.17 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2565,7 +2564,6 @@
 	)
 	(label "DP"
 		(at 74.93 83.82 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2577,7 +2575,6 @@
 	(hierarchical_label "BOOT"
 		(shape input)
 		(at 255.27 110.49 270)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2589,7 +2586,6 @@
 	(hierarchical_label "RST"
 		(shape input)
 		(at 255.27 82.55 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2601,7 +2597,6 @@
 	(hierarchical_label "RXD"
 		(shape input)
 		(at 196.85 85.09 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2613,7 +2608,6 @@
 	(hierarchical_label "TXD"
 		(shape input)
 		(at 196.85 82.55 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2625,7 +2619,6 @@
 	(hierarchical_label "VUSB"
 		(shape input)
 		(at 130.81 55.88 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
