@@ -5,8 +5,38 @@
 	(uuid "48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa")
 	(paper "A4")
 	(lib_symbols)
+	(bus
+		(pts
+			(xy 76.2 86.36) (xy 76.2 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1eb646dc-86f8-48ae-b577-08c535158fb7")
+	)
+	(bus
+		(pts
+			(xy 97.79 86.36) (xy 76.2 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "55234e75-9580-4aa8-9b67-4f9f35c41823")
+	)
+	(bus
+		(pts
+			(xy 76.2 39.37) (xy 50.8 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a258d31c-e642-4a5f-b726-45dcd0d20d61")
+	)
 	(sheet
-		(at 37.465 83.185)
+		(at 38.1 83.82)
 		(size 25.4 21.59)
 		(fields_autoplaced yes)
 		(stroke
@@ -18,7 +48,7 @@
 		)
 		(uuid "60655049-fbf3-4dfc-8be5-e92116ff6bf0")
 		(property "Sheetname" "usbcpd"
-			(at 37.465 82.4734 0)
+			(at 38.1 83.1084 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -27,7 +57,7 @@
 			)
 		)
 		(property "Sheetfile" "usbcpd.kicad_sch"
-			(at 37.465 105.3596 0)
+			(at 38.1 105.9946 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -44,8 +74,8 @@
 		)
 	)
 	(sheet
-		(at 95.885 84.455)
-		(size 22.225 19.685)
+		(at 97.79 83.82)
+		(size 29.21 20.32)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -56,7 +86,7 @@
 		)
 		(uuid "6d838d19-4ba8-44ad-a949-ec7e36a56135")
 		(property "Sheetname" "amp"
-			(at 95.885 83.7434 0)
+			(at 97.79 83.1084 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -65,13 +95,43 @@
 			)
 		)
 		(property "Sheetfile" "amp.kicad_sch"
-			(at 95.885 104.7246 0)
+			(at 97.79 104.0896 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left top)
 			)
+		)
+		(pin "20V" input
+			(at 97.79 89.535 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "11a1656a-8fb0-4a61-8b3c-b05a7720bfda")
+		)
+		(pin "3V3" input
+			(at 97.79 93.345 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "6ebf4d69-f6a2-42fc-8547-7bb4f25ccc52")
+		)
+		(pin "I2S{LRCLK,SCLK,SDIN}" input
+			(at 97.79 86.36 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "5ae2ba56-560c-4bb7-a1a7-0e429def8054")
 		)
 		(instances
 			(project "espamp"
@@ -82,8 +142,8 @@
 		)
 	)
 	(sheet
-		(at 27.305 27.305)
-		(size 23.495 38.1)
+		(at 27.94 27.94)
+		(size 22.86 38.1)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -94,7 +154,7 @@
 		)
 		(uuid "971439fe-c8ce-4450-821c-537e8691d398")
 		(property "Sheetname" "esp32"
-			(at 27.305 26.5934 0)
+			(at 27.94 27.2284 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -103,13 +163,23 @@
 			)
 		)
 		(property "Sheetfile" "esp32.kicad_sch"
-			(at 27.305 65.9896 0)
+			(at 27.94 66.6246 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left top)
 			)
+		)
+		(pin "I2S{LRCLK,SCLK,SDIN}" input
+			(at 50.8 39.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "71ce6aba-b90d-4d64-ab01-d9c3ed140611")
 		)
 		(instances
 			(project "espamp"

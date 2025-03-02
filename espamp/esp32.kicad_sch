@@ -849,6 +849,154 @@
 			)
 		)
 	)
+	(bus_entry
+		(at 124.46 61.595)
+		(size 2.54 2.54)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "00b7b49d-9f7a-4ca9-9af0-c338b9aa4979")
+	)
+	(bus_entry
+		(at 124.46 64.135)
+		(size 2.54 2.54)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "463e3792-a2bf-41d3-b960-e2493f12cadb")
+	)
+	(bus_entry
+		(at 124.46 58.42)
+		(size 2.54 2.54)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9fed0ea9-3a3d-44dd-89bd-8742b5731dd0")
+	)
+	(wire
+		(pts
+			(xy 127 66.04) (xy 137.16 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0f72060d-3e11-4cdd-96c7-096cd44ea8b7")
+	)
+	(wire
+		(pts
+			(xy 127 60.96) (xy 137.16 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1bfde6fe-f566-4a15-b1e6-561c1b159c29")
+	)
+	(bus
+		(pts
+			(xy 124.46 58.42) (xy 124.46 61.595)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3e53fa6b-705a-4e30-82c0-19b98c11bceb")
+	)
+	(wire
+		(pts
+			(xy 127 64.135) (xy 127 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5c1ee92d-0b4d-43c7-8184-0ad3ef36e575")
+	)
+	(bus
+		(pts
+			(xy 124.46 61.595) (xy 124.46 64.135)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "651e824b-a48b-4fd1-b746-81de432aa97d")
+	)
+	(wire
+		(pts
+			(xy 127 66.675) (xy 127 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "806acd5e-d38c-4443-99fd-5680bdae958d")
+	)
+	(wire
+		(pts
+			(xy 127 63.5) (xy 137.16 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9334d825-250e-4eb1-bdbf-6926df2df6e3")
+	)
+	(bus
+		(pts
+			(xy 118.11 58.42) (xy 124.46 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b5a2af2a-e08c-41a0-80f1-822996d9b8cf")
+	)
+	(label "I2S.LRCLK"
+		(at 127 60.96 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "a6476b7a-b714-4d7c-9f88-ac46cc9850e9")
+	)
+	(label "I2S.SCLK"
+		(at 127 63.5 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "c5299a69-c15e-4789-b30e-13d0765e7966")
+	)
+	(label "I2S.SDIN"
+		(at 127 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "cbe95574-fcec-49f9-8070-3c60debd3b62")
+	)
+	(hierarchical_label "I2S{LRCLK,SCLK,SDIN}"
+		(shape input)
+		(at 118.11 58.42 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "9023e067-8aab-4e21-be6b-4137ef07f4ad")
+	)
 	(symbol
 		(lib_id "RF_Module:ESP32-S3-WROOM-1")
 		(at 152.4 76.2 0)
