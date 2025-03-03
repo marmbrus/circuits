@@ -958,6 +958,7 @@
 	)
 	(label "I2S.LRCLK"
 		(at 127 60.96 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -968,6 +969,7 @@
 	)
 	(label "I2S.SCLK"
 		(at 127 63.5 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -978,6 +980,7 @@
 	)
 	(label "I2S.SDIN"
 		(at 127 66.04 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -989,6 +992,7 @@
 	(hierarchical_label "I2S{LRCLK,SCLK,SDIN}"
 		(shape input)
 		(at 118.11 58.42 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)

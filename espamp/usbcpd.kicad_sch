@@ -4526,6 +4526,7 @@
 	)
 	(label "fault"
 		(at 231.14 97.79 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4536,6 +4537,7 @@
 	)
 	(label "VBUS"
 		(at 193.04 52.07 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4546,6 +4548,7 @@
 	)
 	(label "shield"
 		(at 44.45 115.57 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4556,6 +4559,7 @@
 	)
 	(label "fault"
 		(at 111.76 71.12 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4567,6 +4571,7 @@
 	(hierarchical_label "DN"
 		(shape input)
 		(at 111.76 90.17 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4578,6 +4583,7 @@
 	(hierarchical_label "DP"
 		(shape input)
 		(at 111.76 87.63 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4589,6 +4595,7 @@
 	(hierarchical_label "VSYS"
 		(shape input)
 		(at 278.13 72.39 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4600,6 +4607,7 @@
 	(hierarchical_label "SDA"
 		(shape input)
 		(at 231.14 105.41 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4611,6 +4619,7 @@
 	(hierarchical_label "SCL"
 		(shape input)
 		(at 231.14 102.87 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
