@@ -636,8 +636,12 @@
       "amp"
     ],
     [
-      "afeea8ee-3d90-4165-9db5-239cec7d43de",
-      "mic"
+      "ff982210-6c86-422a-a66b-20bff67bd030",
+      "3v3"
+    ],
+    [
+      "35a4a023-801a-4ad8-aaa9-651a71e86f56",
+      "i2c"
     ]
   ],
   "text_variables": {}
