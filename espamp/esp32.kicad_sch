@@ -2700,6 +2700,7 @@
 	)
 	(label "I2S.LRCLK"
 		(at 127 124.46 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2710,6 +2711,7 @@
 	)
 	(label "I2S.SDIN"
 		(at 127 119.38 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2720,6 +2722,7 @@
 	)
 	(label "I2C.SDA"
 		(at 143.51 118.11 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2730,6 +2733,7 @@
 	)
 	(label "I2C.SCL"
 		(at 143.51 115.57 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2740,6 +2744,7 @@
 	)
 	(label "I2S.SCLK"
 		(at 127 121.92 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2751,6 +2756,7 @@
 	(hierarchical_label "I2C{SDA,SCL}"
 		(shape input)
 		(at 139.7 111.76 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2762,6 +2768,7 @@
 	(hierarchical_label "3v3"
 		(shape input)
 		(at 66.04 86.36 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2773,6 +2780,7 @@
 	(hierarchical_label "I2S{LRCLK,SCLK,SDIN}"
 		(shape input)
 		(at 124.46 116.84 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)

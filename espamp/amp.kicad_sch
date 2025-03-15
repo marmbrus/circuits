@@ -3112,6 +3112,7 @@
 	)
 	(label "A-"
 		(at 227.33 71.12 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3122,6 +3123,7 @@
 	)
 	(label "OUT_B+"
 		(at 157.48 87.63 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3132,6 +3134,7 @@
 	)
 	(label "BST_B-"
 		(at 157.48 95.25 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3142,6 +3145,7 @@
 	)
 	(label "OUT_B-"
 		(at 157.48 92.71 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3152,6 +3156,7 @@
 	)
 	(label "BST_B+"
 		(at 157.48 85.09 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3162,6 +3167,7 @@
 	)
 	(label "I2S.LRCLK"
 		(at 114.3 69.85 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3172,6 +3178,7 @@
 	)
 	(label "I2C.SCL"
 		(at 114.3 82.55 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3182,6 +3189,7 @@
 	)
 	(label "BST_A-"
 		(at 157.48 74.93 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3192,6 +3200,7 @@
 	)
 	(label "B-"
 		(at 227.33 101.6 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3202,6 +3211,7 @@
 	)
 	(label "I2S.SCLK"
 		(at 114.3 72.39 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3212,6 +3222,7 @@
 	)
 	(label "I2S.SDIN"
 		(at 114.3 74.93 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3222,6 +3233,7 @@
 	)
 	(label "I2C.SDA"
 		(at 114.3 80.01 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3232,6 +3244,7 @@
 	)
 	(label "A+"
 		(at 227.33 54.61 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3242,6 +3255,7 @@
 	)
 	(label "OUT_A-"
 		(at 157.48 72.39 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3252,6 +3266,7 @@
 	)
 	(label "BST_A+"
 		(at 157.48 64.77 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3262,6 +3277,7 @@
 	)
 	(label "B+"
 		(at 227.33 86.36 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3272,6 +3288,7 @@
 	)
 	(label "OUT_A+"
 		(at 157.48 67.31 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3283,6 +3300,7 @@
 	(hierarchical_label "3V3"
 		(shape input)
 		(at 57.15 20.32 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3294,6 +3312,7 @@
 	(hierarchical_label "20V"
 		(shape input)
 		(at 281.94 27.94 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3305,6 +3324,7 @@
 	(hierarchical_label "I2C{SDA,SCL}"
 		(shape input)
 		(at 93.98 77.47 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3316,6 +3336,7 @@
 	(hierarchical_label "I2S{LRCLK,SCLK,SDIN}"
 		(shape input)
 		(at 93.98 67.31 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3327,6 +3348,7 @@
 	(hierarchical_label "20V"
 		(shape input)
 		(at 238.76 27.94 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)

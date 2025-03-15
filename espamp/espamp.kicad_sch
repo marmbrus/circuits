@@ -137,7 +137,7 @@
 	)
 	(wire
 		(pts
-			(xy 71.12 120.65) (xy 87.63 120.65)
+			(xy 71.12 121.92) (xy 87.63 121.92)
 		)
 		(stroke
 			(width 0)
@@ -187,7 +187,7 @@
 	)
 	(wire
 		(pts
-			(xy 128.27 48.26) (xy 83.82 48.26)
+			(xy 83.82 48.26) (xy 128.27 48.26)
 		)
 		(stroke
 			(width 0)
@@ -217,7 +217,7 @@
 	)
 	(wire
 		(pts
-			(xy 71.12 97.79) (xy 71.12 120.65)
+			(xy 71.12 97.79) (xy 71.12 121.92)
 		)
 		(stroke
 			(width 0)
@@ -354,6 +354,28 @@
 			(type default)
 		)
 		(uuid "f8239104-c713-4f52-8b63-ee1d24b7ba5f")
+	)
+	(label "5V"
+		(at 91.44 48.26 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "04bf00f7-056b-45b0-861d-57aa40ebbcbc")
+	)
+	(label "20V"
+		(at 58.42 97.79 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8fbc32b2-fc91-45b6-86b2-7d317e629eab")
 	)
 	(sheet
 		(at 128.27 44.45)
