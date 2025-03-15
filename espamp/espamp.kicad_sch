@@ -24,6 +24,12 @@
 		(uuid "83278a90-cb59-4a59-9ac0-d07cfcf0f9fc")
 	)
 	(junction
+		(at 86.36 64.77)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "838e1703-0abf-42b8-b090-99ca48cff50d")
+	)
+	(junction
 		(at 83.82 64.77)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -57,6 +63,16 @@
 	)
 	(wire
 		(pts
+			(xy 130.81 83.82) (xy 130.81 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "03831887-9b58-4eae-b00b-9bb5fa71c239")
+	)
+	(wire
+		(pts
 			(xy 78.74 66.04) (xy 83.82 66.04)
 		)
 		(stroke
@@ -64,6 +80,16 @@
 			(type default)
 		)
 		(uuid "056cadb1-223e-423f-b59c-d3f8c4c8f078")
+	)
+	(wire
+		(pts
+			(xy 135.89 83.82) (xy 130.81 83.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "18d47f17-38a1-454d-b8ce-cae399c0107e")
 	)
 	(bus
 		(pts
@@ -227,13 +253,33 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 64.77) (xy 90.17 64.77)
+			(xy 130.81 80.01) (xy 86.36 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8fdc8a76-30cc-430a-aed5-93fba3ee82cc")
+	)
+	(wire
+		(pts
+			(xy 83.82 64.77) (xy 86.36 64.77)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "abd110cb-c7d3-4a4c-bf6c-ec20ae2e06cf")
+	)
+	(wire
+		(pts
+			(xy 86.36 80.01) (xy 86.36 64.77)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b93eaac8-ae6c-4944-a080-a2080f860dd9")
 	)
 	(wire
 		(pts
@@ -294,6 +340,16 @@
 			(type default)
 		)
 		(uuid "d2463ea8-79a6-4cfd-bf6d-d7c9f1ea2e4f")
+	)
+	(wire
+		(pts
+			(xy 86.36 64.77) (xy 90.17 64.77)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dce35d92-b85b-4629-908c-b719bd202437")
 	)
 	(bus
 		(pts
@@ -357,7 +413,6 @@
 	)
 	(label "5V"
 		(at 91.44 48.26 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -368,7 +423,6 @@
 	)
 	(label "20V"
 		(at 58.42 97.79 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -660,6 +714,16 @@
 				(justify left)
 			)
 			(uuid "d708bc92-aacf-4c89-aae3-ca2df075a72c")
+		)
+		(pin "5V" input
+			(at 135.89 83.82 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "c07077b3-3339-47a0-ba34-6b4110e11462")
 		)
 		(instances
 			(project "espamp"

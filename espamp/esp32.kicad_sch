@@ -1820,6 +1820,159 @@
 				)
 			)
 		)
+		(symbol "easyeda2kicad:WS2812B-2020"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "LED"
+				(at 0 6.35 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "WS2812B-2020"
+				(at 0 -6.35 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:LED-SMD_4P-L2.0-W2.0-TL_WS2812B-2020"
+				(at 0 -8.89 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_Worldsemi-WS2812B-2020_C965555.html"
+				(at 0 -11.43 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "LCSC Part" "C965555"
+				(at 0 -13.97 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "WS2812B-2020_0_1"
+				(rectangle
+					(start -6.35 3.81)
+					(end 6.35 -3.81)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(circle
+					(center -5.08 2.54)
+					(radius 0.38)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin unspecified line
+					(at -8.89 1.27 0)
+					(length 2.54)
+					(name "DO"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at -8.89 -1.27 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 8.89 -1.27 180)
+					(length 2.54)
+					(name "DI"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 8.89 1.27 180)
+					(length 2.54)
+					(name "VDD"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "power:GND"
 			(power)
 			(pin_numbers hide)
@@ -2002,6 +2155,12 @@
 		(uuid "f6ce09b0-5e0b-4c5d-a716-7440e75479d5")
 	)
 	(junction
+		(at 170.18 140.97)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "fb6476c7-662c-4db9-bc16-b6098a774b46")
+	)
+	(junction
 		(at 93.98 86.36)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2014,6 +2173,10 @@
 	(no_connect
 		(at 185.42 124.46)
 		(uuid "20f35d4c-5667-46b0-96de-27b058cd9055")
+	)
+	(no_connect
+		(at 218.44 110.49)
+		(uuid "36cb5ca0-3918-4f5b-8a4e-d6926445baa3")
 	)
 	(no_connect
 		(at 185.42 119.38)
@@ -2110,6 +2273,16 @@
 	)
 	(wire
 		(pts
+			(xy 170.18 140.97) (xy 170.18 144.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "07317b68-9891-4ed1-ae88-b82308b8861a")
+	)
+	(wire
+		(pts
 			(xy 93.98 86.36) (xy 102.87 86.36)
 		)
 		(stroke
@@ -2170,6 +2343,16 @@
 	)
 	(wire
 		(pts
+			(xy 196.85 110.49) (xy 200.66 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "19ff0275-cf62-4a34-b738-5474556aeb51")
+	)
+	(wire
+		(pts
 			(xy 148.59 118.11) (xy 153.67 118.11)
 		)
 		(stroke
@@ -2177,6 +2360,16 @@
 			(type default)
 		)
 		(uuid "1d1a6d9b-5700-42ef-bb5d-be99ebf01451")
+	)
+	(wire
+		(pts
+			(xy 170.18 140.97) (xy 227.33 140.97)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2335939f-f2ae-405e-a950-7159ebff6d72")
 	)
 	(wire
 		(pts
@@ -2430,6 +2623,16 @@
 	)
 	(wire
 		(pts
+			(xy 191.77 107.95) (xy 200.66 107.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8219a640-a074-497e-b6f4-5162c72795d3")
+	)
+	(wire
+		(pts
 			(xy 127 121.92) (xy 154.94 121.92)
 		)
 		(stroke
@@ -2447,6 +2650,16 @@
 			(type default)
 		)
 		(uuid "90e7a28a-e079-4db5-8d94-091d8072249b")
+	)
+	(wire
+		(pts
+			(xy 191.77 111.76) (xy 191.77 107.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9414b8e4-9363-4641-983a-a654170299fa")
 	)
 	(wire
 		(pts
@@ -2470,6 +2683,16 @@
 	)
 	(wire
 		(pts
+			(xy 227.33 107.95) (xy 227.33 140.97)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "96a1b513-18ec-46a0-871c-85316123f70c")
+	)
+	(wire
+		(pts
 			(xy 134.62 91.44) (xy 138.43 91.44)
 		)
 		(stroke
@@ -2487,6 +2710,16 @@
 			(type default)
 		)
 		(uuid "a0ed2031-be95-4ef0-802b-46decd40ae43")
+	)
+	(wire
+		(pts
+			(xy 185.42 111.76) (xy 191.77 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a4bdcf07-5106-4fa2-9a93-7aef62968a11")
 	)
 	(wire
 		(pts
@@ -2557,6 +2790,16 @@
 			(type default)
 		)
 		(uuid "c18f9795-f0bf-40d8-beb4-37f846db871e")
+	)
+	(wire
+		(pts
+			(xy 218.44 107.95) (xy 227.33 107.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c64b6fc7-55f4-4da8-8598-ad91cd0fd31c")
 	)
 	(wire
 		(pts
@@ -2660,7 +2903,7 @@
 	)
 	(wire
 		(pts
-			(xy 170.18 137.16) (xy 170.18 144.78)
+			(xy 170.18 137.16) (xy 170.18 140.97)
 		)
 		(stroke
 			(width 0)
@@ -2700,7 +2943,6 @@
 	)
 	(label "I2S.LRCLK"
 		(at 127 124.46 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2711,7 +2953,6 @@
 	)
 	(label "I2S.SDIN"
 		(at 127 119.38 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2722,7 +2963,6 @@
 	)
 	(label "I2C.SDA"
 		(at 143.51 118.11 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2733,7 +2973,6 @@
 	)
 	(label "I2C.SCL"
 		(at 143.51 115.57 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2744,7 +2983,6 @@
 	)
 	(label "I2S.SCLK"
 		(at 127 121.92 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2756,7 +2994,6 @@
 	(hierarchical_label "I2C{SDA,SCL}"
 		(shape input)
 		(at 139.7 111.76 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2768,7 +3005,6 @@
 	(hierarchical_label "3v3"
 		(shape input)
 		(at 66.04 86.36 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2780,7 +3016,6 @@
 	(hierarchical_label "I2S{LRCLK,SCLK,SDIN}"
 		(shape input)
 		(at 124.46 116.84 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -2788,6 +3023,17 @@
 			(justify right)
 		)
 		(uuid "9023e067-8aab-4e21-be6b-4137ef07f4ad")
+	)
+	(hierarchical_label "5V"
+		(shape input)
+		(at 196.85 110.49 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "fc080941-4b49-4d96-af95-93e05daf1e96")
 	)
 	(symbol
 		(lib_id "easyeda2kicad:B3U-1000P")
@@ -3207,6 +3453,89 @@
 			(project "espamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/971439fe-c8ce-4450-821c-537e8691d398"
 					(reference "C203")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:WS2812B-2020")
+		(at 209.55 109.22 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3554ce80-fbd0-4d63-8399-357bd52dd931")
+		(property "Reference" "LED201"
+			(at 209.55 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "WS2812B-2020"
+			(at 209.55 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L2.0-W2.0-TL_WS2812B-2020"
+			(at 209.55 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Light-Emitting-Diodes-LED_Worldsemi-WS2812B-2020_C965555.html"
+			(at 209.55 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 209.55 109.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C965555"
+			(at 209.55 95.25 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d1155b1a-cd14-4d60-9457-1add18ded00f")
+		)
+		(pin "3"
+			(uuid "4e07ce1e-0dd0-427a-a314-257d1ad15397")
+		)
+		(pin "4"
+			(uuid "0daf6108-b58f-4a4f-a337-2e23bd6e4a1f")
+		)
+		(pin "2"
+			(uuid "31e2134a-2265-44f3-bbfd-6c798c44ed7e")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/971439fe-c8ce-4450-821c-537e8691d398"
+					(reference "LED201")
 					(unit 1)
 				)
 			)

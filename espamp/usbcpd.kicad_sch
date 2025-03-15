@@ -4554,7 +4554,6 @@
 	)
 	(label "fault"
 		(at 231.14 97.79 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4565,7 +4564,6 @@
 	)
 	(label "I2C.SDA"
 		(at 228.6 105.41 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4576,7 +4574,6 @@
 	)
 	(label "VBUS"
 		(at 193.04 52.07 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4587,7 +4584,6 @@
 	)
 	(label "I2C.SCL"
 		(at 228.6 102.87 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4598,7 +4594,6 @@
 	)
 	(label "shield"
 		(at 44.45 115.57 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4609,7 +4604,6 @@
 	)
 	(label "fault"
 		(at 111.76 71.12 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4621,7 +4615,6 @@
 	(hierarchical_label "DN"
 		(shape input)
 		(at 111.76 90.17 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4633,7 +4626,6 @@
 	(hierarchical_label "I2C{SDA,SCL}"
 		(shape input)
 		(at 238.76 100.33 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4645,7 +4637,6 @@
 	(hierarchical_label "DP"
 		(shape input)
 		(at 111.76 87.63 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4657,7 +4648,6 @@
 	(hierarchical_label "VSYS"
 		(shape input)
 		(at 278.13 72.39 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
