@@ -1790,6 +1790,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part" "C18078211"
+			(at 166.37 58.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "3"
 			(uuid "fc62e877-453d-4965-a4fd-23c7800e6365")
 		)
@@ -2005,10 +2014,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "4e26b19c-d765-468c-bdc5-e65d83242856")
+			(uuid "4e26b19c-d765-468c-bdc5-e65d83242857")
 		)
 		(pin "2"
-			(uuid "767f35c7-a0ff-45ee-be53-e1d171819086")
+			(uuid "767f35c7-a0ff-45ee-be53-e1d171819087")
 		)
 		(instances
 			(project ""
@@ -2157,10 +2166,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "4e26b19c-d765-468c-bdc5-e65d83242856")
+			(uuid "4e26b19c-d765-468c-bdc5-e65d83242858")
 		)
 		(pin "2"
-			(uuid "767f35c7-a0ff-45ee-be53-e1d171819086")
+			(uuid "767f35c7-a0ff-45ee-be53-e1d171819088")
 		)
 		(instances
 			(project ""
