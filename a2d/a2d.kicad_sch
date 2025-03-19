@@ -3539,7 +3539,6 @@
 	)
 	(label "6V"
 		(at 36.83 68.58 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3550,7 +3549,6 @@
 	)
 	(label "SDA"
 		(at 36.83 66.04 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3561,7 +3559,6 @@
 	)
 	(label "A2"
 		(at 215.9 119.38 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3572,7 +3569,6 @@
 	)
 	(label "SCL"
 		(at 36.83 63.5 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3583,7 +3579,6 @@
 	)
 	(label "6V"
 		(at 36.83 127 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3594,7 +3589,6 @@
 	)
 	(label "SDA"
 		(at 36.83 124.46 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3605,7 +3599,6 @@
 	)
 	(label "A3"
 		(at 215.9 109.22 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3616,7 +3609,6 @@
 	)
 	(label "A4"
 		(at 210.82 106.68 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3627,7 +3619,6 @@
 	)
 	(label "A1"
 		(at 210.82 119.38 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3638,7 +3629,6 @@
 	)
 	(label "SCL"
 		(at 36.83 121.92 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4481,9 +4471,9 @@
 		(at 171.45 152.4 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "27986da6-e610-4430-a04a-78186afca460")
 		(property "Reference" "RF2"
@@ -7123,6 +7113,15 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC Part" "C5383105"
+			(at 170.18 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "4"
 			(uuid "aa891632-06e3-4307-8896-2f2defbd0579")
 		)
@@ -7227,9 +7226,9 @@
 		(at 261.62 137.16 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "e4d7136d-03b0-4a4c-869a-bc976100ad7c")
 		(property "Reference" "RF3"
@@ -7533,9 +7532,9 @@
 		(at 95.25 147.32 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "f65ec15e-a32c-41bb-8a38-00d5fb0559c4")
 		(property "Reference" "RF1"
