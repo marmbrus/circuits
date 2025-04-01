@@ -2854,6 +2854,15 @@
 		(uuid "5bd6e71f-d925-413b-98d8-6e681dc86b2e")
 	)
 	(bus_entry
+		(at 116.84 87.63)
+		(size -2.54 2.54)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a99308b7-d8db-46e9-843d-4cc8726b851d")
+	)
+	(bus_entry
 		(at 238.76 102.87)
 		(size -2.54 2.54)
 		(stroke
@@ -2861,6 +2870,15 @@
 			(type default)
 		)
 		(uuid "d7b6151c-46ba-4f13-9eca-2383dc4606fd")
+	)
+	(bus_entry
+		(at 116.84 85.09)
+		(size -2.54 2.54)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e94b9af0-f843-4a36-9281-61e2448d6b29")
 	)
 	(wire
 		(pts
@@ -2891,16 +2909,6 @@
 			(type default)
 		)
 		(uuid "08943530-b8c2-4160-a0a0-bcbe34805392")
-	)
-	(wire
-		(pts
-			(xy 125.73 102.87) (xy 125.73 54.61)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0924002f-e03e-40d1-97e1-8f715f96b989")
 	)
 	(wire
 		(pts
@@ -3394,16 +3402,6 @@
 	)
 	(wire
 		(pts
-			(xy 130.81 102.87) (xy 125.73 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "56ea2a66-7d7d-41ed-8136-5ae53b56c709")
-	)
-	(wire
-		(pts
 			(xy 161.29 91.44) (xy 161.29 95.25)
 		)
 		(stroke
@@ -3434,7 +3432,7 @@
 	)
 	(wire
 		(pts
-			(xy 111.76 54.61) (xy 125.73 54.61)
+			(xy 111.76 54.61) (xy 130.81 54.61)
 		)
 		(stroke
 			(width 0)
@@ -3491,6 +3489,16 @@
 			(type default)
 		)
 		(uuid "6136e480-1610-4dc3-991d-d605b0aa51f2")
+	)
+	(wire
+		(pts
+			(xy 130.81 54.61) (xy 130.81 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6199f4bf-3e41-4d29-97ad-ecf3e1fe5b32")
 	)
 	(wire
 		(pts
@@ -3711,6 +3719,16 @@
 			(type default)
 		)
 		(uuid "8635133f-f656-4237-898a-d5f4753480b7")
+	)
+	(bus
+		(pts
+			(xy 116.84 85.09) (xy 116.84 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "86e6ffec-ee03-41ba-aa83-a79e38749dfc")
 	)
 	(wire
 		(pts
@@ -4074,16 +4092,6 @@
 	)
 	(wire
 		(pts
-			(xy 107.95 87.63) (xy 111.76 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "bb66c1ab-1110-4a7e-b070-7905e67f0f15")
-	)
-	(wire
-		(pts
 			(xy 107.95 82.55) (xy 173.99 82.55)
 		)
 		(stroke
@@ -4164,6 +4172,16 @@
 	)
 	(wire
 		(pts
+			(xy 107.95 90.17) (xy 114.3 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c90bf9aa-70c1-4a11-bec2-f94254792deb")
+	)
+	(wire
+		(pts
 			(xy 228.6 115.57) (xy 232.41 115.57)
 		)
 		(stroke
@@ -4181,6 +4199,16 @@
 			(type default)
 		)
 		(uuid "d168a329-c7a0-4e5e-b429-13bddf95b744")
+	)
+	(wire
+		(pts
+			(xy 107.95 87.63) (xy 114.3 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d4ba520a-22e8-4d03-a539-5f7c6611e1ab")
 	)
 	(wire
 		(pts
@@ -4231,16 +4259,6 @@
 			(type default)
 		)
 		(uuid "dda3ae99-96ab-47b8-b233-92e31ece7c5e")
-	)
-	(wire
-		(pts
-			(xy 107.95 90.17) (xy 111.76 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dde07681-1f9b-4f5d-92c9-d84db865045d")
 	)
 	(wire
 		(pts
@@ -4554,6 +4572,7 @@
 	)
 	(label "fault"
 		(at 231.14 97.79 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4564,6 +4583,7 @@
 	)
 	(label "I2C.SDA"
 		(at 228.6 105.41 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4574,6 +4594,7 @@
 	)
 	(label "VBUS"
 		(at 193.04 52.07 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4584,6 +4605,7 @@
 	)
 	(label "I2C.SCL"
 		(at 228.6 102.87 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4592,8 +4614,19 @@
 		)
 		(uuid "29898418-e915-4d94-adba-5ac585225f58")
 	)
+	(label "USB.DP"
+		(at 107.95 87.63 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "516baabc-e2b7-44ac-9dc7-8e6f5fbbe688")
+	)
 	(label "shield"
 		(at 44.45 115.57 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4602,8 +4635,19 @@
 		)
 		(uuid "7821b84c-6551-4054-9354-cce78972415e")
 	)
+	(label "USB.DN"
+		(at 107.95 90.17 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "961efc5b-17dd-47d1-9c8c-899245567054")
+	)
 	(label "fault"
 		(at 111.76 71.12 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4612,20 +4656,10 @@
 		)
 		(uuid "a7b3706a-9840-48e2-a478-f82a490653f7")
 	)
-	(hierarchical_label "DN"
-		(shape input)
-		(at 111.76 90.17 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "07207774-7baa-4674-91a6-102daa466721")
-	)
 	(hierarchical_label "I2C{SDA,SCL}"
 		(shape input)
 		(at 238.76 100.33 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4634,20 +4668,10 @@
 		)
 		(uuid "0c2bfafd-8fdd-4134-8991-4cb396acd0ac")
 	)
-	(hierarchical_label "DP"
-		(shape input)
-		(at 111.76 87.63 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "1af943a6-9685-402c-a575-6133cb9b5bad")
-	)
 	(hierarchical_label "VSYS"
 		(shape input)
 		(at 278.13 72.39 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4655,6 +4679,18 @@
 			(justify left)
 		)
 		(uuid "8c7e61b5-e261-4bab-a40a-ab77713c270a")
+	)
+	(hierarchical_label "USB{DP,DN}"
+		(shape input)
+		(at 116.84 85.09 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "e7d3088b-304f-48b0-8839-7492cbff6b70")
 	)
 	(symbol
 		(lib_id "power:GND")

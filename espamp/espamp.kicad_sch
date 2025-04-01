@@ -71,6 +71,16 @@
 		)
 		(uuid "03831887-9b58-4eae-b00b-9bb5fa71c239")
 	)
+	(bus
+		(pts
+			(xy 128.27 87.63) (xy 128.27 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "03ad6dc4-944c-40f6-8e89-bcbb8b931142")
+	)
 	(wire
 		(pts
 			(xy 78.74 66.04) (xy 83.82 66.04)
@@ -131,6 +141,16 @@
 		)
 		(uuid "2d35d60f-9c7a-406b-9f1e-8c1b2b543d3d")
 	)
+	(wire
+		(pts
+			(xy 116.84 129.54) (xy 139.7 129.54)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "328ceadc-87f5-47c1-a58a-59157ce8e671")
+	)
 	(bus
 		(pts
 			(xy 121.92 91.44) (xy 128.27 91.44)
@@ -141,6 +161,16 @@
 		)
 		(uuid "331b2f3b-d7b6-449f-99e2-c19a99ff7020")
 	)
+	(wire
+		(pts
+			(xy 147.32 113.03) (xy 147.32 137.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "371fe080-3e8f-4f92-b252-b206be9e8c3b")
+	)
 	(bus
 		(pts
 			(xy 128.27 91.44) (xy 128.27 96.52)
@@ -150,6 +180,16 @@
 			(type default)
 		)
 		(uuid "38d1c0ea-6a82-4083-a004-5d423f3ae57f")
+	)
+	(bus
+		(pts
+			(xy 128.27 88.9) (xy 135.89 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3d5b7dc9-4450-43c6-aa5d-94738db7ed17")
 	)
 	(bus
 		(pts
@@ -211,6 +251,16 @@
 		)
 		(uuid "4aaea78e-09fc-45e3-8d3e-ee5967e263af")
 	)
+	(bus
+		(pts
+			(xy 44.45 85.09) (xy 92.71 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "50a30e9e-4f8c-4aec-a43c-002b7aae0df4")
+	)
 	(wire
 		(pts
 			(xy 83.82 48.26) (xy 128.27 48.26)
@@ -261,6 +311,36 @@
 		)
 		(uuid "8fdc8a76-30cc-430a-aed5-93fba3ee82cc")
 	)
+	(bus
+		(pts
+			(xy 92.71 87.63) (xy 128.27 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "99a47f9e-e937-4e91-9efa-37d0afab8e33")
+	)
+	(bus
+		(pts
+			(xy 92.71 85.09) (xy 92.71 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9c4fad2e-87bb-4ea8-9576-4a8d59125934")
+	)
+	(wire
+		(pts
+			(xy 143.51 113.03) (xy 143.51 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "aa411224-cd25-4fa6-8d0b-7a88c148a69b")
+	)
 	(wire
 		(pts
 			(xy 83.82 64.77) (xy 86.36 64.77)
@@ -270,6 +350,16 @@
 			(type default)
 		)
 		(uuid "abd110cb-c7d3-4a4c-bf6c-ec20ae2e06cf")
+	)
+	(wire
+		(pts
+			(xy 147.32 137.16) (xy 116.84 137.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b492dcde-1ef1-4f10-8d7c-d5e7ffd7b96f")
 	)
 	(wire
 		(pts
@@ -343,6 +433,26 @@
 	)
 	(wire
 		(pts
+			(xy 151.13 113.03) (xy 151.13 140.97)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d7d85541-1786-410c-ba4a-0b5f2433ac3f")
+	)
+	(wire
+		(pts
+			(xy 151.13 140.97) (xy 116.84 140.97)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d81205cc-812e-41c0-accc-091de06f6cad")
+	)
+	(wire
+		(pts
 			(xy 86.36 64.77) (xy 90.17 64.77)
 		)
 		(stroke
@@ -350,6 +460,16 @@
 			(type default)
 		)
 		(uuid "dce35d92-b85b-4629-908c-b719bd202437")
+	)
+	(wire
+		(pts
+			(xy 139.7 129.54) (xy 139.7 113.03)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "df7b0514-4b10-4f00-b6b6-b24350dc12fe")
 	)
 	(bus
 		(pts
@@ -411,8 +531,19 @@
 		)
 		(uuid "f8239104-c713-4f52-8b63-ee1d24b7ba5f")
 	)
+	(wire
+		(pts
+			(xy 143.51 133.35) (xy 116.84 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ff56e906-461b-4ff8-ae38-19b004e90a46")
+	)
 	(label "5V"
 		(at 91.44 48.26 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -423,6 +554,7 @@
 	)
 	(label "20V"
 		(at 58.42 97.79 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -539,26 +671,6 @@
 			)
 			(uuid "c00caa7a-72bc-45cd-b07f-4e2e3fb6ce26")
 		)
-		(pin "DN" input
-			(at 35.56 82.55 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-			(uuid "d320863b-eae8-4a90-8e2a-40c3b6a2f9c2")
-		)
-		(pin "DP" input
-			(at 33.02 82.55 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-			(uuid "f4a8f34a-b2f4-4805-a91e-2765bba89b7f")
-		)
 		(pin "I2C{SDA,SCL}" input
 			(at 44.45 91.44 0)
 			(effects
@@ -568,6 +680,16 @@
 				(justify right)
 			)
 			(uuid "dfcccb3a-90b0-43af-ac11-3454a37b9e7e")
+		)
+		(pin "USB{DP,DN}" input
+			(at 44.45 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "cd80a2f1-92a5-496f-aaa9-7402454248bc")
 		)
 		(instances
 			(project "espamp"
@@ -579,7 +701,7 @@
 	)
 	(sheet
 		(at 87.63 115.57)
-		(size 29.21 20.32)
+		(size 29.21 27.94)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -599,7 +721,7 @@
 			)
 		)
 		(property "Sheetfile" "amp.kicad_sch"
-			(at 87.63 135.8396 0)
+			(at 87.63 144.0946 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -646,6 +768,46 @@
 				(justify right)
 			)
 			(uuid "a3cd8d42-79e5-4b7e-a71c-399d7cf9e32d")
+		)
+		(pin "GPIO1" input
+			(at 116.84 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "384d2bd9-5647-449f-9ce6-28ca8430a540")
+		)
+		(pin "GPIO0" input
+			(at 116.84 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "3a310c5b-e767-4c3d-aceb-6f25ccb06c5e")
+		)
+		(pin "GPIO2" input
+			(at 116.84 133.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "483cfb42-0f40-4527-a3b1-fbf31ec37e46")
+		)
+		(pin "PDN" input
+			(at 116.84 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "b6c6533c-84c0-4879-942c-551497636bd9")
 		)
 		(instances
 			(project "espamp"
@@ -724,6 +886,56 @@
 				(justify left)
 			)
 			(uuid "c07077b3-3339-47a0-ba34-6b4110e11462")
+		)
+		(pin "USB{DP,DN}" input
+			(at 135.89 88.9 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "515d0524-9977-4930-bf19-3256b5f208e1")
+		)
+		(pin "PDN" input
+			(at 139.7 113.03 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "ccff12e2-2b02-4a40-9b72-f29ea04ea82d")
+		)
+		(pin "GPIO2" input
+			(at 143.51 113.03 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "393e20a8-f41b-4918-893f-a73715fa3c60")
+		)
+		(pin "GPIO1" input
+			(at 147.32 113.03 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "617f73ac-6be1-4182-ac86-bf4a63ad6dcf")
+		)
+		(pin "GPIO0" input
+			(at 151.13 113.03 270)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "f226d670-9c0d-42f8-8827-ab04a5841ce1")
 		)
 		(instances
 			(project "espamp"
