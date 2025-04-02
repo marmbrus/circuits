@@ -4616,6 +4616,7 @@
 	)
 	(label "USB.DP"
 		(at 107.95 87.63 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4637,6 +4638,7 @@
 	)
 	(label "USB.DN"
 		(at 107.95 90.17 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
