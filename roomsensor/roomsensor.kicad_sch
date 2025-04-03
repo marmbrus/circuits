@@ -1,0 +1,922 @@
+(kicad_sch
+	(version 20231120)
+	(generator "eeschema")
+	(generator_version "8.0")
+	(uuid "48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa")
+	(paper "A4")
+	(lib_symbols
+		(symbol "power:+5V"
+			(power)
+			(pin_numbers hide)
+			(pin_names
+				(offset 0) hide)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "#PWR"
+				(at 0 -3.81 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Value" "+5V"
+				(at 0 3.556 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Power symbol creates a global label with name \"+5V\""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "global power"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "+5V_0_1"
+				(polyline
+					(pts
+						(xy -0.762 1.27) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 2.54) (xy 0.762 1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "+5V_1_1"
+				(pin power_in line
+					(at 0 0 90)
+					(length 0)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
+	)
+	(junction
+		(at 133.35 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "1e888867-ca88-49c3-86ba-0265a9cef0de")
+	)
+	(junction
+		(at 175.26 81.28)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "44b5c735-c000-4bb3-8176-a3c7c4931b3a")
+	)
+	(junction
+		(at 91.44 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4f0008e9-a259-4047-8cc5-aa4c12f8c74c")
+	)
+	(junction
+		(at 85.09 78.74)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "69cb0874-39d7-4d88-9a96-fa78b009f6c8")
+	)
+	(junction
+		(at 85.09 93.98)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "736dd52b-6495-4ac2-97e9-7767ee5f3696")
+	)
+	(junction
+		(at 85.09 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "fef2a05e-d836-4129-8d5b-25fdcfff956c")
+	)
+	(wire
+		(pts
+			(xy 133.35 35.56) (xy 133.35 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "03127c93-c87d-40bc-9bb1-4e70d5c01366")
+	)
+	(wire
+		(pts
+			(xy 85.09 60.96) (xy 91.44 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "034732de-bbc7-4bfd-a66f-e982c83fa4c7")
+	)
+	(wire
+		(pts
+			(xy 85.09 109.22) (xy 85.09 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "06f73bc3-cd1c-4bb2-82d4-918f84f3e218")
+	)
+	(wire
+		(pts
+			(xy 166.37 93.98) (xy 85.09 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0d05c847-8bf0-41e8-a86b-16c44ecac626")
+	)
+	(wire
+		(pts
+			(xy 140.97 109.22) (xy 85.09 109.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1d13a5a5-efa8-49b2-a85b-ebf0ac98af71")
+	)
+	(bus
+		(pts
+			(xy 182.88 100.33) (xy 175.26 100.33)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1da7e559-1e46-42ef-9bba-35da1f8bb508")
+	)
+	(bus
+		(pts
+			(xy 175.26 81.28) (xy 182.88 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1dc0fdae-d804-4ad5-86b2-5f8e62b28fcf")
+	)
+	(wire
+		(pts
+			(xy 209.55 90.17) (xy 209.55 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1f49d102-32bb-4cf5-aa0c-b11b8f9e7997")
+	)
+	(wire
+		(pts
+			(xy 130.81 104.14) (xy 130.81 67.31)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "23dded51-9796-4a80-8770-d15e86969ef2")
+	)
+	(wire
+		(pts
+			(xy 190.5 90.17) (xy 209.55 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "267d0b4d-d690-4d57-a4d5-9ed7b35fd5d0")
+	)
+	(bus
+		(pts
+			(xy 175.26 100.33) (xy 175.26 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2d3adb1b-32c4-426f-87d4-afe1b5af4bef")
+	)
+	(wire
+		(pts
+			(xy 209.55 35.56) (xy 133.35 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4c2fa7da-8106-413e-967b-91d7239fe02c")
+	)
+	(wire
+		(pts
+			(xy 85.09 57.15) (xy 85.09 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4d59ff81-90b5-4185-ab1a-892b26eb70e7")
+	)
+	(bus
+		(pts
+			(xy 163.83 81.28) (xy 175.26 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6f06b500-23ad-48fd-9c49-3ed715f170f3")
+	)
+	(wire
+		(pts
+			(xy 120.65 60.96) (xy 133.35 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "76cb8f10-a3a2-4ecd-a8f5-3e67e9807af1")
+	)
+	(wire
+		(pts
+			(xy 85.09 93.98) (xy 85.09 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7eeafbb0-348c-4f65-9658-c1ef663a8a9e")
+	)
+	(wire
+		(pts
+			(xy 166.37 104.14) (xy 166.37 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "82b27614-1522-4833-8653-375e9a916bed")
+	)
+	(wire
+		(pts
+			(xy 190.5 92.71) (xy 190.5 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8d32f5b0-16e3-44b1-a4c2-d7942a6ae097")
+	)
+	(wire
+		(pts
+			(xy 133.35 60.96) (xy 138.43 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "955bcb0f-0a7b-48b2-be24-7603bed1b9d3")
+	)
+	(wire
+		(pts
+			(xy 76.2 78.74) (xy 85.09 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ab06781b-74f8-4076-b0f7-c12a3a700fb6")
+	)
+	(wire
+		(pts
+			(xy 85.09 78.74) (xy 85.09 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b449d8a2-408f-4a7b-b49b-903a8448d809")
+	)
+	(wire
+		(pts
+			(xy 140.97 104.14) (xy 130.81 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c164b5a3-082a-475f-b1bd-ee585d4afaaf")
+	)
+	(wire
+		(pts
+			(xy 76.2 57.15) (xy 85.09 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c3a58793-5477-4c78-9a4a-9123cc954306")
+	)
+	(wire
+		(pts
+			(xy 130.81 67.31) (xy 138.43 67.31)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ce33ff6e-2447-4843-afd4-a64e89dc0a7e")
+	)
+	(wire
+		(pts
+			(xy 182.88 104.14) (xy 166.37 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ef2d0c0e-535d-47b6-bb26-0ed1a957c3c9")
+	)
+	(wire
+		(pts
+			(xy 91.44 60.96) (xy 100.33 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f56a1b9a-589e-4cf7-a973-b0d26bede685")
+	)
+	(symbol
+		(lib_id "power:+5V")
+		(at 91.44 60.96 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "d368db2e-08ee-4c5f-bf9c-046c4714cb8b")
+		(property "Reference" "#PWR0102"
+			(at 91.44 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+5V"
+			(at 91.44 55.88 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 91.44 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 91.44 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+5V\""
+			(at 91.44 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7f78dbd0-47c8-4ac1-800c-8e4f67c248f7")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "#PWR0102")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(sheet
+		(at 100.33 53.34)
+		(size 20.32 13.97)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "2d1191d2-d17a-41ea-81f5-b9348ae89f40")
+		(property "Sheetname" "3v3"
+			(at 100.33 52.6284 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "3v3.kicad_sch"
+			(at 100.33 67.8946 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "VIN" input
+			(at 100.33 60.96 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "e286fc44-6919-42bf-961a-5bba36d31366")
+		)
+		(pin "VOUT" input
+			(at 120.65 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "c55a4b5b-1871-4e1a-8e72-89ac8783e082")
+		)
+		(instances
+			(project "roomsensor"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 138.43 50.8)
+		(size 25.4 38.1)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "4b5bbb7b-58fe-4016-8754-12480b330a98")
+		(property "Sheetname" "esp32"
+			(at 138.43 50.0884 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "esp32.kicad_sch"
+			(at 138.43 89.4846 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "3v3" input
+			(at 138.43 60.96 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "e5299d84-1491-4f85-92b4-20a577d362ad")
+		)
+		(pin "LED" input
+			(at 138.43 67.31 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "390113f0-7a4d-410c-9220-2ce283f516ca")
+		)
+		(pin "motion" input
+			(at 138.43 73.66 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "382412a6-3015-4fa0-a05e-f7f7084d11aa")
+		)
+		(pin "I2C{SDA, SCL}" input
+			(at 163.83 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "7c2d810b-af7d-4a95-9b09-30ff5fc44244")
+		)
+		(instances
+			(project "roomsensor"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 182.88 68.58)
+		(size 20.32 16.51)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "540f9e6d-e1e5-4bef-b016-77620b266c13")
+		(property "Sheetname" "bme680"
+			(at 182.88 67.8684 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "bme680.kicad_sch"
+			(at 182.88 85.6746 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "I2C{SDA, SCL}" input
+			(at 182.88 81.28 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "e0465ea2-64aa-49b9-a395-c8fb5a6af35f")
+		)
+		(instances
+			(project "roomsensor"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 140.97 100.33)
+		(size 20.32 12.7)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "5cee5b65-7904-4d4d-b514-47220b319d3c")
+		(property "Sheetname" "leds"
+			(at 140.97 99.6184 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "leds.kicad_sch"
+			(at 140.97 113.6146 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "5V" input
+			(at 140.97 109.22 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "4f7b35dc-3b80-407f-bf5b-ed3c220ddd36")
+		)
+		(pin "DIN" input
+			(at 140.97 104.14 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "5ba176a2-1cb7-49ef-928b-54628a4ce9dc")
+		)
+		(instances
+			(project "roomsensor"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 182.88 92.71)
+		(size 16.51 15.24)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "9bbd6b58-2c5b-4ba0-9255-412ba0fc4a43")
+		(property "Sheetname" "i2c"
+			(at 182.88 91.9984 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "i2c.kicad_sch"
+			(at 182.88 108.5346 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "3V3" input
+			(at 190.5 92.71 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "ab3fed2b-f0a1-41ce-ab4f-a9ea4a01ae71")
+		)
+		(pin "VCC" input
+			(at 182.88 104.14 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "dba1fce9-3d72-42b3-babd-aed7b993df4e")
+		)
+		(pin "I2C{SDA,SCL}" input
+			(at 182.88 100.33 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "8f1c1190-cf92-45d9-9574-2107979ac7ff")
+		)
+		(instances
+			(project "roomsensor"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 60.96 74.93)
+		(size 15.24 13.97)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "acb10ddb-98c9-439e-a93d-9b153e35464d")
+		(property "Sheetname" "usba"
+			(at 60.96 74.2184 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "usba.kicad_sch"
+			(at 60.96 89.4846 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "USB{DP,DN}" input
+			(at 76.2 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "675a4092-bb31-4336-9484-fe43b4223fba")
+		)
+		(pin "VUSB" input
+			(at 76.2 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "d6ef986d-8255-4b0f-b5b1-db64e472a5fd")
+		)
+		(instances
+			(project "roomsensor"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "8")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 60.96 52.07)
+		(size 15.24 13.97)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "ae2b9ec3-c935-493a-ad67-6420fe172e8e")
+		(property "Sheetname" "usbc"
+			(at 60.96 51.3584 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "usbc.kicad_sch"
+			(at 60.96 66.6246 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "VUSB" input
+			(at 76.2 57.15 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "75bba10a-0809-4a07-b18e-c8dc2913646d")
+		)
+		(pin "USB{DP,DN}" input
+			(at 76.2 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "3e3061e8-4662-49d7-a4ba-3352e415017b")
+		)
+		(instances
+			(project "roomsensor"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+)
