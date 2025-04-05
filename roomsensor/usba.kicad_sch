@@ -824,28 +824,22 @@
 		(uuid "24860017-e15f-470e-906f-8202581ded8f")
 	)
 	(junction
-		(at 158.75 91.44)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "6d93b0cf-6a9a-4f86-b11e-289fc175b517")
-	)
-	(junction
 		(at 133.35 83.82)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a675ec16-0250-408d-8bf3-e9eb5ea3bc0e")
 	)
 	(junction
+		(at 158.75 91.44)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "e583d3cf-3783-4eaa-ab7f-dbfd0d5898fc")
+	)
+	(junction
 		(at 142.24 83.82)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "e8dc796f-c538-49eb-a111-d91b00842332")
-	)
-	(junction
-		(at 158.75 83.82)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "f33dec49-80f7-4c6a-bad8-858b60e23f02")
 	)
 	(bus_entry
 		(at 163.83 106.68)
@@ -907,6 +901,26 @@
 	)
 	(wire
 		(pts
+			(xy 118.11 106.68) (xy 121.92 106.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "19afce04-bc03-465d-9b48-99431da02a77")
+	)
+	(wire
+		(pts
+			(xy 121.92 106.68) (xy 121.92 121.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1d33f401-4f82-482a-9550-61bc43047dba")
+	)
+	(wire
+		(pts
 			(xy 124.46 83.82) (xy 133.35 83.82)
 		)
 		(stroke
@@ -927,13 +941,13 @@
 	)
 	(wire
 		(pts
-			(xy 158.75 83.82) (xy 158.75 86.36)
+			(xy 121.92 121.92) (xy 133.35 121.92)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "5909e9db-6b61-4c60-af72-da62912cc9e3")
+		(uuid "5df1350e-3a34-4574-8130-c9d22254974a")
 	)
 	(wire
 		(pts
@@ -977,16 +991,6 @@
 	)
 	(wire
 		(pts
-			(xy 182.88 91.44) (xy 158.75 91.44)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9c2ff54d-b929-452a-8d49-f4a99203f9bb")
-	)
-	(wire
-		(pts
 			(xy 182.88 121.92) (xy 182.88 91.44)
 		)
 		(stroke
@@ -1024,6 +1028,16 @@
 			(type default)
 		)
 		(uuid "f41e55a9-e196-41d6-b290-6b9c64468484")
+	)
+	(wire
+		(pts
+			(xy 158.75 91.44) (xy 182.88 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f7c7be2b-d904-46a4-a467-b18935d93396")
 	)
 	(wire
 		(pts
@@ -1177,6 +1191,76 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 158.75 87.63 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2c0d2328-83bb-4aa7-b449-4f4bd5859af1")
+		(property "Reference" "C802"
+			(at 162.56 86.3599 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "1uF"
+			(at 162.56 88.8999 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 159.7152 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 158.75 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 158.75 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "3e4e512d-67ea-423f-a86f-58b4c43afe7d")
+		)
+		(pin "2"
+			(uuid "11e20483-9bf8-4664-893d-157a17ee29c8")
+		)
+		(instances
+			(project "roomsensor"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/acb10ddb-98c9-439e-a93d-9b153e35464d"
+					(reference "C802")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 133.35 125.73 0)
 		(unit 1)
@@ -1244,76 +1328,6 @@
 	)
 	(symbol
 		(lib_id "Device:C")
-		(at 158.75 87.63 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "721135cb-aaa7-4c52-9ab3-f34b911bdf79")
-		(property "Reference" "C802"
-			(at 162.56 86.3599 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "10uf"
-			(at 162.56 88.8999 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
-			(at 159.7152 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 158.75 87.63 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 158.75 87.63 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "ecb954a9-847f-4f9b-b02e-1672848e9f56")
-		)
-		(pin "2"
-			(uuid "8a36fac6-23af-4132-8c7b-fc1487036715")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/acb10ddb-98c9-439e-a93d-9b153e35464d"
-					(reference "C802")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
 		(at 142.24 87.63 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -1331,7 +1345,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "100nf"
+		(property "Value" "100nF"
 			(at 146.05 88.8999 0)
 			(effects
 				(font

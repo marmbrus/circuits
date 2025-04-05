@@ -58,7 +58,28 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "annular_width|62725000|26312500|eaf445d7-0f83-45fd-b6b2-7032b73563a9|00000000-0000-0000-0000-000000000000",
+        "hole_clearance|23300000|76127500|18802d57-b5f3-4559-aaf7-63c5e5028503|0b634140-b115-49d8-8781-1b5457bf5ac4",
+        "hole_clearance|29100000|76127500|995f8b30-4e3f-4326-9ac8-9fdce3f8a636|c3de6c20-2db8-4ecd-9c8e-8ba7740dff5e",
+        "padstack|23300000|76737500|18802d57-b5f3-4559-aaf7-63c5e5028503|00000000-0000-0000-0000-000000000000",
+        "padstack|29100000|76737500|995f8b30-4e3f-4326-9ac8-9fdce3f8a636|00000000-0000-0000-0000-000000000000",
+        "padstack|62725000|26312500|eaf445d7-0f83-45fd-b6b2-7032b73563a9|00000000-0000-0000-0000-000000000000",
+        "silk_overlap|30100000|46200000|e23b277f-ea15-4aa6-ba76-59f70a55233b|70a2a93a-6402-441b-a4bd-a92823d7a7c0",
+        "silk_overlap|31601792|45680366|70a2a93a-6402-441b-a4bd-a92823d7a7c0|00b9de52-9394-42d8-b277-e2a1063c2bda",
+        "silk_overlap|54200000|69900000|4f26743a-4766-4448-888c-1139fe78c971|b925fddc-84d3-454c-9c59-d002bdc2bc5a",
+        "silk_overlap|54200000|70900000|4f26743a-4766-4448-888c-1139fe78c971|bd0a7b48-cdaa-42fe-bdde-0983e09b6d66",
+        "silk_overlap|61400000|59700000|940820c2-83df-4072-a40b-43e71a541182|755d683e-ec09-496e-8251-7bbf287eef45",
+        "silk_overlap|61400000|69900000|4f26743a-4766-4448-888c-1139fe78c971|7058828e-310b-40ba-94f8-affc7592c902",
+        "silk_overlap|61400000|70900000|4f26743a-4766-4448-888c-1139fe78c971|1b06e055-236c-439e-9130-2f75c2377bb0",
+        "silk_overlap|61900000|68400000|76b71fe7-2c3b-4e1b-86b8-869fb79d3b8e|2bd11713-76d0-4641-a335-56a77a76b4da",
+        "silk_overlap|62900000|61200000|2bd11713-76d0-4641-a335-56a77a76b4da|755d683e-ec09-496e-8251-7bbf287eef45",
+        "silk_overlap|62900000|68400000|2bd11713-76d0-4641-a335-56a77a76b4da|7058828e-310b-40ba-94f8-affc7592c902",
+        "silk_overlap|62900000|68400000|76b71fe7-2c3b-4e1b-86b8-869fb79d3b8e|7058828e-310b-40ba-94f8-affc7592c902",
+        "silk_overlap|63900000|61200000|2bd11713-76d0-4641-a335-56a77a76b4da|9839e5bd-503a-4b0d-bac8-1041d907eaf3",
+        "silk_overlap|63900000|68400000|2bd11713-76d0-4641-a335-56a77a76b4da|36c5ec0b-88bf-4aa4-be62-1842811e0c89",
+        "silk_overlap|63900000|68400000|76b71fe7-2c3b-4e1b-86b8-869fb79d3b8e|36c5ec0b-88bf-4aa4-be62-1842811e0c89"
+      ],
       "meta": {
         "version": 2
       },
@@ -96,8 +117,8 @@
         "padstack": "warning",
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
-        "silk_over_copper": "warning",
+        "silk_edge_clearance": "ignore",
+        "silk_over_copper": "ignore",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
         "solder_mask_bridge": "error",
@@ -214,8 +235,12 @@
           "drill": 0.0
         },
         {
-          "diameter": 0.35,
+          "diameter": 0.5,
           "drill": 0.2
+        },
+        {
+          "diameter": 0.9,
+          "drill": 0.6
         }
       ],
       "zones_allow_external_fillets": false
@@ -227,7 +252,110 @@
       "mfg": "",
       "mpn": ""
     },
-    "layer_presets": [],
+    "layer_presets": [
+      {
+        "activeLayer": -2,
+        "layers": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59
+        ],
+        "name": "All But Fab",
+        "renderLayers": [
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          133,
+          134,
+          135,
+          136,
+          137,
+          138,
+          140,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          148,
+          149,
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          157,
+          158,
+          159,
+          160,
+          161,
+          164,
+          165
+        ]
+      }
+    ],
     "viewports": []
   },
   "boards": [],
@@ -643,6 +771,14 @@
     [
       "acb10ddb-98c9-439e-a93d-9b153e35464d",
       "usba"
+    ],
+    [
+      "74e2951c-297e-4870-8359-997caa89f407",
+      "pira"
+    ],
+    [
+      "c4514872-6898-4930-85b8-95c1964554a5",
+      "mic"
     ]
   ],
   "text_variables": {}
