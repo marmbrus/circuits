@@ -15,6 +15,8 @@
 #include "esp_flash.h"
 #include "cJSON.h"
 
+#include "communication.h"
+
 static const char *TAG = "wifi";
 
 static volatile SystemState system_state = WIFI_CONNECTING;
@@ -47,7 +49,7 @@ static void log_current_time(void) {
     struct tm timeinfo;
     time(&now);
     localtime_r(&now, &timeinfo);
-    ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo));
+    ESP_LOGI(TAG, "Time set using NTP: %s", asctime(&timeinfo));
 }
 
 static void initialize_sntp(void) {

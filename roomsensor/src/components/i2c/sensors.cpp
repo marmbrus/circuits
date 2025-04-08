@@ -9,10 +9,9 @@
 #include "i2c_master_ext.h"
 #include "mqtt_client.h"
 #include "cJSON.h"
-#include "wifi.h"
-#include "led_control.h"
 #include "lis2dh.h"
 
+#include "communication.h"
 static const char *TAG = "sensors";
 
 // Define the global battery SOC variable
@@ -122,7 +121,7 @@ static esp_err_t read_battery_status(void) {
 
 static void sensor_task(void* pvParameters) {
     TickType_t last_publish_time = 0;
-    const TickType_t publish_interval = pdMS_TO_TICKS(10000); // 10 seconds
+    const TickType_t publish_interval = pdMS_TO_TICKS(SENSOR_TASK_INTERVAL_MS);
     
     // Wait a bit before starting to read sensors
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -229,11 +228,5 @@ esp_err_t sensors_init_with_callbacks(movement_callback_t movement_cb, orientati
         return ESP_FAIL;
     }
 
-    return ESP_OK;
-}
-
-esp_err_t sensors_process(void) {
-    // This function is called from the main loop
-    // All sensor processing happens in the sensor task now
     return ESP_OK;
 }

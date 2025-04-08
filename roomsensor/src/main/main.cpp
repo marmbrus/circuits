@@ -7,6 +7,7 @@
 #include "sensors.h"
 #include "led_control.h"
 #include "cJSON.h"
+#include "communication.h"
 
 static const char* TAG = "main";
 
@@ -65,8 +66,6 @@ extern "C" void app_main(void)
 
     // Main loop
     while (1) {
-        // Process sensor readings
-        sensors_process();
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(60000));
     }
 }
