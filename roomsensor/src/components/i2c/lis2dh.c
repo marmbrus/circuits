@@ -9,6 +9,41 @@ static i2c_master_dev_handle_t dev_handle = NULL;
 static lis2dh12_scale_t current_scale = LIS2DH12_2G;
 static lis2dh12_mode_t current_mode = LIS2DH12_HR_12BIT;
 
+static float last_x = 0, last_y = 0, last_z = 0;
+static const float ORIENTATION_THRESHOLD = 0.8f;
+static const float MOVEMENT_THRESHOLD = 0.1f;
+
+// Define the current orientation variable
+device_orientation_t current_orientation = ORIENTATION_UNKNOWN;
+
+// Function to determine orientation from accelerometer data
+device_orientation_t determine_orientation(float x, float y, float z) {
+    if (fabsf(x) > ORIENTATION_THRESHOLD) {
+        return (x > 0) ? ORIENTATION_TOP : ORIENTATION_BOTTOM;
+    }
+    if (fabsf(y) > ORIENTATION_THRESHOLD) {
+        return (y > 0) ? ORIENTATION_RIGHT : ORIENTATION_LEFT;
+    }
+    if (fabsf(z) > ORIENTATION_THRESHOLD) {
+        return (z > 0) ? ORIENTATION_UP : ORIENTATION_DOWN;
+    }
+    return ORIENTATION_UNKNOWN;
+}
+
+bool is_significant_movement(float x, float y, float z) {
+    bool significant = (
+        fabsf(x - last_x) > MOVEMENT_THRESHOLD ||
+        fabsf(y - last_y) > MOVEMENT_THRESHOLD ||
+        fabsf(z - last_z) > MOVEMENT_THRESHOLD
+    );
+
+    last_x = x;
+    last_y = y;
+    last_z = z;
+
+    return significant;
+}
+
 static esp_err_t write_register(uint8_t reg, uint8_t value)
 {
     uint8_t write_buf[2] = {reg, value};

@@ -3,6 +3,7 @@
 #include <esp_err.h>
 #include "driver/i2c_master.h"
 #include "i2c_master_ext.h"
+#include <math.h>  // Include math library for fabsf
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,6 +66,23 @@ typedef struct {
     float y;
     float z;
 } lis2dh12_accel_t;
+
+// Define device orientation types
+typedef enum {
+    ORIENTATION_TOP,
+    ORIENTATION_BOTTOM,
+    ORIENTATION_RIGHT,
+    ORIENTATION_LEFT,
+    ORIENTATION_UP,
+    ORIENTATION_DOWN,
+    ORIENTATION_UNKNOWN
+} device_orientation_t;
+
+// Function declarations for movement and orientation detection
+bool is_significant_movement(float x, float y, float z);
+device_orientation_t determine_orientation(float x, float y, float z);
+
+extern device_orientation_t current_orientation;  // Declare as extern to avoid multiple definitions
 
 /**
  * @brief Initialize the LIS2DH12 sensor

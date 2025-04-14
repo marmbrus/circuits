@@ -44,34 +44,22 @@ void wifi_mqtt_init(void)
     esp_mqtt_client_register_event(mqtt_client, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, event_handler, NULL);
 }
 
-static void log_current_time(void) {
+static void time_sync_notification_cb(struct timeval *tv) {
     time_t now;
     struct tm timeinfo;
     time(&now);
     localtime_r(&now, &timeinfo);
-    ESP_LOGI(TAG, "Time set using NTP: %s", asctime(&timeinfo));
+    char* time_str = asctime(&timeinfo);
+    time_str[strcspn(time_str, "\n")] = '\0';  // Trim newline
+    ESP_LOGI("sntp", "System time updated: %s", time_str);
 }
 
 static void initialize_sntp(void) {
     ESP_LOGI(TAG, "Initializing SNTP");
     esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
     esp_sntp_setservername(0, "pool.ntp.org");
+    esp_sntp_set_time_sync_notification_cb(time_sync_notification_cb);
     esp_sntp_init();
-
-    // Wait for time to be set
-    time_t now = 0;
-    struct tm timeinfo = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-    int retry = 0;
-    const int retry_count = 10;
-    while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-        ESP_LOGD(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-        time(&now);
-        localtime_r(&now, &timeinfo);
-    }
-
-    // Log the current time
-    log_current_time();
 }
 
 static void publish_device_info(esp_ip4_addr_t ip) {
@@ -285,7 +273,6 @@ const uint8_t* get_device_mac(void)
 {
     return device_mac;
 }
-
 esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, int retain) {
     if (!mqtt_client || system_state != FULLY_CONNECTED) {
         ESP_LOGE(TAG, "MQTT publish failed: client not connected (state: %d)", system_state);
@@ -310,3 +297,4 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
     
     return ESP_OK;
 }
+

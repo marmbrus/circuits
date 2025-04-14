@@ -21,45 +21,11 @@ uint8_t g_battery_soc = 100;  // Default to 100%
 static movement_callback_t movement_callback = NULL;
 static orientation_callback_t orientation_callback = NULL;
 
-// Static variables for sensor state
-static float last_x = 0, last_y = 0, last_z = 0;
-static const float ORIENTATION_THRESHOLD = 0.8f;
-static const float MOVEMENT_THRESHOLD = 0.1f;
-static device_orientation_t current_orientation = ORIENTATION_UNKNOWN;
 static i2c_master_bus_handle_t i2c_handle;
 
 // Function declarations
 static void sensor_task(void* pvParameters);
-static esp_err_t bq27441_init(void);
 static esp_err_t read_battery_status(void);
-
-// Function to determine orientation from accelerometer data
-static device_orientation_t determine_orientation(float x, float y, float z) {
-    if (fabsf(x) > ORIENTATION_THRESHOLD) {
-        return (x > 0) ? ORIENTATION_TOP : ORIENTATION_BOTTOM;
-    }
-    if (fabsf(y) > ORIENTATION_THRESHOLD) {
-        return (y > 0) ? ORIENTATION_RIGHT : ORIENTATION_LEFT;
-    }
-    if (fabsf(z) > ORIENTATION_THRESHOLD) {
-        return (z > 0) ? ORIENTATION_UP : ORIENTATION_DOWN;
-    }
-    return ORIENTATION_UNKNOWN;
-}
-
-static bool is_significant_movement(float x, float y, float z) {
-    bool significant = (
-        fabsf(x - last_x) > MOVEMENT_THRESHOLD ||
-        fabsf(y - last_y) > MOVEMENT_THRESHOLD ||
-        fabsf(z - last_z) > MOVEMENT_THRESHOLD
-    );
-
-    last_x = x;
-    last_y = y;
-    last_z = z;
-
-    return significant;
-}
 
 static esp_err_t bq27441_init(void) {
     ESP_LOGI(TAG, "Initializing BQ27441 battery gauge");

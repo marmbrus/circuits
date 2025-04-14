@@ -1,19 +1,10 @@
 #pragma once
 
 #include "esp_err.h"
+#include "lis2dh.h"  // Ensure lis2dh.h is included for device_orientation_t
 
 // Global battery state of charge variable used by led_control.cpp
 extern uint8_t g_battery_soc;
-
-typedef enum {
-    ORIENTATION_UP,
-    ORIENTATION_DOWN,
-    ORIENTATION_LEFT,
-    ORIENTATION_RIGHT,
-    ORIENTATION_TOP,
-    ORIENTATION_BOTTOM,
-    ORIENTATION_UNKNOWN
-} device_orientation_t;
 
 // Define callback function types
 typedef void (*movement_callback_t)(void);
