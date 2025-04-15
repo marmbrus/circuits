@@ -22,7 +22,7 @@ void FlashingLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightne
         last_update = current_time;
     }
 
-    for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
+    for (int i = 0; i < LED_STRIP_NUM_PIXELS; ++i) {
         if (isRed) {
             led_control_set_pixel(led_strip, i, brightness, 0, 0);
         } else {

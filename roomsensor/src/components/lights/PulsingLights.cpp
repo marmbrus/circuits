@@ -37,7 +37,7 @@ void PulsingLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightnes
         last_update = current_time;
     }
 
-    for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
+    for (int i = 0; i < LED_STRIP_NUM_PIXELS; ++i) {
         led_control_set_pixel(led_strip, i,
             (color[0] * brightness) / 255,
             (color[1] * brightness) / 255,

@@ -24,7 +24,9 @@
 
 // LED Configuration
 #define LED_STRIP_GPIO              GPIO_NUM_3
-#define LED_STRIP_NUM_PIXELS        43  // Counted with test routine
+#define LED_GRID_WIDTH              5
+#define LED_GRID_HEIGHT             5
+#define LED_STRIP_NUM_PIXELS        (LED_GRID_WIDTH * LED_GRID_HEIGHT)  // 5x5 grid
 #define LED_STRIP_NUM_BRIGHTNESS    40  // Maximum brightness (0-255)
 #define LED_UPDATE_TASK_STACK_SIZE  4096
 #define LED_UPDATE_INTERVAL_MS      50

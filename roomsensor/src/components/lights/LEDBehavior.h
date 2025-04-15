@@ -1,3 +1,6 @@
+// UNUSED - LEDBehavior is now defined in led_control.h
+// Keeping this file for reference only
+
 #pragma once
 
 #include "led_strip.h"

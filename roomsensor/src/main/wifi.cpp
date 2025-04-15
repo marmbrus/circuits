@@ -22,6 +22,7 @@ static const char *TAG = "wifi";
 static volatile SystemState system_state = WIFI_CONNECTING;
 static esp_mqtt_client_handle_t mqtt_client;
 static uint8_t device_mac[6] = {0};
+static bool sntp_initialized = false;
 
 static void wifi_init_sta(void);
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
@@ -55,11 +56,17 @@ static void time_sync_notification_cb(struct timeval *tv) {
 }
 
 static void initialize_sntp(void) {
+    if (sntp_initialized) {
+        ESP_LOGI(TAG, "SNTP already initialized, skipping");
+        return;
+    }
+    
     ESP_LOGI(TAG, "Initializing SNTP");
     esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
     esp_sntp_setservername(0, "pool.ntp.org");
     esp_sntp_set_time_sync_notification_cb(time_sync_notification_cb);
     esp_sntp_init();
+    sntp_initialized = true;
 }
 
 static void publish_device_info(esp_ip4_addr_t ip) {
@@ -148,6 +155,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 {
     static uint32_t mqtt_error_count = 0;
     static bool mqtt_started = false;
+    
     // Handle WiFi events
     if (event_base == WIFI_EVENT) {
         switch (event_id) {
@@ -156,6 +164,8 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 break;
             case WIFI_EVENT_STA_DISCONNECTED:
                 system_state = WIFI_CONNECTING;
+                led_control_set_state(WIFI_CONNECTING);
+                mqtt_error_count = 0; // Reset error count on disconnect
                 esp_wifi_connect();
                 break;
         }
@@ -164,6 +174,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         mqtt_error_count = 0;
         system_state = WIFI_CONNECTED_MQTT_CONNECTING;
+        led_control_set_state(WIFI_CONNECTED_MQTT_CONNECTING);
 
         // Start MQTT client only if it hasn't been started yet
         if (!mqtt_started) {
@@ -176,39 +187,69 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
     // Handle MQTT events
     else {
+        // This section handles all MQTT events
         esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
-        switch ((esp_mqtt_event_id_t)event->event_id) {
-            case MQTT_EVENT_CONNECTED:
-                ESP_LOGI(TAG, "MQTT Connected");
-                mqtt_error_count = 0;
-                system_state = FULLY_CONNECTED;
-                led_control_set_state(FULLY_CONNECTED);
+        esp_mqtt_event_id_t mqtt_event = (esp_mqtt_event_id_t)event->event_id;
+        
+        // First check WiFi state - don't process MQTT errors if WiFi is disconnected
+        bool wifi_connected = false;
+        {
+            wifi_ap_record_t ap_info;
+            wifi_connected = (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK);
+        }
+        
+        // Process MQTT events based on event type
+        if (mqtt_event == MQTT_EVENT_CONNECTED) {
+            ESP_LOGI(TAG, "MQTT Connected");
+            mqtt_error_count = 0;
+            system_state = FULLY_CONNECTED;
+            led_control_set_state(FULLY_CONNECTED);
 
-                // Publish device info when MQTT is connected
-                ip_event_got_ip_t ip_event;
-                esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
-                publish_device_info(ip_event.ip_info.ip);
-                break;
-
-            case MQTT_EVENT_DISCONNECTED:
-                ESP_LOGI(TAG, "MQTT Disconnected");
-                if (system_state == FULLY_CONNECTED) {
-                    system_state = WIFI_CONNECTED_MQTT_CONNECTING;
-                    led_control_set_state(WIFI_CONNECTED_MQTT_CONNECTING);
-                }
-                break;
-            case MQTT_EVENT_ERROR:
-                ESP_LOGI(TAG, "MQTT Error");
+            // Publish device info when MQTT is connected
+            ip_event_got_ip_t ip_event;
+            esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
+            publish_device_info(ip_event.ip_info.ip);
+        }
+        else if (mqtt_event == MQTT_EVENT_DISCONNECTED) {
+            ESP_LOGI(TAG, "MQTT Disconnected");
+            
+            if (!wifi_connected) {
+                // WiFi is actually disconnected but we haven't received the WiFi event yet
+                // Update the state to be consistent
+                ESP_LOGI(TAG, "WiFi appears to be disconnected, updating state");
+                system_state = WIFI_CONNECTING;
+                led_control_set_state(WIFI_CONNECTING);
+            } else if (system_state == FULLY_CONNECTED) {
+                // Normal MQTT disconnection while WiFi is still connected
+                system_state = WIFI_CONNECTED_MQTT_CONNECTING;
+                led_control_set_state(WIFI_CONNECTED_MQTT_CONNECTING);
+            }
+            
+            mqtt_error_count = 0; // Reset error count on disconnect
+        }
+        else if (mqtt_event == MQTT_EVENT_ERROR) {
+            ESP_LOGI(TAG, "MQTT Error");
+            
+            // Only count MQTT errors when we're actually connected to WiFi
+            // Ignore MQTT errors when WiFi is disconnected - they're expected
+            if (!wifi_connected) {
+                // MQTT errors during WiFi disconnect are expected and should be ignored
+                ESP_LOGI(TAG, "Ignoring MQTT error during WiFi disconnect state");
+            }
+            else if (system_state == WIFI_CONNECTED_MQTT_CONNECTING || 
+                     system_state == FULLY_CONNECTED) {
+                // Only count errors when in an appropriate state
                 mqtt_error_count++;
+                ESP_LOGI(TAG, "MQTT Error count: %lu/3", (unsigned long)mqtt_error_count);
+                
                 if (mqtt_error_count >= 3) {
                     system_state = MQTT_ERROR_STATE;
                     mqtt_error_count = 0;
                     led_control_set_state(MQTT_ERROR_STATE);
                 }
-                break;
-            default:
-                break;
+            }
         }
+        // Other MQTT events are not used in this application
     }
 }
 

@@ -17,7 +17,7 @@ void RainbowChasing::update(led_strip_handle_t led_strip, uint8_t pulse_brightne
         last_update = current_time;
     }
 
-    for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
+    for (int i = 0; i < LED_STRIP_NUM_PIXELS; ++i) {
         uint8_t r, g, b;
         uint8_t hue = (baseHue + (i * 255 / LED_STRIP_NUM_PIXELS)) % 255;
         hsvToRgb(hue, 255, 255, &r, &g, &b);

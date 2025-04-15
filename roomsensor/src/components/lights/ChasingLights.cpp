@@ -33,7 +33,7 @@ void ChasingLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightnes
         last_update = current_time;
     }
 
-    for (int i = 3; i < LED_STRIP_NUM_PIXELS; ++i) {
+    for (int i = 0; i < LED_STRIP_NUM_PIXELS; ++i) {
         bool is_even = (i % 2) == 0;
         uint8_t* active_color = ((is_even && phase) || (!is_even && !phase)) ? color1 : color2;
 

@@ -10,6 +10,9 @@ idf_component_register(
         "FlashingLights.cpp"
         "PulsingLights.cpp"
         "SolidLights.cpp"
+        "ConnectingLights.cpp"
+        "ConnectedLights.cpp"
+        "DisconnectedLights.cpp"
     INCLUDE_DIRS "." "../common"
     PRIV_REQUIRES driver led_strip esp_common esp_timer
 ) 
