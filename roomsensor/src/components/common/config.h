@@ -8,8 +8,8 @@
 #define MQTT_OPERATION_TIMEOUT_MS 10000
 
 // I2C Configuration
-#define I2C_MASTER_SCL_IO           ((gpio_num_t)47)      // GPIO number for I2C master clock
-#define I2C_MASTER_SDA_IO           ((gpio_num_t)21)      // GPIO number for I2C master data
+#define I2C_MASTER_SCL_IO           GPIO_NUM_9      // GPIO number for I2C master clock
+#define I2C_MASTER_SDA_IO           GPIO_NUM_10     // GPIO number for I2C master data
 #define I2C_MASTER_NUM              I2C_NUM_0             // I2C port number
 #define I2C_MASTER_FREQ_HZ          400000                // I2C master clock frequency
 #define I2C_MASTER_TIMEOUT_MS       100
@@ -23,7 +23,7 @@
 #define IO_QUEUE_SIZE               10
 
 // LED Configuration
-#define LED_STRIP_GPIO              GPIO_NUM_48
+#define LED_STRIP_GPIO              GPIO_NUM_3
 #define LED_STRIP_NUM_PIXELS        43  // Counted with test routine
 #define LED_STRIP_NUM_BRIGHTNESS    40  // Maximum brightness (0-255)
 #define LED_UPDATE_TASK_STACK_SIZE  4096
