@@ -644,7 +644,6 @@
 	(hierarchical_label "I2S{SCK,WS,SD}"
 		(shape input)
 		(at 73.66 40.64 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -656,7 +655,6 @@
 	(hierarchical_label "3v3"
 		(shape input)
 		(at 25.4 33.02 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)

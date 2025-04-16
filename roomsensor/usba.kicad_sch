@@ -1061,7 +1061,6 @@
 	)
 	(label "USB.DP"
 		(at 144.78 111.76 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1072,7 +1071,6 @@
 	)
 	(label "USB.DN"
 		(at 144.78 109.22 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1084,7 +1082,6 @@
 	(hierarchical_label "USB{DP,DN}"
 		(shape input)
 		(at 163.83 106.68 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1096,7 +1093,6 @@
 	(hierarchical_label "VUSB"
 		(shape input)
 		(at 158.75 83.82 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1401,9 +1397,9 @@
 		(at 113.03 113.03 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "e31b1b9c-4e12-4bf4-900d-05b1b3d2d7ad")
 		(property "Reference" "U802"
