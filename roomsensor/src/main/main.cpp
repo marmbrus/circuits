@@ -4,46 +4,12 @@
 #include "esp_event.h"
 #include "mqtt_client.h"
 #include "wifi.h"
-#include "sensors.h"
 #include "led_control.h"
 #include "cJSON.h"
 #include "communication.h"
+#include "i2c.h"
 
 static const char* TAG = "main";
-
-// Callback functions for sensor events
-void on_movement_detected() {
-    ESP_LOGI(TAG, "Movement detected");
-    
-    // Publish movement notification
-    cJSON *movement_json = cJSON_CreateObject();
-    cJSON_AddBoolToObject(movement_json, "detected", true);
-    
-    char *movement_string = cJSON_Print(movement_json);
-    publish_to_topic("movement", movement_string);
-    
-    cJSON_free(movement_string);
-    cJSON_Delete(movement_json);
-}
-
-void on_orientation_changed(device_orientation_t orientation) {
-    ESP_LOGI(TAG, "Orientation changed to: %d", orientation);
-    
-    const char* orientation_names[] = {
-        "up", "down", "left", "right", "top", "bottom", "unknown"
-    };
-    
-    // Publish orientation change
-    cJSON *orientation_json = cJSON_CreateObject();
-    cJSON_AddStringToObject(orientation_json, "orientation", 
-                          orientation_names[orientation]);
-    
-    char *orientation_string = cJSON_Print(orientation_json);
-    publish_to_topic("orientation", orientation_string);
-    
-    cJSON_free(orientation_string);
-    cJSON_Delete(orientation_json);
-}
 
 extern "C" void app_main(void)
 {
@@ -60,9 +26,13 @@ extern "C" void app_main(void)
 
     // Initialize WiFi and MQTT
     wifi_mqtt_init();
-    
-    // Initialize sensors with callbacks
-    sensors_init_with_callbacks(on_movement_detected, on_orientation_changed);
+
+    // Initialize I2C subsystem
+    if (!init_i2c()) {
+        ESP_LOGE(TAG, "Failed to initialize I2C subsystem");
+    } else {
+        ESP_LOGI(TAG, "I2C subsystem initialized successfully");
+    }
 
     // Main loop
     while (1) {

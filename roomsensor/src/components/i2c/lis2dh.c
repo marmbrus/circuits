@@ -239,65 +239,6 @@ esp_err_t lis2dh12_data_ready(bool *available)
     return ESP_OK;
 }
 
-esp_err_t lis2dh12_configure_movement_interrupt()
-{
-    esp_err_t ret;
-    uint8_t reg;
-
-    // Temporarily disable all interrupts
-    ret = write_register(LIS2DH12_CTRL_REG3, 0x00);
-    if (ret != ESP_OK) return ret;
-
-    // Reset INT1_CFG first
-    ret = write_register(LIS2DH12_INT1_CFG, 0x00);
-    if (ret != ESP_OK) return ret;
-
-    // Clear any pending interrupts
-    ret = read_register(LIS2DH12_INT1_SRC, &reg);
-    if (ret != ESP_OK) return ret;
-
-    // Configure CTRL_REG2 for high-pass filter
-    // 0x01 = Enable HP filter for INT1
-    ret = write_register(LIS2DH12_CTRL_REG2, 0x01);
-    if (ret != ESP_OK) return ret;
-
-    // Set data rate and enable all axes in CTRL_REG1
-    // 0x57 = 01010111b (50Hz, all axes enabled)
-    ret = write_register(LIS2DH12_CTRL_REG1, 0x57);
-    if (ret != ESP_OK) return ret;
-
-    // Configure CTRL_REG4 for high resolution mode and ±2g range
-    // 0x88 = 10001000b (BDU enabled, HR mode, ±2g range)
-    ret = write_register(LIS2DH12_CTRL_REG4, 0x88);
-    if (ret != ESP_OK) return ret;
-
-    // Configure CTRL_REG5 (default values)
-    ret = write_register(LIS2DH12_CTRL_REG5, 0x00);
-    if (ret != ESP_OK) return ret;
-
-    // Set interrupt threshold (adjust if needed)
-    ret = write_register(LIS2DH12_INT1_THS, 5);  // ~80mg threshold
-    if (ret != ESP_OK) return ret;
-
-    // Set interrupt duration
-    ret = write_register(LIS2DH12_INT1_DURATION, 0);  // No minimum duration
-    if (ret != ESP_OK) return ret;
-
-    // Configure INT1_CFG for OR combination of high events on all axes
-    // 0x2A = 00101010b (OR combination of high events on X, Y, Z)
-    ret = write_register(LIS2DH12_INT1_CFG, 0x2A);
-    if (ret != ESP_OK) return ret;
-
-    // Enable interrupt on INT1 pin in CTRL_REG3
-    // 0x40 = 01000000b (INT1 interrupt enabled)
-    ret = write_register(LIS2DH12_CTRL_REG3, 0x40);
-    if (ret != ESP_OK) return ret;
-
-    vTaskDelay(pdMS_TO_TICKS(10));  // Small delay to let settings take effect
-
-    return ESP_OK;
-}
-
 // Add a new function to periodically check and reconfigure the interrupt if needed
 esp_err_t lis2dh12_check_interrupt_config()
 {
@@ -310,7 +251,47 @@ esp_err_t lis2dh12_check_interrupt_config()
 
     if (reg != 0x40) {
         ESP_LOGW(TAG, "Interrupt configuration lost, reconfiguring...");
-        return lis2dh12_configure_movement_interrupt();
+        
+        // Directly reconfigure the interrupt since lis2dh12_configure_movement_interrupt was moved
+        // Temporarily disable all interrupts
+        ret = write_register(LIS2DH12_CTRL_REG3, 0x00);
+        if (ret != ESP_OK) return ret;
+
+        // Reset INT1_CFG
+        ret = write_register(LIS2DH12_INT1_CFG, 0x00);
+        if (ret != ESP_OK) return ret;
+
+        // Clear any pending interrupts
+        ret = read_register(LIS2DH12_INT1_SRC, &reg);
+        if (ret != ESP_OK) return ret;
+
+        // Configure CTRL_REG2 for high-pass filter
+        ret = write_register(LIS2DH12_CTRL_REG2, 0x01);
+        if (ret != ESP_OK) return ret;
+
+        // Configure CTRL_REG1 (50Hz, all axes enabled)
+        ret = write_register(LIS2DH12_CTRL_REG1, 0x57);
+        if (ret != ESP_OK) return ret;
+
+        // Configure CTRL_REG4 for high resolution
+        ret = write_register(LIS2DH12_CTRL_REG4, 0x88);
+        if (ret != ESP_OK) return ret;
+
+        // Set interrupt threshold and duration
+        ret = write_register(LIS2DH12_INT1_THS, 5);
+        if (ret != ESP_OK) return ret;
+        ret = write_register(LIS2DH12_INT1_DURATION, 0);
+        if (ret != ESP_OK) return ret;
+
+        // Configure INT1_CFG
+        ret = write_register(LIS2DH12_INT1_CFG, 0x2A);
+        if (ret != ESP_OK) return ret;
+
+        // Enable interrupt on INT1 pin
+        ret = write_register(LIS2DH12_CTRL_REG3, 0x40);
+        if (ret != ESP_OK) return ret;
+
+        vTaskDelay(pdMS_TO_TICKS(10));  // Small delay
     }
 
     return ESP_OK;
@@ -349,9 +330,50 @@ esp_err_t lis2dh12_configure_normal_mode(void)
 
 esp_err_t lis2dh12_configure_sleep_mode(void)
 {
-    // This is essentially the same as configure_movement_interrupt
-    // but we'll make it explicit for clarity
-    return lis2dh12_configure_movement_interrupt();
+    // This function previously called configure_movement_interrupt
+    // Now we'll implement the functionality directly
+    esp_err_t ret;
+    uint8_t reg;
+
+    // Temporarily disable all interrupts
+    ret = write_register(LIS2DH12_CTRL_REG3, 0x00);
+    if (ret != ESP_OK) return ret;
+
+    // Reset INT1_CFG
+    ret = write_register(LIS2DH12_INT1_CFG, 0x00);
+    if (ret != ESP_OK) return ret;
+
+    // Clear any pending interrupts
+    ret = read_register(LIS2DH12_INT1_SRC, &reg);
+    if (ret != ESP_OK) return ret;
+
+    // Configure CTRL_REG2 for high-pass filter
+    ret = write_register(LIS2DH12_CTRL_REG2, 0x01);
+    if (ret != ESP_OK) return ret;
+
+    // Configure CTRL_REG1 (50Hz, all axes enabled)
+    ret = write_register(LIS2DH12_CTRL_REG1, 0x57);
+    if (ret != ESP_OK) return ret;
+
+    // Configure CTRL_REG4 for high resolution
+    ret = write_register(LIS2DH12_CTRL_REG4, 0x88);
+    if (ret != ESP_OK) return ret;
+
+    // Set interrupt threshold and duration
+    ret = write_register(LIS2DH12_INT1_THS, 5);
+    if (ret != ESP_OK) return ret;
+    ret = write_register(LIS2DH12_INT1_DURATION, 0);
+    if (ret != ESP_OK) return ret;
+
+    // Configure INT1_CFG
+    ret = write_register(LIS2DH12_INT1_CFG, 0x2A);
+    if (ret != ESP_OK) return ret;
+
+    // Enable interrupt on INT1 pin
+    ret = write_register(LIS2DH12_CTRL_REG3, 0x40);
+    if (ret != ESP_OK) return ret;
+
+    return ESP_OK;
 }
 
 // Make the read_register function public

@@ -1,0 +1,415 @@
+#include "lis2dh_sensor.h"
+#include "esp_log.h"
+#include <string.h>
+#include <math.h> 
+#include "i2c.h"
+#include "driver/gpio.h"
+
+static const char *TAG = "LIS2DHSensor";
+
+// Static GPIO ISR handler
+static void IRAM_ATTR lis2dh_isr_handler(void* arg)
+{
+    // Call the signalSensorInterrupt function when interrupt triggers
+    signalSensorInterrupt();
+}
+
+LIS2DHSensor::LIS2DHSensor() : 
+    I2CSensor(nullptr),
+    _bus_handle(nullptr),
+    _lastAccel{0, 0, 0}, 
+    _movementDetected(false),
+    _initialized(false) {
+    ESP_LOGD(TAG, "LIS2DHSensor constructed");
+}
+
+uint8_t LIS2DHSensor::addr() const {
+    return LIS2DH12_I2C_ADDR;
+}
+
+std::string LIS2DHSensor::name() const {
+    return "LIS2DH12 Motion Sensor";
+}
+
+bool LIS2DHSensor::isInitialized() const {
+    if (!_initialized) {
+        ESP_LOGD(TAG, "Sensor not initialized. Call init() first.");
+    }
+    return _initialized;
+}
+
+// Internal methods that don't check initialization status
+esp_err_t LIS2DHSensor::_writeRegister(uint8_t reg, uint8_t value) {
+    uint8_t write_buf[2] = {reg, value};
+    esp_err_t ret = i2c_master_transmit(_dev_handle, write_buf, 2, 100); // 100ms timeout
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to write register 0x%02x: %s", reg, esp_err_to_name(ret));
+    }
+    return ret;
+}
+
+esp_err_t LIS2DHSensor::_readRegister(uint8_t reg, uint8_t *value) {
+    esp_err_t ret = i2c_master_transmit_receive(_dev_handle, &reg, 1, value, 1, 100); // 100ms timeout
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read register 0x%02x: %s", reg, esp_err_to_name(ret));
+    }
+    return ret;
+}
+
+// Public methods that check initialization status
+esp_err_t LIS2DHSensor::writeRegister(uint8_t reg, uint8_t value) {
+    if (!isInitialized()) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    return _writeRegister(reg, value);
+}
+
+esp_err_t LIS2DHSensor::readRegister(uint8_t reg, uint8_t *value) {
+    if (!isInitialized()) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    return _readRegister(reg, value);
+}
+
+bool LIS2DHSensor::init() {
+    ESP_LOGE(TAG, "Invalid init() call without bus handle. Use init(i2c_master_bus_handle_t) instead.");
+    return false;
+}
+
+bool LIS2DHSensor::init(i2c_master_bus_handle_t bus_handle) {
+    if (_initialized) {
+        ESP_LOGW(TAG, "Sensor already initialized");
+        return true;
+    }
+    
+    if (bus_handle == nullptr) {
+        ESP_LOGE(TAG, "Invalid bus handle (null)");
+        return false;
+    }
+    
+    _bus_handle = bus_handle;
+    
+    ESP_LOGI(TAG, "Initializing LIS2DH12 accelerometer");
+    
+    esp_err_t ret;
+    uint8_t whoami;
+    
+    // Configure device
+    i2c_device_config_t dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+        .device_address = LIS2DH12_I2C_ADDR,
+        .scl_speed_hz = 400000,
+    };
+
+    // Create device handle
+    ret = i2c_master_bus_add_device(_bus_handle, &dev_cfg, &_dev_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add device to I2C bus: %s", esp_err_to_name(ret));
+        return false;
+    }
+
+    // Check device ID - use internal methods that don't check initialization status
+    ret = _readRegister(WHO_AM_I, &whoami);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read WHO_AM_I register: %s", esp_err_to_name(ret));
+        return false;
+    }
+
+    if (whoami != LIS2DH12_ID) {
+        ESP_LOGE(TAG, "Invalid WHO_AM_I value: 0x%02x", whoami);
+        return false;
+    }
+
+    // Configure default settings - use internal methods
+    // Enable all axes, normal mode, 50Hz (0x57 = 01010111b)
+    ret = _writeRegister(CTRL_REG1, 0x57);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to configure CTRL_REG1: %s", esp_err_to_name(ret));
+        return false;
+    }
+
+    // High resolution mode (12-bit) and ±2g range
+    // BDU=1 (Block Data Update), HR=1 (High Resolution), FS=00 (±2g)
+    // 0x88 = 10001000b
+    ret = _writeRegister(CTRL_REG4, 0x88);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to configure CTRL_REG4: %s", esp_err_to_name(ret));
+        return false;
+    }
+    
+    // Mark as initialized BEFORE configuring sleep mode which uses public methods
+    _initialized = true;
+    
+    // Configure movement interrupt instead of sleep mode
+    if (configureMovementInterrupt() != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to configure movement interrupt");
+        return false;
+    }
+    
+    // Configure GPIO pin for LIS2DH INT1 interrupt (IO13)
+    gpio_config_t io_conf = {};
+    io_conf.pin_bit_mask = (1ULL << 13);  // IO13
+    io_conf.mode = GPIO_MODE_INPUT;
+    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+    io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;  // Pull down when inactive
+    io_conf.intr_type = GPIO_INTR_POSEDGE;        // Interrupt on rising edge
+    
+    ret = gpio_config(&io_conf);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to configure GPIO for interrupt: %s", esp_err_to_name(ret));
+        return false;
+    }
+    
+    // Install GPIO ISR service if not already installed
+    ret = gpio_install_isr_service(0);
+    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {  // ESP_ERR_INVALID_STATE means already installed
+        ESP_LOGE(TAG, "Failed to install GPIO ISR service: %s", esp_err_to_name(ret));
+        return false;
+    }
+    
+    // Add handler for GPIO interrupt
+    ret = gpio_isr_handler_add((gpio_num_t)13, lis2dh_isr_handler, NULL);
+    
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add GPIO ISR handler: %s", esp_err_to_name(ret));
+        return false;
+    }
+    
+    ESP_LOGI(TAG, "LIS2DH12 accelerometer initialized successfully with interrupt on IO13");
+    return true;
+}
+
+esp_err_t LIS2DHSensor::getAccelData(AccelData &accel) {
+    if (!isInitialized()) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    uint8_t data[6];
+    int16_t raw_x, raw_y, raw_z;
+    float sensitivity = 0.001f; // 1 mg/LSB for ±2g in high resolution mode
+    
+    // Read all acceleration registers in one transaction
+    uint8_t reg = OUT_X_L | 0x80;  // Set MSB for multi-byte read
+    esp_err_t ret = i2c_master_transmit_receive(_dev_handle, &reg, 1, data, 6, 100); // 100ms timeout
+
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read acceleration data: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    // Combine high and low bytes and sign extend the 12-bit values
+    raw_x = ((int16_t)(data[1] << 8 | data[0])) >> 4;
+    raw_y = ((int16_t)(data[3] << 8 | data[2])) >> 4;
+    raw_z = ((int16_t)(data[5] << 8 | data[4])) >> 4;
+
+    // Convert to g's
+    accel.x = raw_x * sensitivity;
+    accel.y = raw_y * sensitivity;
+    accel.z = raw_z * sensitivity;
+
+    ESP_LOGD(TAG, "Accel Data: X=%.3f Y=%.3f Z=%.3f g", accel.x, accel.y, accel.z);
+
+    return ESP_OK;
+}
+
+bool LIS2DHSensor::isSignificantMovement(float x, float y, float z) {
+    bool significant = (
+        fabsf(x - _lastAccel.x) > MOVEMENT_THRESHOLD ||
+        fabsf(y - _lastAccel.y) > MOVEMENT_THRESHOLD ||
+        fabsf(z - _lastAccel.z) > MOVEMENT_THRESHOLD
+    );
+
+    _lastAccel.x = x;
+    _lastAccel.y = y;
+    _lastAccel.z = z;
+
+    return significant;
+}
+
+void LIS2DHSensor::poll() {
+    if (!isInitialized()) {
+        ESP_LOGE(TAG, "Cannot poll: sensor not initialized");
+        return;
+    }
+    
+    // Method 1: Poll acceleration data and check for significant movement
+    AccelData accel;
+    esp_err_t ret = getAccelData(accel);
+    
+    if (ret == ESP_OK) {
+        _movementDetected = isSignificantMovement(accel.x, accel.y, accel.z);
+        if (_movementDetected) {
+            ESP_LOGI(TAG, "Significant movement detected!");
+        }
+    }
+    
+    // Method 2: Check interrupt status register if in interrupt mode
+    uint8_t int_source;
+    ret = readRegister(INT1_SRC, &int_source);
+    
+    if (ret == ESP_OK && (int_source & 0x40)) { // 0x40 = IA bit (Interrupt Active)
+        ESP_LOGI(TAG, "Movement interrupt detected! (INT1_SRC: 0x%02x)", int_source);
+        _movementDetected = true;
+    }
+}
+
+bool LIS2DHSensor::hasMovement() {
+    if (!isInitialized()) {
+        ESP_LOGE(TAG, "Cannot check movement: sensor not initialized");
+        return false;
+    }
+    
+    bool movement = _movementDetected;
+    _movementDetected = false; // Clear the flag after reading
+    return movement;
+}
+
+bool LIS2DHSensor::configureSleepMode() {
+    if (!isInitialized()) {
+        ESP_LOGE(TAG, "Cannot configure sleep mode: sensor not initialized");
+        return false;
+    }
+    
+    ESP_LOGI(TAG, "Configuring LIS2DH12 for movement detection (sleep mode)");
+    
+    esp_err_t ret;
+    
+    // Temporarily disable all interrupts
+    ret = writeRegister(CTRL_REG3, 0x00);
+    if (ret != ESP_OK) return false;
+
+    // Reset INT1_CFG first
+    ret = writeRegister(INT1_CFG, 0x00);
+    if (ret != ESP_OK) return false;
+
+    // Clear any pending interrupts
+    uint8_t reg;
+    ret = readRegister(INT1_SRC, &reg);
+    if (ret != ESP_OK) return false;
+
+    // Configure CTRL_REG2 for high-pass filter
+    // 0x01 = Enable HP filter for INT1
+    ret = writeRegister(CTRL_REG2, 0x01);
+    if (ret != ESP_OK) return false;
+
+    // Set data rate and enable all axes in CTRL_REG1
+    // 0x57 = 01010111b (50Hz, all axes enabled)
+    ret = writeRegister(CTRL_REG1, 0x57);
+    if (ret != ESP_OK) return false;
+
+    // Configure CTRL_REG4 for high resolution mode and ±2g range
+    // 0x88 = 10001000b (BDU enabled, HR mode, ±2g range)
+    ret = writeRegister(CTRL_REG4, 0x88);
+    if (ret != ESP_OK) return false;
+
+    // Set interrupt threshold (adjust if needed)
+    ret = writeRegister(INT1_THS, 5);  // ~80mg threshold (5 * 16mg = 80mg)
+    if (ret != ESP_OK) return false;
+
+    // Set interrupt duration
+    ret = writeRegister(INT1_DURATION, 0);  // No minimum duration
+    if (ret != ESP_OK) return false;
+
+    // Configure INT1_CFG for OR combination of high events on all axes
+    // 0x2A = 00101010b (OR combination of high events on X, Y, Z)
+    ret = writeRegister(INT1_CFG, 0x2A);
+    if (ret != ESP_OK) return false;
+
+    // Enable interrupt on INT1 pin in CTRL_REG3
+    // 0x40 = 01000000b (INT1 interrupt enabled)
+    ret = writeRegister(CTRL_REG3, 0x40);
+    if (ret != ESP_OK) return false;
+    
+    ESP_LOGI(TAG, "LIS2DH12 configured for movement detection");
+    return true;
+}
+
+bool LIS2DHSensor::configureNormalMode() {
+    if (!isInitialized()) {
+        ESP_LOGE(TAG, "Cannot configure normal mode: sensor not initialized");
+        return false;
+    }
+    
+    ESP_LOGI(TAG, "Configuring LIS2DH12 for normal mode");
+    
+    esp_err_t ret;
+
+    // Disable interrupts temporarily
+    ret = writeRegister(CTRL_REG3, 0x00);
+    if (ret != ESP_OK) return false;
+
+    // Configure CTRL_REG2 to disable high-pass filter
+    ret = writeRegister(CTRL_REG2, 0x00);
+    if (ret != ESP_OK) return false;
+
+    // Set data rate and enable all axes in CTRL_REG1
+    // 0x57 = 01010111b (50Hz, all axes enabled)
+    ret = writeRegister(CTRL_REG1, 0x57);
+    if (ret != ESP_OK) return false;
+
+    // Configure CTRL_REG4 for high resolution mode and ±2g range
+    // 0x88 = 10001000b (BDU enabled, HR mode, ±2g range)
+    ret = writeRegister(CTRL_REG4, 0x88);
+    if (ret != ESP_OK) return false;
+    
+    ESP_LOGI(TAG, "LIS2DH12 configured for normal mode");
+    return true;
+}
+
+esp_err_t LIS2DHSensor::configureMovementInterrupt() {
+    if (!isInitialized()) {
+        ESP_LOGE(TAG, "Cannot configure interrupt: sensor not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    esp_err_t ret;
+    uint8_t reg;
+
+    // Temporarily disable all interrupts
+    ret = writeRegister(CTRL_REG3, 0x00);
+    if (ret != ESP_OK) return ret;
+
+    // Reset INT1_CFG first
+    ret = writeRegister(INT1_CFG, 0x00);
+    if (ret != ESP_OK) return ret;
+
+    // Clear any pending interrupts
+    ret = readRegister(INT1_SRC, &reg);
+    if (ret != ESP_OK) return ret;
+
+    // Configure CTRL_REG2 for high-pass filter
+    // 0x01 = Enable HP filter for INT1
+    ret = writeRegister(CTRL_REG2, 0x01);
+    if (ret != ESP_OK) return ret;
+
+    // Set data rate and enable all axes in CTRL_REG1
+    // 0x57 = 01010111b (50Hz, all axes enabled)
+    ret = writeRegister(CTRL_REG1, 0x57);
+    if (ret != ESP_OK) return ret;
+
+    // Configure CTRL_REG4 for high resolution mode and ±2g range
+    // 0x88 = 10001000b (BDU enabled, HR mode, ±2g range)
+    ret = writeRegister(CTRL_REG4, 0x88);
+    if (ret != ESP_OK) return ret;
+
+    // Set interrupt threshold (adjust if needed)
+    ret = writeRegister(INT1_THS, 5);  // ~80mg threshold (5 * 16mg = 80mg)
+    if (ret != ESP_OK) return ret;
+
+    // Set interrupt duration
+    ret = writeRegister(INT1_DURATION, 0);  // No minimum duration
+    if (ret != ESP_OK) return ret;
+
+    // Configure INT1_CFG for OR combination of high events on all axes
+    // 0x2A = 00101010b (OR combination of high events on X, Y, Z)
+    ret = writeRegister(INT1_CFG, 0x2A);
+    if (ret != ESP_OK) return ret;
+
+    // Enable interrupt on INT1 pin in CTRL_REG3
+    // 0x40 = 01000000b (INT1 interrupt enabled)
+    ret = writeRegister(CTRL_REG3, 0x40);
+    if (ret != ESP_OK) return ret;
+    
+    ESP_LOGI(TAG, "Movement interrupt configured for LIS2DH12");
+    return ESP_OK;
+} 
