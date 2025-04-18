@@ -27,6 +27,12 @@ extern "C" void app_main(void)
     // Initialize WiFi and MQTT
     wifi_mqtt_init();
 
+    // Initialize tag system - if this fails, set test tags
+    if (initialize_tag_system() != ESP_OK) {
+        ESP_LOGW(TAG, "Setting test device tags since they weren't found in NVS");
+        set_device_tags_for_testing();
+    }
+
     // Initialize I2C subsystem
     if (!init_i2c()) {
         ESP_LOGE(TAG, "Failed to initialize I2C subsystem");
