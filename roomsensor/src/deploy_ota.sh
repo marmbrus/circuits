@@ -28,12 +28,8 @@ if [ -z "$GIT_HASH" ]; then
     exit 1
 fi
 
-# Get number of commits since the beginning - this serves as a monotonically increasing build number
-BUILD_NUMBER=$(git rev-list --count HEAD)
-echo "Build number (commit count): $BUILD_NUMBER"
-
-# Get the full git describe output which includes tag information and commit count since last tag
-GIT_DESCRIBE=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0-$BUILD_NUMBER-g$GIT_HASH")
+# Get the full git describe output which includes tag information
+GIT_DESCRIBE=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0-g$GIT_HASH")
 echo "Git describe: $GIT_DESCRIBE"
 
 # Check if Git describe contains "dirty"
@@ -47,9 +43,10 @@ echo "Building project with idf.py..."
 idf.py build || { echo "Error: Build failed"; exit 1; }
 echo "Build successful"
 
-# Build timestamp (milliseconds since epoch for easier comparison)
+# Build timestamp (seconds since epoch for version comparison)
 BUILD_TIMESTAMP=$(date +%s)
 BUILD_ISO_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+echo "Build timestamp: $BUILD_ISO_TIME ($BUILD_TIMESTAMP)"
 
 # Check if the binary exists
 if [ ! -f "$BIN_FILE" ]; then
@@ -65,19 +62,18 @@ echo "Using binary: $BIN_FILE (size: $BIN_SIZE bytes)"
 BIN_FILENAME="firmware-${GIT_HASH}.bin"
 MANIFEST_FILE="manifest.json"
 
-# Create manifest.json with additional version information for comparison
+# Create manifest.json with version information
 cat > ${MANIFEST_FILE} << EOF
 {
     "version": "${GIT_HASH}",
     "build_timestamp": "${BUILD_ISO_TIME}",
     "build_timestamp_epoch": ${BUILD_TIMESTAMP},
-    "build_number": ${BUILD_NUMBER},
     "git_describe": "${GIT_DESCRIBE}",
     "url": "${BASE_URL}/${BIN_FILENAME}"
 }
 EOF
 
-echo "Created manifest file with version ${GIT_HASH}, build number ${BUILD_NUMBER}"
+echo "Created manifest file with version ${GIT_HASH}, timestamp ${BUILD_ISO_TIME}"
 
 # Copy bin file to a new name with git hash
 cp "${BIN_FILE}" "${BIN_FILENAME}"
