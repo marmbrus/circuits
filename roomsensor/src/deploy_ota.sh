@@ -7,6 +7,50 @@ REMOTE_DIR="/home/marmbrus/gaia/webapp/public"
 BASE_URL="http://gaia.home:3000"
 BIN_FILE="build/surprise.bin"
 
+# Check if we're in a git repository
+if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+# Check for uncommitted changes
+if [[ -n $(git status --porcelain) ]]; then
+    echo "Error: Git working directory is not clean. Please commit or stash your changes first."
+    echo "Uncommitted changes:"
+    git status --short
+    exit 1
+fi
+
+# Get git information
+GIT_HASH=$(git rev-parse --short HEAD)
+if [ -z "$GIT_HASH" ]; then
+    echo "Error: Could not get git hash. Make sure you're in a git repository."
+    exit 1
+fi
+
+# Get number of commits since the beginning - this serves as a monotonically increasing build number
+BUILD_NUMBER=$(git rev-list --count HEAD)
+echo "Build number (commit count): $BUILD_NUMBER"
+
+# Get the full git describe output which includes tag information and commit count since last tag
+GIT_DESCRIBE=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0-$BUILD_NUMBER-g$GIT_HASH")
+echo "Git describe: $GIT_DESCRIBE"
+
+# Check if Git describe contains "dirty"
+if [[ "$GIT_DESCRIBE" == *-dirty ]]; then
+    echo "Error: Git working directory contains uncommitted changes. Please commit all changes first."
+    exit 1
+fi
+
+# Run idf.py build first to ensure the binary is up-to-date
+echo "Building project with idf.py..."
+idf.py build || { echo "Error: Build failed"; exit 1; }
+echo "Build successful"
+
+# Build timestamp (milliseconds since epoch for easier comparison)
+BUILD_TIMESTAMP=$(date +%s)
+BUILD_ISO_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
 # Check if the binary exists
 if [ ! -f "$BIN_FILE" ]; then
     echo "Error: Could not find firmware binary file at $BIN_FILE"
@@ -17,27 +61,23 @@ fi
 BIN_SIZE=$(stat -f%z "$BIN_FILE")
 echo "Using binary: $BIN_FILE (size: $BIN_SIZE bytes)"
 
-# Get git hash
-GIT_HASH=$(git rev-parse --short HEAD)
-if [ -z "$GIT_HASH" ]; then
-    echo "Error: Could not get git hash. Make sure you're in a git repository."
-    exit 1
-fi
-
 # Create bin filename with git hash
 BIN_FILENAME="firmware-${GIT_HASH}.bin"
 MANIFEST_FILE="manifest.json"
 
-# Create manifest.json
+# Create manifest.json with additional version information for comparison
 cat > ${MANIFEST_FILE} << EOF
 {
     "version": "${GIT_HASH}",
-    "build_timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+    "build_timestamp": "${BUILD_ISO_TIME}",
+    "build_timestamp_epoch": ${BUILD_TIMESTAMP},
+    "build_number": ${BUILD_NUMBER},
+    "git_describe": "${GIT_DESCRIBE}",
     "url": "${BASE_URL}/${BIN_FILENAME}"
 }
 EOF
 
-echo "Created manifest file with version ${GIT_HASH}"
+echo "Created manifest file with version ${GIT_HASH}, build number ${BUILD_NUMBER}"
 
 # Copy bin file to a new name with git hash
 cp "${BIN_FILE}" "${BIN_FILENAME}"
