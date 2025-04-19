@@ -60,7 +60,7 @@ extern "C" void app_main(void)
     if (check_for_ota_update() != ESP_OK) {
         ESP_LOGW(TAG, "OTA update check failed");
     } else {
-        ESP_LOGI(TAG, "OTA update check completed");
+        ESP_LOGI(TAG, "OTA update check completed - test");
     }
 
     // Main loop
