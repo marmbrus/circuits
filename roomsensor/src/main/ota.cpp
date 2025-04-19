@@ -15,7 +15,7 @@ static const char *TAG = "ota";
 static const char *MANIFEST_URL = "http://gaia.home:3000/manifest.json";
 static char current_version[33] = {0}; // Store current firmware version (git hash)
 static char extracted_hash[33] = {0};  // Store extracted Git hash
-static time_t current_build_time = 0;  // Current firmware build timestamp (if known)
+static time_t current_build_time = 0;  // Current firmware build timestamp (converted to UTC)
 static time_t last_ota_timestamp = 0;  // Last successful OTA timestamp from NVS
 
 // NVS keys
@@ -91,8 +91,8 @@ static void load_last_ota_info() {
     if (err == ESP_OK) {
         char time_str[64];
         struct tm timeinfo;
-        localtime_r(&last_ota_timestamp, &timeinfo);
-        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &timeinfo);
+        gmtime_r(&last_ota_timestamp, &timeinfo); // Use gmtime for UTC
+        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S UTC", &timeinfo);
         ESP_LOGI(TAG, "Last OTA timestamp: %s (epoch: %ld)", time_str, (long)last_ota_timestamp);
     } else {
         ESP_LOGW(TAG, "Failed to read last OTA timestamp: %s", esp_err_to_name(err));
@@ -181,29 +181,72 @@ static void get_current_version() {
         snprintf(date_str, sizeof(date_str), "%s %s", app_desc.date, app_desc.time);
 
         // Try different format strings for flexibility
+        bool time_parsed = false;
         if (strptime(date_str, "%b %d %Y %H:%M:%S", &tm_time) != NULL) {
+            tm_time.tm_isdst = -1; // Let the system determine DST
             current_build_time = mktime(&tm_time);
+            // Convert to UTC by adding the timezone offset
+            // mktime returns local time, so adjust to UTC
+            time_t gmt_offset;
+            struct tm *lt = localtime(&current_build_time);
+            lt->tm_isdst = 0; // No DST for mktime calculation
+            gmt_offset = mktime(lt) - mktime(gmtime(&current_build_time));
+            current_build_time += gmt_offset; // Add offset to convert to UTC
+
+            time_parsed = true;
             ESP_LOGI(TAG, "Parsed with format 1 (MMM DD YYYY HH:MM:SS)");
         } else if (strptime(date_str, "%B %d %Y %H:%M:%S", &tm_time) != NULL) {
+            tm_time.tm_isdst = -1;
             current_build_time = mktime(&tm_time);
+            // Convert to UTC
+            time_t gmt_offset;
+            struct tm *lt = localtime(&current_build_time);
+            lt->tm_isdst = 0;
+            gmt_offset = mktime(lt) - mktime(gmtime(&current_build_time));
+            current_build_time += gmt_offset;
+
+            time_parsed = true;
             ESP_LOGI(TAG, "Parsed with format 2 (Month DD YYYY HH:MM:SS)");
         } else if (strptime(date_str, "%Y-%m-%d %H:%M:%S", &tm_time) != NULL) {
+            tm_time.tm_isdst = -1;
             current_build_time = mktime(&tm_time);
+            // Convert to UTC
+            time_t gmt_offset;
+            struct tm *lt = localtime(&current_build_time);
+            lt->tm_isdst = 0;
+            gmt_offset = mktime(lt) - mktime(gmtime(&current_build_time));
+            current_build_time += gmt_offset;
+
+            time_parsed = true;
             ESP_LOGI(TAG, "Parsed with format 3 (YYYY-MM-DD HH:MM:SS)");
         } else if (strptime(app_desc.date, "%b %d %Y", &tm_time) != NULL) {
             // Try just the date part
             if (strptime(app_desc.time, "%H:%M:%S", &tm_time) != NULL) {
+                tm_time.tm_isdst = -1;
                 current_build_time = mktime(&tm_time);
+                // Convert to UTC
+                time_t gmt_offset;
+                struct tm *lt = localtime(&current_build_time);
+                lt->tm_isdst = 0;
+                gmt_offset = mktime(lt) - mktime(gmtime(&current_build_time));
+                current_build_time += gmt_offset;
+
+                time_parsed = true;
                 ESP_LOGI(TAG, "Parsed with split date/time format");
             }
         }
 
-        if (current_build_time > 0) {
+        if (time_parsed && current_build_time > 0) {
             char time_str[64];
             struct tm timeinfo;
+            gmtime_r(&current_build_time, &timeinfo); // Use gmtime for UTC
+            strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S UTC", &timeinfo);
+            ESP_LOGI(TAG, "Extracted build time (UTC): %s (epoch: %ld)", time_str, (long)current_build_time);
+
+            // Also show local time for reference
             localtime_r(&current_build_time, &timeinfo);
             strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &timeinfo);
-            ESP_LOGI(TAG, "Extracted build time: %s (epoch: %ld)", time_str, (long)current_build_time);
+            ESP_LOGI(TAG, "Local equivalent: %s", time_str);
         } else {
             ESP_LOGW(TAG, "Failed to parse build time from '%s %s'", app_desc.date, app_desc.time);
         }
@@ -291,6 +334,13 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     time_t remote_timestamp = 0;
     if (build_timestamp_epoch && cJSON_IsNumber(build_timestamp_epoch)) {
         remote_timestamp = (time_t)build_timestamp_epoch->valueint;
+
+        // Format remote timestamp for logging
+        char remote_time_str[64];
+        struct tm remote_tm;
+        gmtime_r(&remote_timestamp, &remote_tm);
+        strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%d %H:%M:%S UTC", &remote_tm);
+        ESP_LOGI(TAG, "Remote build timestamp (formatted): %s", remote_time_str);
     }
 
     ESP_LOGI(TAG, "Manifest info - version: %s, timestamp: %s (epoch: %ld)",
@@ -302,16 +352,17 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     const char* remote_hash = extract_git_hash(remote_version);
 
     ESP_LOGI(TAG, "Remote hash: %s, Local hash: %s", remote_hash, extracted_hash);
-    ESP_LOGI(TAG, "Remote build time: %ld, Local build time: %ld",
+    ESP_LOGI(TAG, "Remote build time: %ld (UTC), Local build time: %ld (UTC)",
               (long)remote_timestamp, (long)current_build_time);
     ESP_LOGI(TAG, "Last OTA time: %ld", (long)last_ota_timestamp);
 
-    // Check if we already applied this OTA before
-    if (remote_timestamp > 0 && last_ota_timestamp > 0 &&
-        remote_timestamp <= last_ota_timestamp &&
+    // Check if we already applied this update
+    if (last_ota_timestamp > 0 &&
+        remote_timestamp > 0 && remote_timestamp <= last_ota_timestamp &&
         strlen(remote_hash) > 0 && strcmp(remote_hash, extracted_hash) == 0) {
         ESP_LOGI(TAG, "This update was already applied (matching hash and timestamp <= last OTA)");
         mark_app_valid();
+        cJSON_Delete(root);
         return false;
     }
 
@@ -326,10 +377,15 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             is_newer_version = true;
         } else if (remote_timestamp < current_build_time) {
             ESP_LOGW(TAG, "Remote timestamp is older - this would be a downgrade, skipping update");
+            ESP_LOGW(TAG, "Local build: %ld > Remote build: %ld (difference: %ld seconds)",
+                    (long)current_build_time, (long)remote_timestamp,
+                    (long)(current_build_time - remote_timestamp));
             is_newer_version = false;
 
             // IMPORTANT: Always mark the app as valid even when skipping update
             mark_app_valid();
+            cJSON_Delete(root);
+            return false;
         } else {
             // Same timestamp, check hashes
             ESP_LOGI(TAG, "Same build timestamp, checking git hash");
@@ -342,12 +398,16 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
                 // Mark as valid since we're staying with current version
                 mark_app_valid();
+                cJSON_Delete(root);
+                return false;
             } else {
                 ESP_LOGI(TAG, "Identical version (matching hash and timestamp)");
                 is_newer_version = false;  // Same version, not newer
 
                 // Mark as valid since we're staying with current version
                 mark_app_valid();
+                cJSON_Delete(root);
+                return false;
             }
         }
     } else {
@@ -362,6 +422,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             // Mark as valid if we're staying with current version
             if (!is_newer_version) {
                 mark_app_valid();
+                cJSON_Delete(root);
+                return false;
             }
         } else {
             ESP_LOGI(TAG, "Same git hash");
@@ -369,6 +431,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
             // Mark as valid since we're staying with current version
             mark_app_valid();
+            cJSON_Delete(root);
+            return false;
         }
     }
 
@@ -382,6 +446,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     } else {
         ESP_LOGI(TAG, "No update needed - current version is same or newer");
         mark_app_valid();
+        cJSON_Delete(root);
+        return false;
     }
 
     // If update needed, perform the update

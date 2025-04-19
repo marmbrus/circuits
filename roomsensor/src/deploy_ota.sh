@@ -43,10 +43,11 @@ echo "Building project with idf.py..."
 idf.py build || { echo "Error: Build failed"; exit 1; }
 echo "Build successful"
 
-# Build timestamp (seconds since epoch for version comparison)
-BUILD_TIMESTAMP=$(date +%s)
+# Get build timestamp in UTC - very important for correct comparisons across timezones
+# Use UTC time (seconds since epoch, UTC timezone)
+BUILD_TIMESTAMP=$(date -u +%s)
 BUILD_ISO_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "Build timestamp: $BUILD_ISO_TIME ($BUILD_TIMESTAMP)"
+echo "Build timestamp (UTC): $BUILD_ISO_TIME ($BUILD_TIMESTAMP)"
 
 # Check if the binary exists
 if [ ! -f "$BIN_FILE" ]; then
@@ -73,7 +74,7 @@ cat > ${MANIFEST_FILE} << EOF
 }
 EOF
 
-echo "Created manifest file with version ${GIT_HASH}, timestamp ${BUILD_ISO_TIME}"
+echo "Created manifest file with version ${GIT_HASH}, timestamp ${BUILD_ISO_TIME} (UTC)"
 
 # Copy bin file to a new name with git hash
 cp "${BIN_FILE}" "${BIN_FILENAME}"
