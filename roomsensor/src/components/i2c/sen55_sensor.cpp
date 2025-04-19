@@ -15,7 +15,8 @@ SEN55Sensor::SEN55Sensor() :
     _temperature(25.0f),  // Start with a reasonable room temperature default
     _humidity(50.0f),     // Start with a reasonable humidity default
     _initialized(false),
-    _tag_collection(nullptr) {
+    _tag_collection(nullptr),
+    _startup_readings_count(0) {
     ESP_LOGD(TAG, "SEN55Sensor constructed");
 }
 
@@ -138,6 +139,11 @@ void SEN55Sensor::poll() {
     if (ret != ESP_OK) {
         ESP_LOGW(TAG, "Failed to read sensor data: %s", esp_err_to_name(ret));
         return;
+    }
+
+    // Increment the startup readings counter
+    if (_startup_readings_count < 5) {
+        _startup_readings_count++;
     }
 
     // Print sensor readings at INFO level, including Fahrenheit
@@ -273,7 +279,11 @@ esp_err_t SEN55Sensor::readMeasurement() {
     // Temperature [°C] - CORRECT SCALING FROM SENSIRION LIBRARY
     int16_t tempRaw = (int16_t)((data[12] << 8) | data[13]);
     if (tempRaw == 0x7FFF) {
-        ESP_LOGW(TAG, "Temperature not available (raw=0x7FFF)");
+        if (_startup_readings_count >= 5) {
+            ESP_LOGW(TAG, "Temperature not available (raw=0x7FFF)");
+        } else {
+            ESP_LOGD(TAG, "Temperature not available during startup (raw=0x7FFF)");
+        }
     } else {
         // According to the official SEN5x docs, T(°C) = raw / 200
         _temperature = tempRaw / 200.0f;
@@ -284,7 +294,11 @@ esp_err_t SEN55Sensor::readMeasurement() {
     // Humidity [%RH] - CORRECT SCALING FROM SENSIRION LIBRARY
     int16_t humidityRaw = (int16_t)((data[15] << 8) | data[16]);
     if (humidityRaw == 0x7FFF) {
-        ESP_LOGW(TAG, "Humidity not available (raw=0x7FFF)");
+        if (_startup_readings_count >= 5) {
+            ESP_LOGW(TAG, "Humidity not available (raw=0x7FFF)");
+        } else {
+            ESP_LOGD(TAG, "Humidity not available during startup (raw=0x7FFF)");
+        }
     } else {
         // According to Sensirion SEN5x, humidity is reported as raw/100 (percent)
         _humidity = humidityRaw / 100.0f;
@@ -293,7 +307,11 @@ esp_err_t SEN55Sensor::readMeasurement() {
     // VOC Index
     int16_t vocIndex = (int16_t)((data[18] << 8) | data[19]);
     if (vocIndex == 0x7FFF) {
-        ESP_LOGW(TAG, "VOC Index not available (raw=0x7FFF)");
+        if (_startup_readings_count >= 5) {
+            ESP_LOGW(TAG, "VOC Index not available (raw=0x7FFF)");
+        } else {
+            ESP_LOGD(TAG, "VOC Index not available during startup (raw=0x7FFF)");
+        }
     } else {
         _voc = vocIndex / 10.0f;
     }
@@ -301,7 +319,11 @@ esp_err_t SEN55Sensor::readMeasurement() {
     // NOx Index
     int16_t noxIndex = (int16_t)((data[21] << 8) | data[22]);
     if (noxIndex == 0x7FFF) {
-        ESP_LOGW(TAG, "NOx Index not available (raw=0x7FFF)");
+        if (_startup_readings_count >= 5) {
+            ESP_LOGW(TAG, "NOx Index not available (raw=0x7FFF)");
+        } else {
+            ESP_LOGD(TAG, "NOx Index not available during startup (raw=0x7FFF)");
+        }
     } else {
         _nox = noxIndex / 10.0f;
     }
