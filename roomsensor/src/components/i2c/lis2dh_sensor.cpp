@@ -1,9 +1,10 @@
 #include "lis2dh_sensor.h"
 #include "esp_log.h"
 #include <string.h>
-#include <math.h> 
+#include <math.h>
 #include "i2c.h"
 #include "driver/gpio.h"
+#include "communication.h" // Add include for metrics reporting
 
 static const char *TAG = "LIS2DHSensor";
 
@@ -14,13 +15,21 @@ static void IRAM_ATTR lis2dh_isr_handler(void* arg)
     signalSensorInterrupt();
 }
 
-LIS2DHSensor::LIS2DHSensor() : 
+LIS2DHSensor::LIS2DHSensor() :
     I2CSensor(nullptr),
     _bus_handle(nullptr),
-    _lastAccel{0, 0, 0}, 
+    _lastAccel{0, 0, 0},
     _movementDetected(false),
-    _initialized(false) {
+    _initialized(false),
+    _tag_collection(nullptr) {
     ESP_LOGD(TAG, "LIS2DHSensor constructed");
+}
+
+LIS2DHSensor::~LIS2DHSensor() {
+    if (_tag_collection != nullptr) {
+        free_tag_collection(_tag_collection);
+        _tag_collection = nullptr;
+    }
 }
 
 uint8_t LIS2DHSensor::addr() const {
@@ -81,24 +90,26 @@ bool LIS2DHSensor::init(i2c_master_bus_handle_t bus_handle) {
         ESP_LOGW(TAG, "Sensor already initialized");
         return true;
     }
-    
+
     if (bus_handle == nullptr) {
         ESP_LOGE(TAG, "Invalid bus handle (null)");
         return false;
     }
-    
+
     _bus_handle = bus_handle;
-    
+
     ESP_LOGI(TAG, "Initializing LIS2DH12 accelerometer");
-    
+
     esp_err_t ret;
     uint8_t whoami;
-    
+
     // Configure device
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = LIS2DH12_I2C_ADDR,
         .scl_speed_hz = 400000,
+        .scl_wait_us = 0,     // Add missing initializer
+        .flags = 0            // Add missing initializer
     };
 
     // Create device handle
@@ -136,16 +147,34 @@ bool LIS2DHSensor::init(i2c_master_bus_handle_t bus_handle) {
         ESP_LOGE(TAG, "Failed to configure CTRL_REG4: %s", esp_err_to_name(ret));
         return false;
     }
-    
+
+    // Create tag collection for metrics reporting
+    _tag_collection = create_tag_collection();
+    if (_tag_collection == nullptr) {
+        ESP_LOGE(TAG, "Failed to create tag collection");
+        return false;
+    }
+
+    // Add sensor-specific tags
+    esp_err_t err_type = add_tag_to_collection(_tag_collection, "type", "lis2dh");
+    esp_err_t err_name = add_tag_to_collection(_tag_collection, "name", "motion");
+
+    if (err_type != ESP_OK || err_name != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add tags to collection");
+        free_tag_collection(_tag_collection);
+        _tag_collection = nullptr;
+        return false;
+    }
+
     // Mark as initialized BEFORE configuring sleep mode which uses public methods
     _initialized = true;
-    
+
     // Configure movement interrupt instead of sleep mode
     if (configureMovementInterrupt() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to configure movement interrupt");
         return false;
     }
-    
+
     // Configure GPIO pin for LIS2DH INT1 interrupt (IO13)
     gpio_config_t io_conf = {};
     io_conf.pin_bit_mask = (1ULL << 13);  // IO13
@@ -153,28 +182,28 @@ bool LIS2DHSensor::init(i2c_master_bus_handle_t bus_handle) {
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE;  // Pull down when inactive
     io_conf.intr_type = GPIO_INTR_POSEDGE;        // Interrupt on rising edge
-    
+
     ret = gpio_config(&io_conf);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to configure GPIO for interrupt: %s", esp_err_to_name(ret));
         return false;
     }
-    
+
     // Install GPIO ISR service if not already installed
     ret = gpio_install_isr_service(0);
     if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {  // ESP_ERR_INVALID_STATE means already installed
         ESP_LOGE(TAG, "Failed to install GPIO ISR service: %s", esp_err_to_name(ret));
         return false;
     }
-    
+
     // Add handler for GPIO interrupt
     ret = gpio_isr_handler_add((gpio_num_t)13, lis2dh_isr_handler, NULL);
-    
+
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add GPIO ISR handler: %s", esp_err_to_name(ret));
         return false;
     }
-    
+
     ESP_LOGI(TAG, "LIS2DH12 accelerometer initialized successfully with interrupt on IO13");
     return true;
 }
@@ -183,11 +212,11 @@ esp_err_t LIS2DHSensor::getAccelData(AccelData &accel) {
     if (!isInitialized()) {
         return ESP_ERR_INVALID_STATE;
     }
-    
+
     uint8_t data[6];
     int16_t raw_x, raw_y, raw_z;
     float sensitivity = 0.001f; // 1 mg/LSB for ±2g in high resolution mode
-    
+
     // Read all acceleration registers in one transaction
     uint8_t reg = OUT_X_L | 0x80;  // Set MSB for multi-byte read
     esp_err_t ret = i2c_master_transmit_receive(_dev_handle, &reg, 1, data, 6, 100); // 100ms timeout
@@ -231,26 +260,39 @@ void LIS2DHSensor::poll() {
         ESP_LOGE(TAG, "Cannot poll: sensor not initialized");
         return;
     }
-    
+
     // Method 1: Poll acceleration data and check for significant movement
     AccelData accel;
     esp_err_t ret = getAccelData(accel);
-    
+
     if (ret == ESP_OK) {
         _movementDetected = isSignificantMovement(accel.x, accel.y, accel.z);
         if (_movementDetected) {
             ESP_LOGI(TAG, "Significant movement detected!");
         }
+
+        // Report acceleration metrics
+        static const char* METRIC_ACCEL_X = "accel_x";
+        static const char* METRIC_ACCEL_Y = "accel_y";
+        static const char* METRIC_ACCEL_Z = "accel_z";
+
+        report_metric(METRIC_ACCEL_X, accel.x, _tag_collection);
+        report_metric(METRIC_ACCEL_Y, accel.y, _tag_collection);
+        report_metric(METRIC_ACCEL_Z, accel.z, _tag_collection);
     }
-    
+
     // Method 2: Check interrupt status register if in interrupt mode
     uint8_t int_source;
     ret = readRegister(INT1_SRC, &int_source);
-    
+
     if (ret == ESP_OK && (int_source & 0x40)) { // 0x40 = IA bit (Interrupt Active)
         ESP_LOGI(TAG, "Movement interrupt detected! (INT1_SRC: 0x%02x)", int_source);
         _movementDetected = true;
     }
+
+    // Report movement detection metric
+    static const char* METRIC_MOVEMENT = "movement";
+    report_metric(METRIC_MOVEMENT, _movementDetected ? 1.0f : 0.0f, _tag_collection);
 }
 
 bool LIS2DHSensor::hasMovement() {
@@ -258,7 +300,7 @@ bool LIS2DHSensor::hasMovement() {
         ESP_LOGE(TAG, "Cannot check movement: sensor not initialized");
         return false;
     }
-    
+
     bool movement = _movementDetected;
     _movementDetected = false; // Clear the flag after reading
     return movement;
@@ -269,11 +311,11 @@ bool LIS2DHSensor::configureSleepMode() {
         ESP_LOGE(TAG, "Cannot configure sleep mode: sensor not initialized");
         return false;
     }
-    
+
     ESP_LOGI(TAG, "Configuring LIS2DH12 for movement detection (sleep mode)");
-    
+
     esp_err_t ret;
-    
+
     // Temporarily disable all interrupts
     ret = writeRegister(CTRL_REG3, 0x00);
     if (ret != ESP_OK) return false;
@@ -319,7 +361,7 @@ bool LIS2DHSensor::configureSleepMode() {
     // 0x40 = 01000000b (INT1 interrupt enabled)
     ret = writeRegister(CTRL_REG3, 0x40);
     if (ret != ESP_OK) return false;
-    
+
     ESP_LOGI(TAG, "LIS2DH12 configured for movement detection");
     return true;
 }
@@ -329,9 +371,9 @@ bool LIS2DHSensor::configureNormalMode() {
         ESP_LOGE(TAG, "Cannot configure normal mode: sensor not initialized");
         return false;
     }
-    
+
     ESP_LOGI(TAG, "Configuring LIS2DH12 for normal mode");
-    
+
     esp_err_t ret;
 
     // Disable interrupts temporarily
@@ -351,7 +393,7 @@ bool LIS2DHSensor::configureNormalMode() {
     // 0x88 = 10001000b (BDU enabled, HR mode, ±2g range)
     ret = writeRegister(CTRL_REG4, 0x88);
     if (ret != ESP_OK) return false;
-    
+
     ESP_LOGI(TAG, "LIS2DH12 configured for normal mode");
     return true;
 }
@@ -409,7 +451,7 @@ esp_err_t LIS2DHSensor::configureMovementInterrupt() {
     // 0x40 = 01000000b (INT1 interrupt enabled)
     ret = writeRegister(CTRL_REG3, 0x40);
     if (ret != ESP_OK) return ret;
-    
+
     ESP_LOGI(TAG, "Movement interrupt configured for LIS2DH12");
     return ESP_OK;
-} 
+}

@@ -6,6 +6,8 @@ idf_component_register(
         "lis2dh_sensor.cpp"
         "i2c.cpp"
         "bme280_sensor.cpp"
+        "sen55_sensor.cpp"
+        "scd4x_sensor.cpp"
     INCLUDE_DIRS "." "../common"
     PRIV_REQUIRES driver mqtt json
-) 
+)

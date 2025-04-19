@@ -31,16 +31,16 @@ void wifi_mqtt_init(void)
 {
     // Initialize WiFi
     system_state = WIFI_CONNECTING;
-    
+
     // Initialize WiFi as station
     wifi_init_sta();
-    
+
     // Configure MQTT
     esp_mqtt_client_config_t mqtt_cfg = {};  // Zero initialize
     mqtt_cfg.broker.address.uri = MQTT_BROKER_URL;
     mqtt_cfg.network.reconnect_timeout_ms = MQTT_RECONNECT_TIMEOUT_MS;
     mqtt_cfg.network.timeout_ms = MQTT_OPERATION_TIMEOUT_MS;
-    
+
     mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(mqtt_client, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, event_handler, NULL);
 }
@@ -60,7 +60,7 @@ static void initialize_sntp(void) {
         ESP_LOGI(TAG, "SNTP already initialized, skipping");
         return;
     }
-    
+
     ESP_LOGI(TAG, "Initializing SNTP");
     esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
     esp_sntp_setservername(0, "pool.ntp.org");
@@ -155,7 +155,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 {
     static uint32_t mqtt_error_count = 0;
     static bool mqtt_started = false;
-    
+
     // Handle WiFi events
     if (event_base == WIFI_EVENT) {
         switch (event_id) {
@@ -190,14 +190,14 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         // This section handles all MQTT events
         esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
         esp_mqtt_event_id_t mqtt_event = (esp_mqtt_event_id_t)event->event_id;
-        
+
         // First check WiFi state - don't process MQTT errors if WiFi is disconnected
         bool wifi_connected = false;
         {
             wifi_ap_record_t ap_info;
             wifi_connected = (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK);
         }
-        
+
         // Process MQTT events based on event type
         if (mqtt_event == MQTT_EVENT_CONNECTED) {
             ESP_LOGI(TAG, "MQTT Connected");
@@ -212,7 +212,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         }
         else if (mqtt_event == MQTT_EVENT_DISCONNECTED) {
             ESP_LOGI(TAG, "MQTT Disconnected");
-            
+
             if (!wifi_connected) {
                 // WiFi is actually disconnected but we haven't received the WiFi event yet
                 // Update the state to be consistent
@@ -224,24 +224,24 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 system_state = WIFI_CONNECTED_MQTT_CONNECTING;
                 led_control_set_state(WIFI_CONNECTED_MQTT_CONNECTING);
             }
-            
+
             mqtt_error_count = 0; // Reset error count on disconnect
         }
         else if (mqtt_event == MQTT_EVENT_ERROR) {
             ESP_LOGI(TAG, "MQTT Error");
-            
+
             // Only count MQTT errors when we're actually connected to WiFi
             // Ignore MQTT errors when WiFi is disconnected - they're expected
             if (!wifi_connected) {
                 // MQTT errors during WiFi disconnect are expected and should be ignored
                 ESP_LOGI(TAG, "Ignoring MQTT error during WiFi disconnect state");
             }
-            else if (system_state == WIFI_CONNECTED_MQTT_CONNECTING || 
+            else if (system_state == WIFI_CONNECTED_MQTT_CONNECTING ||
                      system_state == FULLY_CONNECTED) {
                 // Only count errors when in an appropriate state
                 mqtt_error_count++;
                 ESP_LOGI(TAG, "MQTT Error count: %lu/3", (unsigned long)mqtt_error_count);
-                
+
                 if (mqtt_error_count >= 3) {
                     system_state = MQTT_ERROR_STATE;
                     mqtt_error_count = 0;
@@ -287,7 +287,7 @@ static void wifi_init_sta(void)
     // Initialize only the STA config part explicitly to avoid warnings
     wifi_config_t wifi_config = {};
     memset(&wifi_config, 0, sizeof(wifi_config_t));
-    
+
     strlcpy((char*)wifi_config.sta.ssid, WIFI_SSID, sizeof(wifi_config.sta.ssid));
     strlcpy((char*)wifi_config.sta.password, WIFI_PASS, sizeof(wifi_config.sta.password));
     wifi_config.sta.scan_method = WIFI_FAST_SCAN;
@@ -321,21 +321,31 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
     }
 
     char full_topic[128];
-    snprintf(full_topic, sizeof(full_topic), "roomsensor/%02x%02x%02x%02x%02x%02x/%s",
-             device_mac[0], device_mac[1], device_mac[2],
-             device_mac[3], device_mac[4], device_mac[5],
-             subtopic);
+
+    // Special handling for device topic
+    if (strcmp(subtopic, "device") == 0) {
+        // New format: roomsensor/device/{MAC}
+        snprintf(full_topic, sizeof(full_topic), "roomsensor/device/%02x%02x%02x%02x%02x%02x",
+                device_mac[0], device_mac[1], device_mac[2],
+                device_mac[3], device_mac[4], device_mac[5]);
+    } else {
+        // For all other topics including metrics, use the provided path directly
+        // If subtopic starts with '/', skip the first character
+        const char* topic_path = (subtopic[0] == '/') ? subtopic + 1 : subtopic;
+        strncpy(full_topic, topic_path, sizeof(full_topic) - 1);
+        full_topic[sizeof(full_topic) - 1] = '\0'; // Ensure null termination
+    }
 
     // Log the MQTT message being published (basic info only)
-    ESP_LOGI(TAG, "MQTT: %s -> %s", full_topic, message);
-    
+    ESP_LOGD(TAG, "MQTT: %s -> %s", full_topic, message);
+
     int msg_id = esp_mqtt_client_publish(mqtt_client, full_topic, message, 0, qos, retain);
-    
+
     if (msg_id < 0) {
         ESP_LOGE(TAG, "MQTT publish failed, error code=%d", msg_id);
         return ESP_FAIL;
     }
-    
+
     return ESP_OK;
 }
 

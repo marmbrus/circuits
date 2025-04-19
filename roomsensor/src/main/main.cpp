@@ -33,6 +33,13 @@ extern "C" void app_main(void)
         set_device_tags_for_testing();
     }
 
+    // Initialize the metrics reporting system (both queue and background task)
+    if (initialize_metrics_system() != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize metrics system");
+    } else {
+        ESP_LOGI(TAG, "Metrics reporting system started successfully");
+    }
+
     // Initialize I2C subsystem
     if (!init_i2c()) {
         ESP_LOGE(TAG, "Failed to initialize I2C subsystem");
