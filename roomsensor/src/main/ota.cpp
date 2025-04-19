@@ -72,7 +72,7 @@ static const char* extract_git_hash(const char* version) {
         }
 
         if (is_hash) {
-            ESP_LOGI(TAG, "Version '%s' already looks like a git hash", version);
+            ESP_LOGI(TAG, "Version '%s' appears to be a git hash", version);
             return version;
         }
     }
@@ -82,41 +82,34 @@ static const char* extract_git_hash(const char* version) {
     return version;
 }
 
-// Load last OTA information from NVS
-static time_t load_last_ota_info() {
-    time_t last_ota_timestamp = 0;
+// Check if we already applied this update by checking NVS storage
+static bool already_applied_update(time_t remote_timestamp) {
     nvs_handle_t nvs_handle;
     esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvs_handle);
 
     if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to open NVS namespace: %s", esp_err_to_name(err));
-        return 0;
+        ESP_LOGD(TAG, "Failed to open NVS namespace: %s", esp_err_to_name(err));
+        return false;
     }
 
     // Load last OTA timestamp
+    time_t last_ota_timestamp = 0;
     err = nvs_get_i64(nvs_handle, NVS_LAST_OTA_TIME, (int64_t*)&last_ota_timestamp);
-    if (err == ESP_OK) {
+
+    if (err == ESP_OK && last_ota_timestamp > 0 && remote_timestamp > 0 &&
+        remote_timestamp <= last_ota_timestamp) {
         char time_str[64];
         struct tm timeinfo;
-        gmtime_r(&last_ota_timestamp, &timeinfo); // Use gmtime for UTC
+        gmtime_r(&last_ota_timestamp, &timeinfo);
         strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S UTC", &timeinfo);
-        ESP_LOGI(TAG, "Last OTA timestamp: %s (epoch: %ld)", time_str, (long)last_ota_timestamp);
-    } else {
-        ESP_LOGW(TAG, "Failed to read last OTA timestamp: %s", esp_err_to_name(err));
-    }
 
-    // Load last OTA hash
-    char last_hash[33] = {0};
-    size_t len = sizeof(last_hash);
-    err = nvs_get_str(nvs_handle, NVS_LAST_OTA_HASH, last_hash, &len);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Last OTA hash: %s", last_hash);
-    } else {
-        ESP_LOGW(TAG, "Failed to read last OTA hash: %s", esp_err_to_name(err));
+        ESP_LOGI(TAG, "Previous update already applied at %s", time_str);
+        nvs_close(nvs_handle);
+        return true;
     }
 
     nvs_close(nvs_handle);
-    return last_ota_timestamp;
+    return false;
 }
 
 // Save OTA information to NVS
@@ -143,12 +136,7 @@ static void save_ota_info(time_t timestamp, const char* hash) {
         }
     }
 
-    // Commit changes
-    err = nvs_commit(nvs_handle);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to commit NVS: %s", esp_err_to_name(err));
-    }
-
+    nvs_commit(nvs_handle);
     nvs_close(nvs_handle);
 }
 
@@ -170,21 +158,17 @@ static void get_current_version() {
         // Use project version as the git hash
         strncpy(current_version, app_desc.version, sizeof(current_version) - 1);
         ESP_LOGI(TAG, "Current firmware version: %s", current_version);
-        ESP_LOGI(TAG, "Compiled %s %s", app_desc.date, app_desc.time);
-        ESP_LOGI(TAG, "IDF version: %s", app_desc.idf_ver);
-        ESP_LOGI(TAG, "Project name: %s", app_desc.project_name);
 
         // Extract the git hash part
         const char* hash = extract_git_hash(current_version);
         strncpy(extracted_hash, hash, sizeof(extracted_hash) - 1);
-        ESP_LOGI(TAG, "Extracted git hash for comparison: %s", extracted_hash);
 
         // Display embedded build timestamp
         char build_time_str[64];
         struct tm build_timeinfo;
         gmtime_r(&FIRMWARE_BUILD_TIME, &build_timeinfo);
         strftime(build_time_str, sizeof(build_time_str), "%Y-%m-%d %H:%M:%S UTC", &build_timeinfo);
-        ESP_LOGI(TAG, "Embedded build timestamp: %s (epoch: %ld)",
+        ESP_LOGI(TAG, "Current firmware build time: %s (epoch: %ld)",
                 build_time_str, (long)FIRMWARE_BUILD_TIME);
     } else {
         ESP_LOGW(TAG, "Failed to get partition description");
@@ -194,8 +178,6 @@ static void get_current_version() {
     const esp_partition_t *validated = esp_ota_get_boot_partition();
     if (running != validated) {
         ESP_LOGW(TAG, "Running partition is not the boot partition - pending validation");
-        ESP_LOGI(TAG, "Boot partition type %d subtype %d (offset 0x%08lx)",
-                 validated->type, validated->subtype, validated->address);
     }
 }
 
@@ -219,8 +201,6 @@ static void mark_app_valid() {
     esp_err_t err = esp_ota_get_state_partition(running, &ota_state);
 
     if (err == ESP_OK) {
-        ESP_LOGI(TAG, "Current app state: %d", ota_state);
-
         if (ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
             ESP_LOGI(TAG, "Marking app as valid and canceling rollback");
             if (esp_ota_mark_app_valid_cancel_rollback() == ESP_OK) {
@@ -240,9 +220,6 @@ static void mark_app_valid() {
 
 // Parse manifest and check if update is needed
 static bool parse_manifest_and_check_update(char *manifest_data) {
-    // Load last OTA info first
-    time_t last_ota_timestamp = load_last_ota_info();
-
     cJSON *root = cJSON_Parse(manifest_data);
     if (!root) {
         ESP_LOGE(TAG, "Failed to parse manifest JSON");
@@ -251,9 +228,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
     cJSON *version = cJSON_GetObjectItem(root, "version");
     cJSON *url = cJSON_GetObjectItem(root, "url");
-    cJSON *build_timestamp = cJSON_GetObjectItem(root, "build_timestamp");
     cJSON *build_timestamp_epoch = cJSON_GetObjectItem(root, "build_timestamp_epoch");
-    cJSON *git_describe = cJSON_GetObjectItem(root, "git_describe");
 
     if (!cJSON_IsString(version) || !cJSON_IsString(url)) {
         ESP_LOGE(TAG, "Manifest missing required fields");
@@ -263,8 +238,6 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
     const char *remote_version = version->valuestring;
     const char *firmware_url = url->valuestring;
-    const char *timestamp_str = build_timestamp ? build_timestamp->valuestring : "unknown";
-    const char *describe = git_describe ? git_describe->valuestring : "unknown";
 
     // Get remote timestamp for comparison
     time_t remote_timestamp = 0;
@@ -276,117 +249,80 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         struct tm remote_tm;
         gmtime_r(&remote_timestamp, &remote_tm);
         strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%d %H:%M:%S UTC", &remote_tm);
-        ESP_LOGI(TAG, "Remote build timestamp: %s (epoch: %ld)", remote_time_str, (long)remote_timestamp);
+        ESP_LOGI(TAG, "Remote firmware build time: %s (epoch: %ld)", remote_time_str, (long)remote_timestamp);
+    } else {
+        ESP_LOGW(TAG, "Remote manifest missing build timestamp");
     }
 
-    ESP_LOGI(TAG, "Manifest info - version: %s, timestamp: %s", remote_version, timestamp_str);
-    ESP_LOGI(TAG, "Git describe: %s", describe);
+    ESP_LOGI(TAG, "Remote firmware version: %s", remote_version);
     ESP_LOGI(TAG, "Firmware URL: %s", firmware_url);
 
     // Extract the hash part from the remote version
     const char* remote_hash = extract_git_hash(remote_version);
 
-    ESP_LOGI(TAG, "Remote hash: %s, Local hash: %s", remote_hash, extracted_hash);
-    ESP_LOGI(TAG, "Remote build time: %ld, Firmware build time: %ld",
-             (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
-    ESP_LOGI(TAG, "Last OTA time: %ld", (long)last_ota_timestamp);
-
-    // Already applied check - if the hashes match and we've already seen this timestamp
-    if (strcmp(remote_hash, extracted_hash) == 0 &&
-        last_ota_timestamp > 0 && remote_timestamp <= last_ota_timestamp) {
-        ESP_LOGI(TAG, "This update was already applied (matching hash and timestamp <= last OTA)");
+    // Check if we already applied this update (based on timestamp in NVS)
+    if (already_applied_update(remote_timestamp)) {
+        ESP_LOGI(TAG, "Skipping update: already applied this version");
         mark_app_valid();
         cJSON_Delete(root);
         return false;
     }
 
-    // Determine if we need to update
-    bool update_needed = false;
-
-    // We have a reliable embedded build timestamp and remote timestamp
+    // PRIMARY CHECK: Compare build timestamps
+    // We only update if remote timestamp is newer than our firmware build time
     if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
-        // Compare timestamps - only update if remote is newer
+        // Directly compare the timestamps
         if (remote_timestamp > FIRMWARE_BUILD_TIME) {
-            ESP_LOGI(TAG, "Remote build is newer than current firmware, will update");
-            ESP_LOGI(TAG, "Remote: %ld vs Local: %ld (difference: %ld seconds)",
+            ESP_LOGI(TAG, "Remote build is newer: Remote %ld > Local %ld (+%ld seconds)",
                     (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME,
                     (long)(remote_timestamp - FIRMWARE_BUILD_TIME));
-            update_needed = true;
+
+            // Perform the OTA update
+            ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
+
+            esp_http_client_config_t config = {};
+            config.url = firmware_url;
+            config.cert_pem = NULL;
+            config.skip_cert_common_name_check = true;
+            config.transport_type = HTTP_TRANSPORT_OVER_TCP;
+            config.buffer_size = 1024;
+
+            esp_https_ota_config_t ota_config = {};
+            ota_config.http_config = &config;
+            ota_config.bulk_flash_erase = true;
+
+            esp_err_t ret = esp_https_ota(&ota_config);
+            if (ret == ESP_OK) {
+                ESP_LOGI(TAG, "OTA update successful! Saving update info and rebooting...");
+
+                // Save OTA information before reboot
+                save_ota_info(remote_timestamp, remote_hash);
+
+                cJSON_Delete(root);
+                vTaskDelay(pdMS_TO_TICKS(1000));
+                esp_restart();
+                return true;
+            } else {
+                ESP_LOGE(TAG, "OTA update failed with error: %s", esp_err_to_name(ret));
+                mark_app_valid();
+                cJSON_Delete(root);
+                return false;
+            }
         } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
-            ESP_LOGW(TAG, "Remote build is OLDER than current firmware, skipping update");
-            ESP_LOGW(TAG, "Remote: %ld vs Local: %ld (difference: %ld seconds)",
+            ESP_LOGI(TAG, "Remote build is older: Remote %ld < Local %ld (-%ld seconds)",
                     (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME,
                     (long)(FIRMWARE_BUILD_TIME - remote_timestamp));
-            mark_app_valid();
-            cJSON_Delete(root);
-            return false;
-        } else if (strcmp(remote_hash, extracted_hash) != 0) {
-            // Same timestamp but different hash - can't determine which is newer
-            ESP_LOGW(TAG, "Same timestamp but different hash - cannot determine which is newer");
-            mark_app_valid();
-            cJSON_Delete(root);
-            return false;
+            ESP_LOGI(TAG, "Skipping update: current firmware is newer");
         } else {
-            // Identical version with same hash and timestamp
-            ESP_LOGI(TAG, "Already running identical version");
-            mark_app_valid();
-            cJSON_Delete(root);
-            return false;
-        }
-    } else if (strcmp(remote_hash, extracted_hash) != 0) {
-        // Can't compare timestamps, but hashes differ
-        ESP_LOGW(TAG, "Cannot compare timestamps, using hash comparison");
-
-        // Only update if we don't have a valid hash locally yet
-        if (strlen(extracted_hash) == 0) {
-            ESP_LOGI(TAG, "No local hash available, will update");
-            update_needed = true;
-        } else {
-            ESP_LOGW(TAG, "Different hash but can't determine which is newer without timestamps");
-            ESP_LOGW(TAG, "Staying with current version for safety");
-            mark_app_valid();
-            cJSON_Delete(root);
-            return false;
+            ESP_LOGI(TAG, "Remote and local builds have same timestamp: %ld", (long)remote_timestamp);
+            ESP_LOGI(TAG, "Skipping update: already at latest version");
         }
     } else {
-        // Hashes match, assume same version
-        ESP_LOGI(TAG, "Hash comparison indicates same version");
-        mark_app_valid();
-        cJSON_Delete(root);
-        return false;
+        ESP_LOGW(TAG, "Cannot compare timestamps, skipping update");
     }
 
-    // If update needed, perform the update
-    if (update_needed && firmware_url) {
-        ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
-
-        esp_http_client_config_t config = {};
-        config.url = firmware_url;
-        config.cert_pem = NULL;
-        config.skip_cert_common_name_check = true;
-        config.transport_type = HTTP_TRANSPORT_OVER_TCP;  // Explicitly use HTTP not HTTPS
-        config.buffer_size = 1024;
-
-        esp_https_ota_config_t ota_config = {};
-        ota_config.http_config = &config;
-        ota_config.bulk_flash_erase = true;
-
-        esp_err_t ret = esp_https_ota(&ota_config);
-        if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "OTA update successful! Saving OTA info and rebooting...");
-
-            // Save OTA information before reboot
-            save_ota_info(remote_timestamp, remote_hash);
-
-            cJSON_Delete(root);
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            esp_restart();
-            return true;
-        } else {
-            ESP_LOGE(TAG, "OTA update failed with error: %s", esp_err_to_name(ret));
-        }
-    }
-
+    // If we reach here, no update is needed
+    mark_app_valid();
     cJSON_Delete(root);
     return false;
 }
@@ -459,7 +395,7 @@ esp_err_t check_for_ota_update(void) {
     config.event_handler = http_event_handler;
     config.cert_pem = NULL;
     config.skip_cert_common_name_check = true;
-    config.transport_type = HTTP_TRANSPORT_OVER_TCP;  // Explicitly use HTTP not HTTPS
+    config.transport_type = HTTP_TRANSPORT_OVER_TCP;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);
