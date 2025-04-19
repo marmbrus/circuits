@@ -4,13 +4,21 @@
 #include <math.h>
 #include "i2c.h"
 #include "driver/gpio.h"
+#include "esp_timer.h"  // Add include for esp_timer_get_time
+#include <inttypes.h>   // Add include for PRIu32 format specifier
 #include "communication.h" // Add include for metrics reporting
 
 static const char *TAG = "LIS2DHSensor";
 
-// Static GPIO ISR handler
-static void IRAM_ATTR lis2dh_isr_handler(void* arg)
+// ISR handler - NOT static to match the friend declaration in the header
+void IRAM_ATTR lis2dh_isr_handler(void* arg)
 {
+    // Mark the sensor as having its interrupt triggered
+    LIS2DHSensor* sensor = static_cast<LIS2DHSensor*>(arg);
+    if (sensor) {
+        sensor->_interruptTriggered = true;
+    }
+    
     // Call the signalSensorInterrupt function when interrupt triggers
     signalSensorInterrupt();
 }
@@ -21,7 +29,9 @@ LIS2DHSensor::LIS2DHSensor() :
     _lastAccel{0, 0, 0},
     _movementDetected(false),
     _initialized(false),
-    _tag_collection(nullptr) {
+    _tag_collection(nullptr),
+    _interruptTriggered(false),
+    _lastPollTime(0) {
     ESP_LOGD(TAG, "LIS2DHSensor constructed");
 }
 
@@ -196,8 +206,8 @@ bool LIS2DHSensor::init(i2c_master_bus_handle_t bus_handle) {
         return false;
     }
 
-    // Add handler for GPIO interrupt
-    ret = gpio_isr_handler_add((gpio_num_t)13, lis2dh_isr_handler, NULL);
+    // Add handler for GPIO interrupt - pass 'this' pointer to access member variables
+    ret = gpio_isr_handler_add((gpio_num_t)13, lis2dh_isr_handler, this);
 
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add GPIO ISR handler: %s", esp_err_to_name(ret));
@@ -261,6 +271,19 @@ void LIS2DHSensor::poll() {
         return;
     }
 
+    // Get current time in milliseconds
+    uint32_t current_time = esp_timer_get_time() / 1000;
+    
+    // Check if we're within the minimum polling interval
+    if (current_time - _lastPollTime < MIN_POLL_INTERVAL_MS) {
+        ESP_LOGD(TAG, "Skipping poll - too soon since last poll (%" PRIu32 " ms < %" PRIu32 " ms)",
+                 current_time - _lastPollTime, MIN_POLL_INTERVAL_MS);
+        return;
+    }
+    
+    // Update the last poll time
+    _lastPollTime = current_time;
+
     // Method 1: Poll acceleration data and check for significant movement
     AccelData accel;
     esp_err_t ret = getAccelData(accel);
@@ -293,6 +316,9 @@ void LIS2DHSensor::poll() {
     // Report movement detection metric
     static const char* METRIC_MOVEMENT = "movement";
     report_metric(METRIC_MOVEMENT, _movementDetected ? 1.0f : 0.0f, _tag_collection);
+    
+    // Clear the interrupt flag after polling
+    _interruptTriggered = false;
 }
 
 bool LIS2DHSensor::hasMovement() {
@@ -454,4 +480,12 @@ esp_err_t LIS2DHSensor::configureMovementInterrupt() {
 
     ESP_LOGI(TAG, "Movement interrupt configured for LIS2DH12");
     return ESP_OK;
+}
+
+bool LIS2DHSensor::hasInterruptTriggered() {
+    return _interruptTriggered;
+}
+
+void LIS2DHSensor::clearInterruptFlag() {
+    _interruptTriggered = false;
 }

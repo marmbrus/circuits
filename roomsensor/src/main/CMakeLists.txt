@@ -4,6 +4,7 @@ idf_component_register(
         "wifi.cpp"
         "tags.cpp"
         "metrics.cpp"
+        "http.cpp"
     INCLUDE_DIRS "."
-    REQUIRES i2c lights driver nvs_flash mqtt json esp_wifi esp_app_format
+    REQUIRES i2c lights driver nvs_flash mqtt json esp_wifi esp_app_format esp_http_server
 )

@@ -40,6 +40,20 @@ public:
     bool isInitialized() const override;
 
     /**
+     * @brief Check if the sensor has an interrupt that needs polling
+     * 
+     * SCD4x doesn't support interrupts, so this always returns false
+     */
+    bool hasInterruptTriggered() override { return false; }
+
+    /**
+     * @brief Clear the interrupt flag after polling
+     * 
+     * SCD4x doesn't support interrupts, so this does nothing
+     */
+    void clearInterruptFlag() override {}
+
+    /**
      * @brief Initialize the sensor (requires bus handle)
      */
     bool init() override;

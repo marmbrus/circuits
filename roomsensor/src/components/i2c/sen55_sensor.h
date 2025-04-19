@@ -47,6 +47,22 @@ public:
     bool isInitialized() const override;
 
     /**
+     * @brief Check if the sensor has an interrupt that needs polling
+     * 
+     * SEN55 doesn't support interrupts, so this always returns false
+     * 
+     * @return false SEN55 doesn't support interrupts
+     */
+    bool hasInterruptTriggered() override { return false; }
+
+    /**
+     * @brief Clear the interrupt flag after polling
+     * 
+     * SEN55 doesn't support interrupts, so this does nothing
+     */
+    void clearInterruptFlag() override {}
+
+    /**
      * @brief Initialize the sensor (requires bus handle through other init method)
      *
      * @return true If successful

@@ -64,6 +64,22 @@ public:
     bool isInitialized() const override;
 
     /**
+     * @brief Check if the sensor has an interrupt that needs polling
+     * 
+     * BME280 doesn't support interrupts, so this always returns false
+     * 
+     * @return false BME280 doesn't support interrupts
+     */
+    bool hasInterruptTriggered() override { return false; }
+
+    /**
+     * @brief Clear the interrupt flag after polling
+     * 
+     * BME280 doesn't support interrupts, so this does nothing
+     */
+    void clearInterruptFlag() override {}
+
+    /**
      * @brief Get the temperature in degrees Celsius
      *
      * @return float Temperature in degrees Celsius

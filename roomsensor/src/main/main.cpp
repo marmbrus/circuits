@@ -8,6 +8,7 @@
 #include "cJSON.h"
 #include "communication.h"
 #include "i2c.h"
+#include "http.h"
 
 static const char* TAG = "main";
 
@@ -45,6 +46,13 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "Failed to initialize I2C subsystem");
     } else {
         ESP_LOGI(TAG, "I2C subsystem initialized successfully");
+    }
+
+    // Start HTTP webserver
+    if (start_webserver() != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start HTTP server");
+    } else {
+        ESP_LOGI(TAG, "HTTP server started successfully");
     }
 
     // Main loop

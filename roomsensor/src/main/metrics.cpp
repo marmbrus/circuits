@@ -6,6 +6,9 @@
 #include "cJSON.h"
 #include "system_state.h"
 #include <string.h>
+#include "esp_timer.h"
+#include <time.h>
+#include "freertos/semphr.h"
 
 static const char* TAG = "metrics";
 
@@ -15,6 +18,14 @@ static QueueHandle_t metrics_queue = NULL;
 
 // Task handle for the metrics reporting task
 static TaskHandle_t metrics_task_handle = NULL;
+
+// Latest metrics storage
+#define INITIAL_METRICS_CAPACITY 20
+#define MAX_METRICS_CAPACITY 100
+static StoredMetric* latest_metrics = NULL;
+static int metrics_count = 0;
+static int metrics_capacity = 0;
+static SemaphoreHandle_t metrics_mutex = NULL;
 
 // Safe string concatenation function
 static void safe_strcat(char* dst, size_t dst_size, const char* src) {
@@ -110,6 +121,168 @@ static char* create_json_message(const MetricReport* report) {
     return json_str;
 }
 
+// Generate a hash key for a metric based on name and tags
+static uint32_t hash_metric(const char* metric_name, const TagCollection* tags) {
+    // Simple hash function for metric name + tags
+    uint32_t hash = 5381;
+    
+    // Hash the metric name
+    for (const char* c = metric_name; *c; c++) {
+        hash = ((hash << 5) + hash) + *c; // hash * 33 + c
+    }
+
+    // Hash each tag in a consistent order (tags are already sorted alphabetically by key)
+    for (int i = 0; i < tags->count; i++) {
+        const DeviceTag* tag = &tags->tags[i];
+        
+        // Hash the key
+        for (const char* c = tag->key; *c; c++) {
+            hash = ((hash << 5) + hash) + *c;
+        }
+        
+        // Hash the value
+        for (const char* c = tag->value; *c; c++) {
+            hash = ((hash << 5) + hash) + *c;
+        }
+    }
+    
+    return hash;
+}
+
+// Find a metric in the latest metrics storage by name and tags
+static int find_metric_index(const char* metric_name, const TagCollection* tags) {
+    uint32_t target_hash = hash_metric(metric_name, tags);
+    
+    for (int i = 0; i < metrics_count; i++) {
+        uint32_t current_hash = hash_metric(latest_metrics[i].metric_name, &latest_metrics[i].tags);
+        if (current_hash == target_hash) {
+            // Double-check with actual values to avoid collisions
+            if (strcmp(latest_metrics[i].metric_name, metric_name) == 0) {
+                // Check if tags match
+                bool tags_match = true;
+                if (latest_metrics[i].tags.count == tags->count) {
+                    for (int t = 0; t < tags->count; t++) {
+                        bool tag_found = false;
+                        for (int s = 0; s < latest_metrics[i].tags.count; s++) {
+                            if (strcmp(latest_metrics[i].tags.tags[s].key, tags->tags[t].key) == 0 && 
+                                strcmp(latest_metrics[i].tags.tags[s].value, tags->tags[t].value) == 0) {
+                                tag_found = true;
+                                break;
+                            }
+                        }
+                        if (!tag_found) {
+                            tags_match = false;
+                            break;
+                        }
+                    }
+                    if (tags_match) {
+                        return i;
+                    }
+                }
+            }
+        }
+    }
+    
+    return -1; // Not found
+}
+
+// Store a metric in the latest metrics storage
+static esp_err_t store_latest_metric(const char* metric_name, float value, const TagCollection* tags) {
+    if (metrics_mutex == NULL) {
+        ESP_LOGE(TAG, "Metrics mutex not initialized");
+        return ESP_ERR_INVALID_STATE;
+    }
+    
+    // Get current timestamp 
+    // esp_timer_get_time returns microseconds since boot, not since epoch
+    int64_t now_microsec = esp_timer_get_time();
+    
+    // For timestamps we need time since epoch, not since boot
+    // Get current time as seconds since epoch
+    time_t now_sec;
+    time(&now_sec);
+    
+    // Convert to milliseconds and add the sub-second part from esp_timer
+    int64_t timestamp = (now_sec * 1000) + ((now_microsec / 1000) % 1000);
+    
+    ESP_LOGD(TAG, "Storing metric '%s' with timestamp: %lld ms", metric_name, timestamp);
+    
+    // Take mutex for the update
+    if (xSemaphoreTake(metrics_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+        ESP_LOGE(TAG, "Failed to take metrics mutex");
+        return ESP_ERR_TIMEOUT;
+    }
+    
+    // Find if this metric already exists
+    int index = find_metric_index(metric_name, tags);
+    
+    if (index >= 0) {
+        // Update existing metric (no need for lock since we're just updating a value)
+        latest_metrics[index].value = value;
+        latest_metrics[index].timestamp = timestamp;
+        xSemaphoreGive(metrics_mutex);
+        return ESP_OK;
+    }
+    
+    // This is a new metric, ensure we have capacity
+    if (metrics_count >= metrics_capacity) {
+        // Need to grow the array
+        int new_capacity = metrics_capacity == 0 ? INITIAL_METRICS_CAPACITY : metrics_capacity * 2;
+        if (new_capacity > MAX_METRICS_CAPACITY) {
+            new_capacity = MAX_METRICS_CAPACITY;
+        }
+        
+        if (metrics_count >= MAX_METRICS_CAPACITY) {
+            ESP_LOGE(TAG, "Maximum metrics capacity reached (%d)", MAX_METRICS_CAPACITY);
+            xSemaphoreGive(metrics_mutex);
+            return ESP_ERR_NO_MEM;
+        }
+        
+        // Allocate new array
+        StoredMetric* new_metrics = (StoredMetric*)realloc(latest_metrics, new_capacity * sizeof(StoredMetric));
+        if (new_metrics == NULL) {
+            ESP_LOGE(TAG, "Failed to allocate memory for metrics storage");
+            xSemaphoreGive(metrics_mutex);
+            return ESP_ERR_NO_MEM;
+        }
+        
+        latest_metrics = new_metrics;
+        metrics_capacity = new_capacity;
+        ESP_LOGI(TAG, "Resized metrics storage to %d entries", metrics_capacity);
+    }
+    
+    // Add the new metric
+    StoredMetric* new_metric = &latest_metrics[metrics_count];
+    
+    // Copy metric name
+    strncpy(new_metric->metric_name, metric_name, MAX_METRIC_NAME_LEN - 1);
+    new_metric->metric_name[MAX_METRIC_NAME_LEN - 1] = '\0';
+    
+    // Set value and timestamp
+    new_metric->value = value;
+    new_metric->timestamp = timestamp;
+    
+    // Copy tags
+    new_metric->tags.count = 0;
+    for (int i = 0; i < tags->count && i < MAX_DEVICE_TAGS; i++) {
+        strncpy(new_metric->tags.tags[i].key, tags->tags[i].key, MAX_TAG_KEY_LEN - 1);
+        new_metric->tags.tags[i].key[MAX_TAG_KEY_LEN - 1] = '\0';
+        
+        strncpy(new_metric->tags.tags[i].value, tags->tags[i].value, MAX_TAG_VALUE_LEN - 1);
+        new_metric->tags.tags[i].value[MAX_TAG_VALUE_LEN - 1] = '\0';
+        
+        new_metric->tags.count++;
+    }
+    
+    // Increment count
+    metrics_count++;
+    
+    ESP_LOGI(TAG, "Added new metric '%s' (total: %d/%d)", metric_name, metrics_count, metrics_capacity);
+    
+    xSemaphoreGive(metrics_mutex);
+    return ESP_OK;
+}
+
 // The metrics reporting task
 static void metrics_reporting_task(void* pvParameters) {
     ESP_LOGI(TAG, "Metrics reporting task started");
@@ -163,6 +336,9 @@ static void metrics_reporting_task(void* pvParameters) {
             } else {
                 ESP_LOGD(TAG, "Published metric to %s: %s", topic, json_str);
             }
+            
+            // In addition to publishing, also store the latest value
+            store_latest_metric(report.metric_name, report.value, report.tags);
 
             // Clean up dynamically allocated memory
             free(topic);
@@ -176,10 +352,32 @@ static void metrics_reporting_task(void* pvParameters) {
 
 // Initialize metrics system and start the reporting task
 esp_err_t initialize_metrics_system(void) {
+    // Create the metrics mutex
+    metrics_mutex = xSemaphoreCreateMutex();
+    if (metrics_mutex == NULL) {
+        ESP_LOGE(TAG, "Failed to create metrics mutex");
+        return ESP_FAIL;
+    }
+    
+    // Initialize the metrics storage
+    metrics_capacity = INITIAL_METRICS_CAPACITY;
+    latest_metrics = (StoredMetric*)malloc(metrics_capacity * sizeof(StoredMetric));
+    if (latest_metrics == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate memory for metrics storage");
+        vSemaphoreDelete(metrics_mutex);
+        metrics_mutex = NULL;
+        return ESP_FAIL;
+    }
+    metrics_count = 0;
+    
     // Create the metrics queue
     metrics_queue = xQueueCreate(METRICS_QUEUE_SIZE, sizeof(MetricReport));
     if (metrics_queue == NULL) {
         ESP_LOGE(TAG, "Failed to create metrics queue");
+        free(latest_metrics);
+        latest_metrics = NULL;
+        vSemaphoreDelete(metrics_mutex);
+        metrics_mutex = NULL;
         return ESP_FAIL;
     }
 
@@ -197,6 +395,10 @@ esp_err_t initialize_metrics_system(void) {
         ESP_LOGE(TAG, "Failed to create metrics reporting task");
         vQueueDelete(metrics_queue);
         metrics_queue = NULL;
+        free(latest_metrics);
+        latest_metrics = NULL;
+        vSemaphoreDelete(metrics_mutex);
+        metrics_mutex = NULL;
         return ESP_FAIL;
     }
 
@@ -258,4 +460,64 @@ esp_err_t report_metric(const char* metric_name, float value, TagCollection* tag
     }
 
     return ESP_OK;
+}
+
+// Get the latest metrics
+StoredMetricCollection* get_latest_metrics(void) {
+    if (metrics_mutex == NULL || latest_metrics == NULL) {
+        ESP_LOGE(TAG, "Metrics storage not initialized");
+        return NULL;
+    }
+    
+    // Take mutex for the read
+    if (xSemaphoreTake(metrics_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+        ESP_LOGE(TAG, "Failed to take metrics mutex for read");
+        return NULL;
+    }
+    
+    // Allocate collection structure
+    StoredMetricCollection* collection = (StoredMetricCollection*)malloc(sizeof(StoredMetricCollection));
+    if (collection == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate memory for metrics collection");
+        xSemaphoreGive(metrics_mutex);
+        return NULL;
+    }
+    
+    // Set up collection
+    collection->count = metrics_count;
+    collection->capacity = metrics_count;
+    
+    if (metrics_count == 0) {
+        collection->metrics = NULL;
+        xSemaphoreGive(metrics_mutex);
+        return collection;
+    }
+    
+    // Allocate metrics array
+    collection->metrics = (StoredMetric*)malloc(metrics_count * sizeof(StoredMetric));
+    if (collection->metrics == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate memory for metrics array copy");
+        free(collection);
+        xSemaphoreGive(metrics_mutex);
+        return NULL;
+    }
+    
+    // Copy metrics
+    memcpy(collection->metrics, latest_metrics, metrics_count * sizeof(StoredMetric));
+    
+    xSemaphoreGive(metrics_mutex);
+    return collection;
+}
+
+// Free a metric collection
+void free_metric_collection(StoredMetricCollection* collection) {
+    if (collection == NULL) {
+        return;
+    }
+    
+    if (collection->metrics != NULL) {
+        free(collection->metrics);
+    }
+    
+    free(collection);
 }

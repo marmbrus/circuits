@@ -40,6 +40,21 @@ typedef struct {
     TagCollection* tags;
 } MetricReport;
 
+// Structure to hold a stored metric value with timestamp
+typedef struct {
+    char metric_name[MAX_METRIC_NAME_LEN];
+    float value;
+    TagCollection tags;
+    int64_t timestamp;
+} StoredMetric;
+
+// Structure to hold a collection of stored metrics
+typedef struct {
+    StoredMetric* metrics;
+    int count;
+    int capacity;
+} StoredMetricCollection;
+
 // Initialize tag system with basic device info (call once at startup)
 esp_err_t initialize_tag_system(void);
 
@@ -54,6 +69,10 @@ void free_tag_collection(TagCollection* collection);
 // Metrics reporting system - initializes and starts the metrics background task
 esp_err_t initialize_metrics_system(void);
 esp_err_t report_metric(const char* metric_name, float value, TagCollection* tags);
+
+// Get latest metrics values
+StoredMetricCollection* get_latest_metrics(void);
+void free_metric_collection(StoredMetricCollection* collection);
 
 #ifdef __cplusplus
 }

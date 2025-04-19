@@ -71,6 +71,19 @@ public:
     bool isInitialized() const override;
 
     /**
+     * @brief Check if the sensor has an interrupt that needs polling
+     * 
+     * @return true If the sensor has an interrupt triggered
+     * @return false If no interrupt is triggered
+     */
+    bool hasInterruptTriggered() override;
+
+    /**
+     * @brief Clear the interrupt flag after polling
+     */
+    void clearInterruptFlag() override;
+
+    /**
      * @brief Check if movement was detected
      *
      * @return true If movement was detected
@@ -120,6 +133,9 @@ public:
     esp_err_t readRegister(uint8_t reg, uint8_t *value);
 
 private:
+    // Friend declaration to allow ISR to access private members
+    friend void IRAM_ATTR lis2dh_isr_handler(void* arg);
+    
     // Device address
     static constexpr uint8_t LIS2DH12_I2C_ADDR = 0x18; // SA0 pin to VDD
     static constexpr uint8_t LIS2DH12_ID = 0x33; // Who am I value
@@ -164,4 +180,9 @@ private:
     bool _movementDetected; // Flag indicating if movement was detected
     bool _initialized; // Flag indicating if the sensor has been initialized
     TagCollection* _tag_collection; // Tag collection for metrics reporting
+    
+    // Variables for interrupt handling and rate limiting
+    bool _interruptTriggered; // Flag indicating if an interrupt was triggered
+    uint32_t _lastPollTime;   // Timestamp of the last successful poll (in milliseconds)
+    static constexpr uint32_t MIN_POLL_INTERVAL_MS = 1000; // Minimum 1 second between polls
 };

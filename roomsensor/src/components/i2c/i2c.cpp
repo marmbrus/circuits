@@ -31,21 +31,37 @@ static SemaphoreHandle_t s_sensorInterruptSemaphore = nullptr;
 // Sensor polling task function
 static void sensor_polling_task(void* pvParameters) {
     const TickType_t polling_period = pdMS_TO_TICKS(10000); // 10 seconds
+    bool woken_by_interrupt = false;
 
     while (true) {
         // Block until signaled or the timeout expires
         if (xSemaphoreTake(s_sensorInterruptSemaphore, polling_period) == pdTRUE) {
-            ESP_LOGD(TAG, "Woken by interrupt signal, polling sensors now...");
+            ESP_LOGD(TAG, "Woken by interrupt signal, polling sensors with interrupts...");
+            woken_by_interrupt = true;
         } else {
-            ESP_LOGD(TAG, "Polling interval reached, polling sensors...");
+            ESP_LOGD(TAG, "Polling interval reached, polling all sensors...");
+            woken_by_interrupt = false;
         }
 
-        // Poll each initialized sensor
-        for (int i = 0; i < s_sensor_count; i++) {
-            if (s_sensors[i]->isInitialized()) {
-                ESP_LOGD(TAG, "Polling sensor: %s", s_sensors[i]->name().c_str());
-                s_sensors[i]->poll();
-                // Each sensor now handles events internally in its poll() method
+        if (woken_by_interrupt) {
+            // Only poll sensors that have triggered interrupts
+            for (int i = 0; i < s_sensor_count; i++) {
+                if (s_sensors[i]->isInitialized() && s_sensors[i]->hasInterruptTriggered()) {
+                    ESP_LOGD(TAG, "Polling sensor with interrupt: %s", s_sensors[i]->name().c_str());
+                    s_sensors[i]->poll();
+                    // Clear the interrupt flag after polling
+                    s_sensors[i]->clearInterruptFlag();
+                }
+            }
+        } else {
+            // Poll all initialized sensors during regular intervals
+            for (int i = 0; i < s_sensor_count; i++) {
+                if (s_sensors[i]->isInitialized()) {
+                    ESP_LOGD(TAG, "Polling sensor: %s", s_sensors[i]->name().c_str());
+                    s_sensors[i]->poll();
+                    // Clear any pending interrupt flags
+                    s_sensors[i]->clearInterruptFlag();
+                }
             }
         }
     }

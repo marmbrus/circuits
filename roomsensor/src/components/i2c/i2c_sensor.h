@@ -71,6 +71,26 @@ public:
      */
     virtual bool isInitialized() const = 0;
 
+    /**
+     * @brief Check if the sensor has an interrupt that needs polling
+     * 
+     * This method should be implemented by sensors that support interrupts
+     * to indicate when they need to be polled due to an interrupt.
+     * After polling, the interrupt flag should be cleared.
+     * 
+     * @return true If the sensor has triggered an interrupt
+     * @return false If no interrupt is triggered
+     */
+    virtual bool hasInterruptTriggered() { return false; }
+
+    /**
+     * @brief Clear the interrupt flag after polling
+     * 
+     * This method should be called after polling a sensor that had
+     * an interrupt triggered to reset its interrupt state.
+     */
+    virtual void clearInterruptFlag() {}
+
 protected:
     i2c_master_bus_handle_t _bus_handle; ///< Handle to the I2C master bus
     i2c_master_dev_handle_t _dev_handle; ///< Handle to the I2C device
