@@ -17,6 +17,8 @@ void IRAM_ATTR lis2dh_isr_handler(void* arg)
     LIS2DHSensor* sensor = static_cast<LIS2DHSensor*>(arg);
     if (sensor) {
         sensor->_interruptTriggered = true;
+        // Note: We'll process the actual interrupt source register in poll()
+        // since we can't do I2C operations safely from an ISR
     }
     
     // Call the signalSensorInterrupt function when interrupt triggers
@@ -31,7 +33,12 @@ LIS2DHSensor::LIS2DHSensor() :
     _initialized(false),
     _tag_collection(nullptr),
     _interruptTriggered(false),
-    _lastPollTime(0) {
+    _lastPollTime(0),
+    _xAxisTriggerCount(0),
+    _yAxisTriggerCount(0),
+    _zAxisTriggerCount(0),
+    _maxMagnitude(0.0f),
+    _hasInterruptData(false) {
     ESP_LOGD(TAG, "LIS2DHSensor constructed");
 }
 
@@ -251,20 +258,6 @@ esp_err_t LIS2DHSensor::getAccelData(AccelData &accel) {
     return ESP_OK;
 }
 
-bool LIS2DHSensor::isSignificantMovement(float x, float y, float z) {
-    bool significant = (
-        fabsf(x - _lastAccel.x) > MOVEMENT_THRESHOLD ||
-        fabsf(y - _lastAccel.y) > MOVEMENT_THRESHOLD ||
-        fabsf(z - _lastAccel.z) > MOVEMENT_THRESHOLD
-    );
-
-    _lastAccel.x = x;
-    _lastAccel.y = y;
-    _lastAccel.z = z;
-
-    return significant;
-}
-
 void LIS2DHSensor::poll() {
     if (!isInitialized()) {
         ESP_LOGE(TAG, "Cannot poll: sensor not initialized");
@@ -274,50 +267,98 @@ void LIS2DHSensor::poll() {
     // Get current time in milliseconds
     uint32_t current_time = esp_timer_get_time() / 1000;
     
+    // Read acceleration data to calculate magnitude
+    AccelData accel;
+    esp_err_t ret = getAccelData(accel);
+    
+    if (ret == ESP_OK) {
+        // Calculate magnitude of acceleration
+        float magnitude = calculateMagnitude(accel.x, accel.y, accel.z);
+        
+        // Update maximum magnitude if necessary
+        if (magnitude > _maxMagnitude) {
+            _maxMagnitude = magnitude;
+        }
+    }
+    
+    // Check interrupt source register
+    uint8_t int_source = 0;
+    ret = readRegister(INT1_SRC, &int_source);
+    
+    if (ret == ESP_OK) {
+        // Log the raw register for debugging
+        ESP_LOGD(TAG, "INT1_SRC register: 0x%02x (IA:%d, ZH:%d, ZL:%d, YH:%d, YL:%d, XH:%d, XL:%d)",
+                 int_source,
+                 (int_source & INT_ACTIVE) ? 1 : 0,
+                 (int_source & INT_Z_HIGH) ? 1 : 0,
+                 (int_source & INT_Z_LOW) ? 1 : 0,
+                 (int_source & INT_Y_HIGH) ? 1 : 0,
+                 (int_source & INT_Y_LOW) ? 1 : 0,
+                 (int_source & INT_X_HIGH) ? 1 : 0,
+                 (int_source & INT_X_LOW) ? 1 : 0);
+                 
+        if (int_source & INT_ACTIVE) {
+            // Process which axes triggered
+            processInterruptSource(int_source);
+        }
+    }
+    
     // Check if we're within the minimum polling interval
     if (current_time - _lastPollTime < MIN_POLL_INTERVAL_MS) {
-        ESP_LOGD(TAG, "Skipping poll - too soon since last poll (%" PRIu32 " ms < %" PRIu32 " ms)",
-                 current_time - _lastPollTime, MIN_POLL_INTERVAL_MS);
+        ESP_LOGD(TAG, "Within polling interval, accumulating data");
         return;
     }
     
-    // Update the last poll time
-    _lastPollTime = current_time;
-
-    // Method 1: Poll acceleration data and check for significant movement
-    AccelData accel;
-    esp_err_t ret = getAccelData(accel);
-
-    if (ret == ESP_OK) {
-        _movementDetected = isSignificantMovement(accel.x, accel.y, accel.z);
-        if (_movementDetected) {
-            ESP_LOGI(TAG, "Significant movement detected!");
-        }
-
-        // Report acceleration metrics
+    // Outside the polling interval, time to report accumulated data
+    if (_hasInterruptData) {
+        ESP_LOGI(TAG, "Movement detected: X:%lu Y:%lu Z:%lu triggers, max magnitude: %.3f g", 
+                 _xAxisTriggerCount, _yAxisTriggerCount, _zAxisTriggerCount, _maxMagnitude);
+        
+        // Set the movement detected flag for API consistency
+        _movementDetected = true;
+        
+        // Report metrics for each axis count
+        static const char* METRIC_X_AXIS = "accel_x_triggers";
+        static const char* METRIC_Y_AXIS = "accel_y_triggers";
+        static const char* METRIC_Z_AXIS = "accel_z_triggers";
+        static const char* METRIC_MAX_MAG = "accel_max_magnitude";
+        
+        report_metric(METRIC_X_AXIS, (float)_xAxisTriggerCount, _tag_collection);
+        report_metric(METRIC_Y_AXIS, (float)_yAxisTriggerCount, _tag_collection);
+        report_metric(METRIC_Z_AXIS, (float)_zAxisTriggerCount, _tag_collection);
+        report_metric(METRIC_MAX_MAG, _maxMagnitude, _tag_collection);
+        
+        // Also report the current acceleration values for context
         static const char* METRIC_ACCEL_X = "accel_x";
         static const char* METRIC_ACCEL_Y = "accel_y";
         static const char* METRIC_ACCEL_Z = "accel_z";
-
+        
         report_metric(METRIC_ACCEL_X, accel.x, _tag_collection);
         report_metric(METRIC_ACCEL_Y, accel.y, _tag_collection);
         report_metric(METRIC_ACCEL_Z, accel.z, _tag_collection);
+        
+        // Report overall movement detection metric
+        static const char* METRIC_MOVEMENT = "movement";
+        report_metric(METRIC_MOVEMENT, 1.0f, _tag_collection);
+    } else {
+        ESP_LOGD(TAG, "No movement detected since last poll");
+        
+        // Report zero movement for metrics
+        static const char* METRIC_MOVEMENT = "movement";
+        report_metric(METRIC_MOVEMENT, 0.0f, _tag_collection);
     }
-
-    // Method 2: Check interrupt status register if in interrupt mode
-    uint8_t int_source;
-    ret = readRegister(INT1_SRC, &int_source);
-
-    if (ret == ESP_OK && (int_source & 0x40)) { // 0x40 = IA bit (Interrupt Active)
-        ESP_LOGI(TAG, "Movement interrupt detected! (INT1_SRC: 0x%02x)", int_source);
-        _movementDetected = true;
-    }
-
-    // Report movement detection metric
-    static const char* METRIC_MOVEMENT = "movement";
-    report_metric(METRIC_MOVEMENT, _movementDetected ? 1.0f : 0.0f, _tag_collection);
     
-    // Clear the interrupt flag after polling
+    // Reset counters and flags
+    _xAxisTriggerCount = 0;
+    _yAxisTriggerCount = 0;
+    _zAxisTriggerCount = 0;
+    _maxMagnitude = 0.0f;
+    _hasInterruptData = false;
+    
+    // Update the last poll time
+    _lastPollTime = current_time;
+    
+    // Clear the interrupt flag
     _interruptTriggered = false;
 }
 
@@ -488,4 +529,42 @@ bool LIS2DHSensor::hasInterruptTriggered() {
 
 void LIS2DHSensor::clearInterruptFlag() {
     _interruptTriggered = false;
+}
+
+// Calculate magnitude of acceleration vector
+float LIS2DHSensor::calculateMagnitude(float x, float y, float z) {
+    return sqrtf(x*x + y*y + z*z);
+}
+
+// Process interrupt source register and update axis counters
+void LIS2DHSensor::processInterruptSource(uint8_t int_source) {
+    // We already logged the full register in poll(), no need to repeat here
+    
+    // Process each axis independently - only count HIGH events since that's what we configured
+    bool anyTriggered = false;
+    
+    // Check X-axis HIGH event only
+    if (int_source & INT_X_HIGH) {
+        _xAxisTriggerCount++;
+        ESP_LOGD(TAG, "X-axis HIGH event triggered");
+        anyTriggered = true;
+    }
+    
+    // Check Y-axis HIGH event only
+    if (int_source & INT_Y_HIGH) {
+        _yAxisTriggerCount++;
+        ESP_LOGD(TAG, "Y-axis HIGH event triggered");
+        anyTriggered = true;
+    }
+    
+    // Check Z-axis HIGH event only
+    if (int_source & INT_Z_HIGH) {
+        _zAxisTriggerCount++;
+        ESP_LOGD(TAG, "Z-axis HIGH event triggered");
+        anyTriggered = true;
+    }
+    
+    if (anyTriggered) {
+        _hasInterruptData = true;
+    }
 }

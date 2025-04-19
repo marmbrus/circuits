@@ -7,6 +7,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_timer.h"
 
 static const char* TAG = "I2C";
 
@@ -30,39 +31,76 @@ static SemaphoreHandle_t s_sensorInterruptSemaphore = nullptr;
 
 // Sensor polling task function
 static void sensor_polling_task(void* pvParameters) {
-    const TickType_t polling_period = pdMS_TO_TICKS(10000); // 10 seconds
-    bool woken_by_interrupt = false;
+    const TickType_t polling_interval = pdMS_TO_TICKS(100); // Poll every 100ms
+    const uint32_t full_report_interval_ms = 10000; // Full report every 10 seconds
+    const uint32_t interrupt_follow_up_ms = 1000; // Follow-up poll 1 second after interrupt
+
+    uint32_t last_full_report_time = 0;
+    uint32_t interrupt_follow_up_time = 0;
+    bool follow_up_scheduled = false;
+
+    // Get initial time
+    last_full_report_time = esp_timer_get_time() / 1000;
 
     while (true) {
-        // Block until signaled or the timeout expires
-        if (xSemaphoreTake(s_sensorInterruptSemaphore, polling_period) == pdTRUE) {
-            ESP_LOGD(TAG, "Woken by interrupt signal, polling sensors with interrupts...");
-            woken_by_interrupt = true;
-        } else {
-            ESP_LOGD(TAG, "Polling interval reached, polling all sensors...");
-            woken_by_interrupt = false;
+        // Block until signaled or the short polling interval expires
+        bool interrupt_triggered = (xSemaphoreTake(s_sensorInterruptSemaphore, polling_interval) == pdTRUE);
+        
+        // Get current time
+        uint32_t current_time = esp_timer_get_time() / 1000;
+        
+        // Check if it's time for a full report (only execute this path if we're not handling an interrupt)
+        bool do_full_report = (current_time - last_full_report_time >= full_report_interval_ms);
+        
+        // Check if we have a scheduled follow-up poll
+        bool do_follow_up = false;
+        if (follow_up_scheduled && current_time >= interrupt_follow_up_time) {
+            ESP_LOGD(TAG, "Performing interrupt follow-up poll");
+            do_follow_up = true;
+            follow_up_scheduled = false;
         }
-
-        if (woken_by_interrupt) {
+        
+        if (interrupt_triggered) {
+            ESP_LOGD(TAG, "Woken by interrupt signal, polling sensors with interrupts...");
+            
             // Only poll sensors that have triggered interrupts
             for (int i = 0; i < s_sensor_count; i++) {
                 if (s_sensors[i]->isInitialized() && s_sensors[i]->hasInterruptTriggered()) {
                     ESP_LOGD(TAG, "Polling sensor with interrupt: %s", s_sensors[i]->name().c_str());
                     s_sensors[i]->poll();
-                    // Clear the interrupt flag after polling
+                    s_sensors[i]->clearInterruptFlag();
+                    
+                    // Schedule a follow-up poll to flush any accumulated data
+                    interrupt_follow_up_time = current_time + interrupt_follow_up_ms;
+                    follow_up_scheduled = true;
+                }
+            }
+        } else if (do_follow_up) {
+            // This is a follow-up poll after an interrupt - only poll interrupt-capable sensors
+            ESP_LOGD(TAG, "Performing follow-up poll to flush accumulated data");
+            
+            for (int i = 0; i < s_sensor_count; i++) {
+                if (s_sensors[i]->isInitialized() && s_sensors[i]->hasInterruptTriggered()) {
+                    ESP_LOGD(TAG, "Follow-up polling sensor: %s", s_sensors[i]->name().c_str());
+                    s_sensors[i]->poll();
                     s_sensors[i]->clearInterruptFlag();
                 }
             }
-        } else {
-            // Poll all initialized sensors during regular intervals
+        } else if (do_full_report) {
+            // This is a regular full report at 10-second intervals
+            ESP_LOGD(TAG, "Full reporting interval reached, polling all sensors...");
+            
+            // Poll all initialized sensors
             for (int i = 0; i < s_sensor_count; i++) {
                 if (s_sensors[i]->isInitialized()) {
                     ESP_LOGD(TAG, "Polling sensor: %s", s_sensors[i]->name().c_str());
                     s_sensors[i]->poll();
-                    // Clear any pending interrupt flags
                     s_sensors[i]->clearInterruptFlag();
                 }
             }
+            
+            // Update the last report time AFTER we've done the polling
+            last_full_report_time = current_time;
         }
     }
 }

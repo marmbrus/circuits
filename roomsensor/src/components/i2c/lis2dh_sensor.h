@@ -154,8 +154,14 @@ private:
     static constexpr uint8_t INT1_THS = 0x32;
     static constexpr uint8_t INT1_DURATION = 0x33;
 
-    // Motion detection threshold
-    static constexpr float MOVEMENT_THRESHOLD = 0.1f;
+    // INT1_SRC register bit definitions
+    static constexpr uint8_t INT_X_HIGH = 0x02; // X high event
+    static constexpr uint8_t INT_Y_HIGH = 0x08; // Y high event
+    static constexpr uint8_t INT_Z_HIGH = 0x20; // Z high event
+    static constexpr uint8_t INT_X_LOW = 0x01;  // X low event
+    static constexpr uint8_t INT_Y_LOW = 0x04;  // Y low event
+    static constexpr uint8_t INT_Z_LOW = 0x10;  // Z low event
+    static constexpr uint8_t INT_ACTIVE = 0x40; // Interrupt active bit
 
     // Internal methods that don't check initialization status
     esp_err_t _writeRegister(uint8_t reg, uint8_t value);
@@ -171,8 +177,11 @@ private:
     // Read acceleration data from the sensor
     esp_err_t getAccelData(AccelData &accel);
 
-    // Check if movement is significant by comparing with threshold
-    bool isSignificantMovement(float x, float y, float z);
+    // Calculate magnitude of acceleration vector in terms of g
+    float calculateMagnitude(float x, float y, float z);
+
+    // Process interrupt source register and update axis counters
+    void processInterruptSource(uint8_t int_source);
 
     // Member variables
     i2c_master_bus_handle_t _bus_handle; // I2C bus handle
@@ -185,4 +194,11 @@ private:
     bool _interruptTriggered; // Flag indicating if an interrupt was triggered
     uint32_t _lastPollTime;   // Timestamp of the last successful poll (in milliseconds)
     static constexpr uint32_t MIN_POLL_INTERVAL_MS = 1000; // Minimum 1 second between polls
+    
+    // Variables for accumulating interrupt data between polls
+    uint32_t _xAxisTriggerCount; // Count of X-axis triggers since last report
+    uint32_t _yAxisTriggerCount; // Count of Y-axis triggers since last report
+    uint32_t _zAxisTriggerCount; // Count of Z-axis triggers since last report
+    float _maxMagnitude;        // Maximum magnitude detected since last report
+    bool _hasInterruptData;     // Flag indicating if there's accumulated interrupt data
 };
