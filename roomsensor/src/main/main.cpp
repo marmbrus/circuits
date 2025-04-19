@@ -9,6 +9,7 @@
 #include "communication.h"
 #include "i2c.h"
 #include "http.h"
+#include "ota.h"
 
 static const char* TAG = "main";
 
@@ -53,6 +54,13 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "Failed to start HTTP server");
     } else {
         ESP_LOGI(TAG, "HTTP server started successfully");
+    }
+
+    // Check for OTA updates
+    if (check_for_ota_update() != ESP_OK) {
+        ESP_LOGW(TAG, "OTA update check failed");
+    } else {
+        ESP_LOGI(TAG, "OTA update check completed");
     }
 
     // Main loop
