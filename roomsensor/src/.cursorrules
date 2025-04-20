@@ -1,0 +1,6 @@
+We are building an embeded sensory platform for IOT / Home automation, using the ESP32S3.
+Be sure the reference the documentation specific version of the ESP-IDF when you are using new APIs.
+Global configuration goes in components/common/config.h.
+Global APIs for talking between components go in components/common/communication.h.
+
+Build Command: . ~/esp/v5.3.2/esp-idf/export.sh && idf.py build
