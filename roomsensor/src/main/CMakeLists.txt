@@ -19,6 +19,9 @@ execute_process(
 
 message(STATUS "Embedding build timestamp (UTC): ${BUILD_TIMESTAMP}")
 
+# Explicitly set the timestamp in the CMake cache so deploy_ota.sh can read it
+set(BUILD_TIMESTAMP ${BUILD_TIMESTAMP} CACHE STRING "Firmware build timestamp (UTC epoch)" FORCE)
+
 # Add the timestamp as a compile definition
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
     "BUILD_TIMESTAMP=${BUILD_TIMESTAMP}"
