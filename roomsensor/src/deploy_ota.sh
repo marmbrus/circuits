@@ -43,11 +43,16 @@ echo "Building project with idf.py..."
 idf.py build || { echo "Error: Build failed"; exit 1; }
 echo "Build successful"
 
-# Get build timestamp in UTC - very important for correct comparisons across timezones
-# Use UTC time (seconds since epoch, UTC timezone)
-BUILD_TIMESTAMP=$(date -u +%s)
-BUILD_ISO_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-echo "Build timestamp (UTC): $BUILD_ISO_TIME ($BUILD_TIMESTAMP)"
+# Extract build timestamp from CMake cache instead of generating a new one
+BUILD_TIMESTAMP=$(grep -a "BUILD_TIMESTAMP:STRING=" build/CMakeCache.txt | cut -d= -f2)
+if [ -z "$BUILD_TIMESTAMP" ]; then
+    echo "Error: Could not extract BUILD_TIMESTAMP from CMake cache"
+    exit 1
+fi
+
+# Generate ISO format time from the timestamp
+BUILD_ISO_TIME=$(date -u -r $BUILD_TIMESTAMP +"%Y-%m-%dT%H:%M:%SZ")
+echo "Using embedded build timestamp (UTC): $BUILD_ISO_TIME ($BUILD_TIMESTAMP)"
 
 # Check if the binary exists
 if [ ! -f "$BIN_FILE" ]; then

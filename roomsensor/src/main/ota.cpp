@@ -370,8 +370,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // We only update if remote timestamp is newer than our firmware build time
     if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
         // Log raw timestamp values for debugging
-        ESP_LOGI(TAG, "Raw timestamp values - Remote: %lld, Local: %lld", 
-                (long long)remote_timestamp, (long long)FIRMWARE_BUILD_TIME);
+        ESP_LOGI(TAG, "Raw timestamp values - Remote: %ld, Local: %ld", 
+                (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
         
         // Check for unrealistic timestamp values (e.g., more than 10 years in the future)
         time_t current_time = time(NULL);
