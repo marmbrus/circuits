@@ -91,7 +91,7 @@ static void report_ota_status(ota_status_t status, const char* remote_hash);
 void ota_notify_network_connected(void) {
     if (network_event_group != NULL) {
         xEventGroupSetBits(network_event_group, NETWORK_CONNECTED_BIT);
-        ESP_LOGI(TAG, "Network connection signaled to OTA task");
+        ESP_LOGD(TAG, "Network connection signaled to OTA task");
     }
 }
 
@@ -138,7 +138,7 @@ static const char* extract_git_hash(const char* version) {
         }
 
         if (is_hash) {
-            ESP_LOGI(TAG, "Version '%s' appears to be a git hash", version);
+            ESP_LOGD(TAG, "Version '%s' appears to be a git hash", version);
             return version;
         }
     }
@@ -146,37 +146,6 @@ static const char* extract_git_hash(const char* version) {
     // Could not extract hash, return original
     ESP_LOGW(TAG, "Could not extract git hash from '%s', using as-is", version);
     return version;
-}
-
-// Check if we previously applied this update (for logging purposes only)
-// This should NOT influence the decision to upgrade
-static bool already_applied_update(time_t remote_timestamp) {
-    nvs_handle_t nvs_handle;
-    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvs_handle);
-
-    if (err != ESP_OK) {
-        ESP_LOGD(TAG, "Failed to open NVS namespace: %s", esp_err_to_name(err));
-        return false;
-    }
-
-    // Load last OTA timestamp
-    time_t last_ota_timestamp = 0;
-    err = nvs_get_i64(nvs_handle, NVS_LAST_OTA_TIME, (int64_t*)&last_ota_timestamp);
-
-    if (err == ESP_OK && last_ota_timestamp > 0 && remote_timestamp > 0 &&
-        remote_timestamp <= last_ota_timestamp) {
-        char time_str[64];
-        struct tm timeinfo;
-        gmtime_r(&last_ota_timestamp, &timeinfo);
-        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S UTC", &timeinfo);
-
-        ESP_LOGI(TAG, "Previous update already applied at %s (informational only)", time_str);
-        nvs_close(nvs_handle);
-        return true;
-    }
-
-    nvs_close(nvs_handle);
-    return false;
 }
 
 // Save OTA information for logging purposes (does not affect update decision)
@@ -281,7 +250,7 @@ static void mark_app_valid() {
     } else {
         // This could happen for factory partition which doesn't have OTA data
         // It's normal for the factory app, so we'll make this INFO level
-        ESP_LOGI(TAG, "Could not get OTA state: %s (this is normal for factory app)", esp_err_to_name(err));
+        ESP_LOGD(TAG, "Could not get OTA state: %s (this is normal for factory app)", esp_err_to_name(err));
     }
 }
 
@@ -317,12 +286,9 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         return false;
     }
 
-    // Reduce logging verbosity - these are details, not essential status
-    // ESP_LOGI(TAG, "Remote firmware version: %s", remote_version_str);
-    // ESP_LOGI(TAG, "Firmware URL: %s", firmware_url);
-
     // Store remote version for status reporting
     strncpy(remote_version, remote_version_str, sizeof(remote_version) - 1);
+    ESP_LOGD(TAG, "Stored remote version: %s", remote_version);
 
     // Get remote timestamp for comparison
     remote_timestamp = 0;
@@ -364,8 +330,6 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     const esp_partition_t *running = esp_ota_get_running_partition();
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
         is_factory = true;
-        // Report DEV_BUILD status - this will be done when status is published
-        // No need for extra log here
     }
 
     // PRIMARY CHECK: Compare build timestamps
@@ -391,6 +355,11 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             
             // Keep this log concise
             ESP_LOGI(TAG, "Newer version found (%ld sec newer), starting upgrade...", (long)time_diff);
+
+            // Special message for factory builds
+            if (is_factory) {
+                ESP_LOGI(TAG, "OTA update available for factory build - will upgrade to: %s", remote_hash);
+            }
 
             // Set system state to OTA_UPDATING to show white pulse animation
             ESP_LOGI(TAG, "Setting LED state to OTA_UPDATING for upgrade animation");
@@ -443,9 +412,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 report_ota_status(OTA_STATUS_NEWER, remote_hash);
             }
         } else {
-            ESP_LOGI(TAG, "Remote and local builds have same timestamp: %ld", (long)remote_timestamp);
-            ESP_LOGI(TAG, "Skipping update: already at latest version");
-            
+            // No need to log this common case
             // Report UP_TO_DATE status, but only if not already reported as DEV_BUILD
             if (!is_factory) {
                 report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
@@ -511,13 +478,16 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
                 // ESP_LOGI(TAG, "Manifest downloaded (%d bytes)", data_len);
                 if (data_len > 0) {
                     // Only show preview at DEBUG level
+                    char preview[101] = {0}; // Declare preview here
+                    strncpy(preview, manifest_data, 100);
                     // ESP_LOGI(TAG, "Manifest preview: %s%s", preview, 
                     //          (strlen(manifest_data) > 100) ? "..." : "");
                     ESP_LOGD(TAG, "Manifest downloaded (%d bytes): %s%s", data_len, 
                              preview, (strlen(manifest_data) > 100) ? "..." : "");
                     
-                    // Process the manifest
-                    bool update_result = parse_manifest_and_check_update(manifest_data);
+                    // Process the manifest - remove unused variable assignment
+                    // bool update_result = parse_manifest_and_check_update(manifest_data);
+                    parse_manifest_and_check_update(manifest_data);
                     // Remove redundant log - the status report is the main output
                     // ESP_LOGI(TAG, "Manifest parse result: %s", update_result ? "Update triggered" : "No update needed");
                 } else {
@@ -572,7 +542,7 @@ static void ota_update_task(void *pvParameter) {
                         pdFALSE, pdTRUE, portMAX_DELAY);
                         
     if (bits & NETWORK_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "Network connected, proceeding with OTA checks");
+        ESP_LOGD(TAG, "Network connected, proceeding with OTA checks");
     } else {
         ESP_LOGW(TAG, "Unexpected event bits: 0x%lx", bits);
     }
@@ -620,8 +590,7 @@ static void ota_update_task(void *pvParameter) {
         } else {
             int status_code = esp_http_client_get_status_code(client);
             if (status_code == 200) {
-                // Success, manifest handled by event handler
-                // No extra log needed here
+                ota_report_status();
             } else {
                 ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
             }
@@ -693,13 +662,6 @@ esp_err_t ota_init(void) {
         ESP_LOGW(TAG, "OTA task already running, skipping creation");
     }
     
-    // For factory builds, report DEV_BUILD status on boot - this will be sent when WiFi/MQTT connects
-    if (is_factory) {
-        ESP_LOGI(TAG, "Will report DEV_BUILD status when network connects");
-        // We can't report immediately because MQTT might not be connected yet
-        // The status will be reported in parse_manifest_and_check_update when the manifest is fetched
-        // OR it will be reported by ota_report_status if called externally
-    }
     
     ESP_LOGI(TAG, "OTA module initialized successfully");
     return ESP_OK;
@@ -792,6 +754,12 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
     // Include remote version when available
     if (remote_hash && strlen(remote_hash) > 0) {
         cJSON_AddStringToObject(ota_json, "remote_version", remote_hash);
+        ESP_LOGD(TAG, "Adding remote_version to status: %s", remote_hash);
+    } else if (strlen(remote_version) > 0) {
+        // Use global remote_version as fallback
+        const char* hash = extract_git_hash(remote_version);
+        cJSON_AddStringToObject(ota_json, "remote_version", hash);
+        ESP_LOGD(TAG, "Adding remote_version from global: %s", hash);
     }
 
     // Format build timestamps in ISO format
@@ -809,6 +777,7 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
         gmtime_r(&remote_timestamp, &remote_tm);
         strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%dT%H:%M:%SZ", &remote_tm);
         cJSON_AddStringToObject(ota_json, "remote_build_time", remote_time_str);
+        ESP_LOGD(TAG, "Adding remote_build_time to status: %s", remote_time_str);
     }
 
     // Convert to string and publish
