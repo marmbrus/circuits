@@ -10,6 +10,12 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <time.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "config.h"
+#include "system_state.h"
+#include "led_control.h"
 
 // Define build timestamp if not defined by CMake
 #ifndef BUILD_TIMESTAMP
@@ -20,6 +26,12 @@ static const char *TAG = "ota";
 static const char *MANIFEST_URL = "http://gaia.home:3000/manifest.json";
 static char current_version[33] = {0}; // Store current firmware version (git hash)
 static char extracted_hash[33] = {0};  // Store extracted Git hash
+static TaskHandle_t ota_task_handle = NULL;
+static bool ota_running = false;
+
+// Event group to signal that network is connected
+static EventGroupHandle_t network_event_group;
+#define NETWORK_CONNECTED_BIT BIT0
 
 // Get the embedded build timestamp (set at compile time)
 static const time_t FIRMWARE_BUILD_TIME = (time_t)BUILD_TIMESTAMP;
@@ -28,6 +40,14 @@ static const time_t FIRMWARE_BUILD_TIME = (time_t)BUILD_TIMESTAMP;
 static const char* NVS_NAMESPACE = "ota";
 static const char* NVS_LAST_OTA_TIME = "last_ota_time";
 static const char* NVS_LAST_OTA_HASH = "last_ota_hash";
+
+// Set the network connected bit when network is up
+void ota_notify_network_connected(void) {
+    if (network_event_group != NULL) {
+        xEventGroupSetBits(network_event_group, NETWORK_CONNECTED_BIT);
+        ESP_LOGI(TAG, "Network connection signaled to OTA task");
+    }
+}
 
 // Extract the git hash from a version string that might be in format like "rev20241211-75-gb1768e2-dirty"
 static const char* extract_git_hash(const char* version) {
@@ -277,6 +297,9 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                     (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME,
                     (long)(remote_timestamp - FIRMWARE_BUILD_TIME));
 
+            // Set system state to OTA_UPDATING to show white pulse animation
+            led_control_set_state(OTA_UPDATING);
+
             // Perform the OTA update
             ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
 
@@ -304,6 +327,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 return true;
             } else {
                 ESP_LOGE(TAG, "OTA update failed with error: %s", esp_err_to_name(ret));
+                // Reset system state after failed update
+                led_control_set_state(FULLY_CONNECTED);
                 mark_app_valid();
                 cJSON_Delete(root);
                 return false;
@@ -381,29 +406,103 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     return ESP_OK;
 }
 
-// Check for OTA updates
-esp_err_t check_for_ota_update(void) {
+// OTA update task that runs in the background
+static void ota_update_task(void *pvParameter) {
+    ESP_LOGI(TAG, "OTA update task started");
+    
+    // Wait for network to be connected before proceeding
+    ESP_LOGI(TAG, "Waiting for network to be connected...");
+    xEventGroupWaitBits(network_event_group, NETWORK_CONNECTED_BIT, 
+                        pdFALSE, pdTRUE, portMAX_DELAY);
+    ESP_LOGI(TAG, "Network connected, proceeding with OTA checks");
+    
+    // Get current version on startup
     get_current_version();
+    
+    // Ensure the app is marked valid to prevent rollback
+    mark_app_valid();
+    
+    while (1) {
+        // Check for updates
+        ESP_LOGI(TAG, "Checking for OTA updates from %s", MANIFEST_URL);
+        
+        esp_http_client_config_t config = {};
+        config.url = MANIFEST_URL;
+        config.event_handler = http_event_handler;
+        config.cert_pem = NULL;
+        config.skip_cert_common_name_check = true;
+        config.transport_type = HTTP_TRANSPORT_OVER_TCP;
+        
+        esp_http_client_handle_t client = esp_http_client_init(&config);
+        esp_err_t err = esp_http_client_perform(client);
+        
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
+        }
+        
+        esp_http_client_cleanup(client);
+        
+        // Sleep for the specified interval before checking again
+        vTaskDelay(pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS));
+    }
+}
 
+// Initialize OTA module and start background task
+esp_err_t ota_init(void) {
+    ESP_LOGI(TAG, "Initializing OTA module");
+    
+    // Create event group for network synchronization
+    network_event_group = xEventGroupCreate();
+    if (network_event_group == NULL) {
+        ESP_LOGE(TAG, "Failed to create event group");
+        return ESP_FAIL;
+    }
+    
+    // Start OTA task
+    ota_running = true;
+    BaseType_t ret = xTaskCreate(ota_update_task, "ota_task", 
+                                OTA_TASK_STACK_SIZE, NULL, 
+                                OTA_TASK_PRIORITY, &ota_task_handle);
+    
+    if (ret != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create OTA task");
+        return ESP_FAIL;
+    }
+    
+    ESP_LOGI(TAG, "OTA module initialized successfully");
+    return ESP_OK;
+}
+
+// Check for OTA updates (legacy function, now just for one-time manual checks)
+esp_err_t check_for_ota_update(void) {
+    // Return immediately if OTA task is already running
+    if (ota_running) {
+        ESP_LOGI(TAG, "OTA task already running, skipping one-time check");
+        return ESP_OK;
+    }
+    
+    // For backward compatibility, do a one-time check
+    get_current_version();
+    
     // Make sure we mark the app valid to prevent rollback
     mark_app_valid();
-
+    
     ESP_LOGI(TAG, "Checking for OTA updates from %s", MANIFEST_URL);
-
+    
     esp_http_client_config_t config = {};
     config.url = MANIFEST_URL;
     config.event_handler = http_event_handler;
     config.cert_pem = NULL;
     config.skip_cert_common_name_check = true;
     config.transport_type = HTTP_TRANSPORT_OVER_TCP;
-
+    
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);
-
+    
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
     }
-
+    
     esp_http_client_cleanup(client);
     return err;
 }

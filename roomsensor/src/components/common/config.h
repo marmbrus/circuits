@@ -7,6 +7,11 @@
 #define MQTT_RECONNECT_TIMEOUT_MS 5000
 #define MQTT_OPERATION_TIMEOUT_MS 10000
 
+// OTA Configuration
+#define OTA_CHECK_INTERVAL_MS     60000   // Check for updates every 60 seconds
+#define OTA_TASK_STACK_SIZE       4096
+#define OTA_TASK_PRIORITY         3       // Lower priority than critical tasks
+
 // I2C Configuration
 #define I2C_MASTER_SCL_IO           GPIO_NUM_9      // GPIO number for I2C master clock
 #define I2C_MASTER_SDA_IO           GPIO_NUM_10     // GPIO number for I2C master data

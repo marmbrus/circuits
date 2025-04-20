@@ -20,6 +20,17 @@ void NoLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightness) {
     }
 }
 
+// OTAUpdateLights implementation
+class OTAUpdateLights : public LEDBehavior {
+public:
+    void update(led_strip_handle_t led_strip, uint8_t pulse_brightness) override {
+        // Pulse all LEDs white during OTA update
+        for (int i = 0; i < LED_STRIP_NUM_PIXELS; ++i) {
+            led_control_set_pixel(led_strip, i, pulse_brightness, pulse_brightness, pulse_brightness);
+        }
+    }
+};
+
 // FourColorLights implementation
 FourColorLights::FourColorLights() {
     clearColors();
@@ -92,6 +103,7 @@ static FourColorLights four_color_lights;
 static ConnectingLights connecting_lights;
 static ConnectedLights connected_lights;
 static DisconnectedLights disconnected_lights;
+static OTAUpdateLights ota_update_lights;
 static LEDBehavior* current_behavior = &no_lights;
 
 static void update_pulse_brightness() {
@@ -209,6 +221,9 @@ static void update_led_task(void* pvParameters) {
             for (int i = 0; i < LED_STRIP_NUM_PIXELS; ++i) {
                 led_control_set_pixel(led_strip, i, 100, 0, 0); // All red for error
             }
+        } else if (current_state == OTA_UPDATING) {
+            // For OTA updates, pulse all LEDs white
+            ota_update_lights.update(led_strip, pulse_brightness);
         }
         
         // Remember the current state for next time
@@ -289,6 +304,7 @@ void led_control_set_state(SystemState state) {
             case WIFI_CONNECTED_MQTT_CONNECTING: state_str = "WIFI_CONNECTED_MQTT_CONNECTING"; break;
             case FULLY_CONNECTED: state_str = "FULLY_CONNECTED"; break;
             case MQTT_ERROR_STATE: state_str = "MQTT_ERROR_STATE"; break;
+            case OTA_UPDATING: state_str = "OTA_UPDATING"; break;
         }
         
         switch (current_state) {
@@ -296,6 +312,7 @@ void led_control_set_state(SystemState state) {
             case WIFI_CONNECTED_MQTT_CONNECTING: prev_state_str = "WIFI_CONNECTED_MQTT_CONNECTING"; break;
             case FULLY_CONNECTED: prev_state_str = "FULLY_CONNECTED"; break;
             case MQTT_ERROR_STATE: prev_state_str = "MQTT_ERROR_STATE"; break;
+            case OTA_UPDATING: prev_state_str = "OTA_UPDATING"; break;
         }
         
         ESP_LOGI(TAG, "State change: %s -> %s", prev_state_str, state_str);
