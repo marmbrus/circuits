@@ -18,6 +18,36 @@
 #include "led_control.h"
 #include "communication.h"
 
+/*
+ * OTA Update State Machine
+ * ========================
+ * 
+ * Core OTA Decision Logic:
+ * 1. The ONLY factor for deciding whether to upgrade is comparing embedded build timestamp 
+ *    (BUILD_TIMESTAMP) with the timestamp in the server manifest (build_timestamp_epoch).
+ * 2. If server timestamp > local timestamp, perform upgrade
+ * 3. No stored state/history should influence this decision
+ * 
+ * Behavior by Partition Type:
+ * - Factory partition: Always reports status as DEV_BUILD, but follows the same upgrade 
+ *   rules - upgrades if server version is newer, no special treatment
+ * - OTA partition: Reports status based on version comparison (UP_TO_DATE, NEWER, UPGRADING)
+ * 
+ * Status Reporting:
+ * - DEV_BUILD: Running from factory partition (regardless of version)
+ * - UPGRADING: When an update is in progress
+ * - UP_TO_DATE: When running on an OTA partition with same version as server
+ * - NEWER: When running on an OTA partition with newer version than server
+ * 
+ * Process Flow:
+ * 1. ota_init() starts a background task (ota_update_task)
+ * 2. Task waits for network connectivity notification
+ * 3. When connected, periodically checks server for manifest
+ * 4. Parses manifest and compares timestamps
+ * 5. If newer version exists, triggers OTA update
+ * 6. Reports status to MQTT at key points (boot, network connection, before update)
+ */
+
 // Define build timestamp if not defined by CMake
 #ifndef BUILD_TIMESTAMP
 #define BUILD_TIMESTAMP 0
@@ -37,7 +67,7 @@ static EventGroupHandle_t network_event_group;
 // Get the embedded build timestamp (set at compile time)
 static const time_t FIRMWARE_BUILD_TIME = (time_t)BUILD_TIMESTAMP;
 
-// NVS keys
+// NVS keys (for logging purposes only, not for decision-making)
 static const char* NVS_NAMESPACE = "ota";
 static const char* NVS_LAST_OTA_TIME = "last_ota_time";
 static const char* NVS_LAST_OTA_HASH = "last_ota_hash";
@@ -118,7 +148,8 @@ static const char* extract_git_hash(const char* version) {
     return version;
 }
 
-// Check if we already applied this update by checking NVS storage
+// Check if we previously applied this update (for logging purposes only)
+// This should NOT influence the decision to upgrade
 static bool already_applied_update(time_t remote_timestamp) {
     nvs_handle_t nvs_handle;
     esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvs_handle);
@@ -139,7 +170,7 @@ static bool already_applied_update(time_t remote_timestamp) {
         gmtime_r(&last_ota_timestamp, &timeinfo);
         strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S UTC", &timeinfo);
 
-        ESP_LOGI(TAG, "Previous update already applied at %s", time_str);
+        ESP_LOGI(TAG, "Previous update already applied at %s (informational only)", time_str);
         nvs_close(nvs_handle);
         return true;
     }
@@ -148,7 +179,7 @@ static bool already_applied_update(time_t remote_timestamp) {
     return false;
 }
 
-// Save OTA information to NVS
+// Save OTA information for logging purposes (does not affect update decision)
 static void save_ota_info(time_t timestamp, const char* hash) {
     nvs_handle_t nvs_handle;
     esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvs_handle);
@@ -295,7 +326,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // Get remote timestamp for comparison
     remote_timestamp = 0;
     if (build_timestamp_epoch && cJSON_IsNumber(build_timestamp_epoch)) {
-        remote_timestamp = (time_t)build_timestamp_epoch->valueint;
+        remote_timestamp = (time_t)build_timestamp_epoch->valuedouble;
 
         // Format remote timestamp for logging
         char remote_time_str[64];
@@ -335,27 +366,29 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
     }
 
-    // Check if we already applied this update (based on timestamp in NVS)
-    if (already_applied_update(remote_timestamp)) {
-        ESP_LOGI(TAG, "Skipping update: already applied this version");
-        // If not factory build, report UP_TO_DATE
-        if (!is_factory) {
-            report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
-        }
-        mark_app_valid();
-        cJSON_Delete(root);
-        return false;
-    }
-
     // PRIMARY CHECK: Compare build timestamps
     // We only update if remote timestamp is newer than our firmware build time
     if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
+        // Log raw timestamp values for debugging
+        ESP_LOGI(TAG, "Raw timestamp values - Remote: %lld, Local: %lld", 
+                (long long)remote_timestamp, (long long)FIRMWARE_BUILD_TIME);
+        
+        // Check for unrealistic timestamp values (e.g., more than 10 years in the future)
+        time_t current_time = time(NULL);
+        if (remote_timestamp > current_time + 315360000) { // 10 years in seconds
+            ESP_LOGW(TAG, "Remote timestamp is unrealistically far in the future, may be corrupted");
+        }
+        if (FIRMWARE_BUILD_TIME > current_time + 315360000) {
+            ESP_LOGW(TAG, "Local build timestamp is unrealistically far in the future, may be corrupted");
+        }
+                
         // Directly compare the timestamps
         if (remote_timestamp > FIRMWARE_BUILD_TIME) {
+            time_t time_diff = remote_timestamp - FIRMWARE_BUILD_TIME;
+            
             ESP_LOGI(TAG, "Remote build is newer: Remote %ld > Local %ld (+%ld seconds)",
-                    (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME,
-                    (long)(remote_timestamp - FIRMWARE_BUILD_TIME));
-
+                    (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME, (long)time_diff);
+            
             // Special message for factory builds
             if (is_factory) {
                 ESP_LOGI(TAG, "OTA update available for factory build - will upgrade to: %s", remote_hash);
@@ -776,6 +809,14 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
         gmtime_r(&remote_timestamp, &remote_tm);
         strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%dT%H:%M:%SZ", &remote_tm);
         cJSON_AddStringToObject(ota_json, "remote_build_time", remote_time_str);
+        
+        // If both timestamps available, include time difference
+        if (FIRMWARE_BUILD_TIME > 0) {
+            time_t time_diff = (remote_timestamp > FIRMWARE_BUILD_TIME) ? 
+                               (remote_timestamp - FIRMWARE_BUILD_TIME) : 
+                               (FIRMWARE_BUILD_TIME - remote_timestamp);
+            cJSON_AddNumberToObject(ota_json, "timestamp_diff_sec", (double)time_diff);
+        }
     }
 
     // Convert to string and publish
