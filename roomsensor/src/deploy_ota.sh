@@ -40,7 +40,7 @@ fi
 
 # Run idf.py build first to ensure the binary is up-to-date
 echo "Building project with idf.py..."
-idf.py build || { echo "Error: Build failed"; exit 1; }
+idf.py fullclean build || { echo "Error: Build failed"; exit 1; }
 echo "Build successful"
 
 # Extract build timestamp from CMake cache instead of generating a new one

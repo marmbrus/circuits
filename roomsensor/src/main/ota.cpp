@@ -21,24 +21,24 @@
 /*
  * OTA Update State Machine
  * ========================
- * 
+ *
  * Core OTA Decision Logic:
- * 1. The ONLY factor for deciding whether to upgrade is comparing embedded build timestamp 
+ * 1. The ONLY factor for deciding whether to upgrade is comparing embedded build timestamp
  *    (BUILD_TIMESTAMP) with the timestamp in the server manifest (build_timestamp_epoch).
  * 2. If server timestamp > local timestamp, perform upgrade
  * 3. No stored state/history should influence this decision
- * 
+ *
  * Behavior by Partition Type:
- * - Factory partition: Always reports status as DEV_BUILD, but follows the same upgrade 
+ * - Factory partition: Always reports status as DEV_BUILD, but follows the same upgrade
  *   rules - upgrades if server version is newer, no special treatment
  * - OTA partition: Reports status based on version comparison (UP_TO_DATE, NEWER, UPGRADING)
- * 
+ *
  * Status Reporting:
  * - DEV_BUILD: Running from factory partition (regardless of version)
  * - UPGRADING: When an update is in progress
  * - UP_TO_DATE: When running on an OTA partition with same version as server
  * - NEWER: When running on an OTA partition with newer version than server
- * 
+ *
  * Process Flow:
  * 1. ota_init() starts a background task (ota_update_task)
  * 2. Task waits for network connectivity notification
@@ -260,7 +260,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         ESP_LOGE(TAG, "Empty manifest data");
         return false;
     }
-    
+
     cJSON *root = cJSON_Parse(manifest_data);
     if (!root) {
         ESP_LOGE(TAG, "Failed to parse manifest JSON: %s", cJSON_GetErrorPtr() ? cJSON_GetErrorPtr() : "unknown error");
@@ -310,7 +310,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             gmtime_r(&FIRMWARE_BUILD_TIME, &local_tm);
             strftime(local_time_str, sizeof(local_time_str), "%Y-%m-%dT%H:%M:%SZ", &local_tm);
             // Reduce logging verbosity
-            // ESP_LOGI(TAG, "Local firmware build time: %s (epoch: %ld)", 
+            // ESP_LOGI(TAG, "Local firmware build time: %s (epoch: %ld)",
             //          local_time_str, (long)FIRMWARE_BUILD_TIME);
         } else {
             ESP_LOGW(TAG, "Local firmware build time is not available");
@@ -322,7 +322,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // Extract the hash part from the remote version
     const char* remote_hash = extract_git_hash(remote_version_str);
     // Reduce logging verbosity
-    // ESP_LOGI(TAG, "Local firmware hash: %s, Remote firmware hash: %s", 
+    // ESP_LOGI(TAG, "Local firmware hash: %s, Remote firmware hash: %s",
     //          extracted_hash, remote_hash);
 
     // Check if we're running from factory partition
@@ -335,11 +335,11 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // PRIMARY CHECK: Compare build timestamps
     if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
         // Log raw timestamp values for debugging - change to DEBUG level
-        // ESP_LOGI(TAG, "Raw timestamp values - Remote: %ld, Local: %ld", 
+        // ESP_LOGI(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
         //         (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
-        ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local: %ld", 
+        ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
                 (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
-        
+
         // Check for unrealistic timestamp values (e.g., more than 10 years in the future)
         time_t current_time = time(NULL);
         if (remote_timestamp > current_time + 315360000) { // 10 years in seconds
@@ -348,11 +348,11 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         if (FIRMWARE_BUILD_TIME > current_time + 315360000) {
             ESP_LOGW(TAG, "Local build timestamp is unrealistically far in the future, may be corrupted");
         }
-                
+
         // Directly compare the timestamps
         if (remote_timestamp > FIRMWARE_BUILD_TIME) {
             time_t time_diff = remote_timestamp - FIRMWARE_BUILD_TIME;
-            
+
             // Keep this log concise
             ESP_LOGI(TAG, "Newer version found (%ld sec newer), starting upgrade...", (long)time_diff);
 
@@ -369,7 +369,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             // Factory builds were already reported as DEV_BUILD above
 
             report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
-            
+
             // Perform the OTA update
             ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
 
@@ -418,7 +418,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             }
         }
     } else {
-        ESP_LOGW(TAG, "Cannot compare timestamps: Remote=%ld, Local=%ld. Skipping update.", 
+        ESP_LOGW(TAG, "Cannot compare timestamps: Remote=%ld, Local=%ld. Skipping update.",
                 (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
     }
 
@@ -456,7 +456,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
                     return ESP_FAIL;
                 }
                 manifest_data = new_data;
-                
+
                 // Update buffer position for the new data
                 memcpy(manifest_data + data_len, evt->data, evt->data_len);
                 data_len += evt->data_len;
@@ -480,11 +480,11 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
                     // Only show preview at DEBUG level
                     char preview[101] = {0}; // Declare preview here
                     strncpy(preview, manifest_data, 100);
-                    // ESP_LOGI(TAG, "Manifest preview: %s%s", preview, 
+                    // ESP_LOGI(TAG, "Manifest preview: %s%s", preview,
                     //          (strlen(manifest_data) > 100) ? "..." : "");
-                    ESP_LOGD(TAG, "Manifest downloaded (%d bytes): %s%s", data_len, 
+                    ESP_LOGD(TAG, "Manifest downloaded (%d bytes): %s%s", data_len,
                              preview, (strlen(manifest_data) > 100) ? "..." : "");
-                    
+
                     // Process the manifest - remove unused variable assignment
                     // bool update_result = parse_manifest_and_check_update(manifest_data);
                     parse_manifest_and_check_update(manifest_data);
@@ -518,7 +518,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
                 data_len = 0;
             }
             break;
-            
+
         default:
             break;
     }
@@ -528,88 +528,110 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
 
 // OTA update task that runs in the background
 static void ota_update_task(void *pvParameter) {
-    ESP_LOGI(TAG, "OTA update task started, waiting for network connection");
-    
-    // Wait for network to be connected before proceeding
+    ESP_LOGI(TAG, "OTA update task started");
+
+    // Validate that network event group exists
     if (network_event_group == NULL) {
         ESP_LOGE(TAG, "Network event group is NULL! OTA task exiting.");
         vTaskDelete(NULL);
         return;
     }
-    
-    ESP_LOGI(TAG, "Waiting for network to be connected...");
-    EventBits_t bits = xEventGroupWaitBits(network_event_group, NETWORK_CONNECTED_BIT, 
-                        pdFALSE, pdTRUE, portMAX_DELAY);
-                        
-    if (bits & NETWORK_CONNECTED_BIT) {
-        ESP_LOGD(TAG, "Network connected, proceeding with OTA checks");
-    } else {
-        ESP_LOGW(TAG, "Unexpected event bits: 0x%lx", bits);
-    }
-    
+
     // Get current version on startup
     get_current_version();
-    
+
     // Ensure the app is marked valid to prevent rollback
     mark_app_valid();
-    
+
     uint32_t check_count = 0;
-    
-    // Main OTA loop
-    ESP_LOGI(TAG, "Starting periodic OTA checks every %d ms", OTA_CHECK_INTERVAL_MS);
-    
+    bool was_connected = false;
+
+    ESP_LOGI(TAG, "Starting OTA monitoring loop");
+
+    // Main OTA loop - runs forever
     while (1) {
-        // Check for updates
-        check_count++;
-        ESP_LOGI(TAG, "OTA check #%lu: Checking for updates from %s", check_count, MANIFEST_URL);
-        
-        esp_err_t err = ESP_OK;
-        esp_http_client_handle_t client = NULL;
-                
-        // Initialize HTTP client with proper error checking
-        esp_http_client_config_t config = {};
-        config.url = MANIFEST_URL;
-        config.event_handler = http_event_handler;
-        config.cert_pem = NULL;
-        config.skip_cert_common_name_check = true;
-        config.transport_type = HTTP_TRANSPORT_OVER_TCP;
-        config.timeout_ms = 10000; // Add 10s timeout to avoid hanging
-        
-        client = esp_http_client_init(&config);
-        if (client == NULL) {
-            ESP_LOGE(TAG, "Failed to initialize HTTP client");
-            // Skip to delay and try again later
-            goto ota_check_delay;
+        // Check for network connectivity
+        bool is_connected = false;
+
+        // Use system state to determine connectivity
+        extern SystemState get_system_state(void);
+        SystemState current_state = get_system_state();
+
+        // Consider connected if WiFi+MQTT is connected or at least WiFi is connected
+        if (current_state == FULLY_CONNECTED ||
+            current_state == WIFI_CONNECTED_MQTT_CONNECTING) {
+            is_connected = true;
         }
-        
-        // Perform HTTP request with proper error handling
-        err = esp_http_client_perform(client);
-        
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
-        } else {
-            int status_code = esp_http_client_get_status_code(client);
-            if (status_code == 200) {
+
+        // Also check event bits as a secondary indicator
+        EventBits_t current_bits = xEventGroupGetBits(network_event_group);
+        if (current_bits & NETWORK_CONNECTED_BIT) {
+            is_connected = true;
+        }
+
+        // Network state change logging
+        if (is_connected && !was_connected) {
+            ESP_LOGI(TAG, "Network is now connected, proceeding with OTA checks");
+            was_connected = true;
+        } else if (!is_connected && was_connected) {
+            ESP_LOGI(TAG, "Network is now disconnected, pausing OTA checks");
+            was_connected = false;
+        }
+
+        // Only proceed with OTA check if network is connected
+        if (is_connected) {
+            // Check for updates
+            check_count++;
+            ESP_LOGI(TAG, "OTA check #%lu: Checking for updates from %s", check_count, MANIFEST_URL);
+
+            esp_err_t err = ESP_OK;
+            esp_http_client_handle_t client = NULL;
+
+            // Initialize HTTP client with proper error checking
+            esp_http_client_config_t config = {};
+            config.url = MANIFEST_URL;
+            config.event_handler = http_event_handler;
+            config.cert_pem = NULL;
+            config.skip_cert_common_name_check = true;
+            config.transport_type = HTTP_TRANSPORT_OVER_TCP;
+            config.timeout_ms = 10000; // Add 10s timeout to avoid hanging
+
+            client = esp_http_client_init(&config);
+            if (client == NULL) {
+                ESP_LOGE(TAG, "Failed to initialize HTTP client");
+                // Skip to delay and try again later
             } else {
-                ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
+                // Perform HTTP request with proper error handling
+                err = esp_http_client_perform(client);
+
+                if (err != ESP_OK) {
+                    ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
+                } else {
+                    int status_code = esp_http_client_get_status_code(client);
+                    if (status_code != 200) {
+                        ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
+                    }
+                }
+
+                // Cleanup
+                esp_http_client_cleanup(client);
             }
+
+            // Sleep for the normal interval before checking again when connected
+            vTaskDelay(pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS));
+        } else {
+            // Not connected - wait efficiently for network connection event
+            ESP_LOGW(TAG, "Waiting for network connection before OTA check...");
+
+            // Wait for the network connection bit to be set, with a timeout
+            // This is more efficient than just sleeping, as it will wake up immediately when connected
+            xEventGroupWaitBits(network_event_group, NETWORK_CONNECTED_BIT,
+                                pdFALSE, pdTRUE, pdMS_TO_TICKS(60000)); // 60 sec timeout for logging purposes
+
+            // No explicit else branch needed - we'll just loop back to the connectivity check
         }
-        
-        // Cleanup
-        if (client != NULL) {
-            esp_http_client_cleanup(client);
-        }
-        
-ota_check_delay:
-        // Sleep for the specified interval before checking again
-        // Reduce log verbosity here
-        // ESP_LOGI(TAG, "OTA check #%lu complete. Waiting %d ms before next check...", 
-        //          check_count, OTA_CHECK_INTERVAL_MS);
-        
-        // Explicitly yield to make sure other tasks can run
-        vTaskDelay(pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS));
     }
-    
+
     // This should never be reached, but just in case
     ESP_LOGW(TAG, "OTA task unexpectedly exited the main loop!");
     vTaskDelete(NULL);
@@ -618,7 +640,7 @@ ota_check_delay:
 // Initialize OTA module and start background task
 esp_err_t ota_init(void) {
     ESP_LOGI(TAG, "Initializing OTA module");
-    
+
     // Create event group for network synchronization if it doesn't exist
     if (network_event_group == NULL) {
         network_event_group = xEventGroupCreate();
@@ -628,10 +650,10 @@ esp_err_t ota_init(void) {
         }
         ESP_LOGI(TAG, "Created network event group for OTA");
     }
-    
+
     // Get current firmware version and partition info
     get_current_version();
-    
+
     // Check if we're running from factory partition
     bool is_factory = false;
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -640,28 +662,28 @@ esp_err_t ota_init(void) {
         // Report DEV_BUILD status - this will be done when status is published
         // No need for extra log here
     }
-    
+
     // Mark app as valid to prevent rollback
     mark_app_valid();
-    
+
     // Start OTA task if not already running
     if (!ota_running || ota_task_handle == NULL) {
         ota_running = true;
-        BaseType_t ret = xTaskCreate(ota_update_task, "ota_task", 
-                                    OTA_TASK_STACK_SIZE, NULL, 
+        BaseType_t ret = xTaskCreate(ota_update_task, "ota_task",
+                                    OTA_TASK_STACK_SIZE, NULL,
                                     OTA_TASK_PRIORITY, &ota_task_handle);
-        
+
         if (ret != pdPASS) {
             ESP_LOGE(TAG, "Failed to create OTA task");
             return ESP_FAIL;
         }
-        
+
         ESP_LOGI(TAG, "OTA task created successfully");
     } else {
         ESP_LOGW(TAG, "OTA task already running, skipping creation");
     }
-    
-    
+
+
     ESP_LOGI(TAG, "OTA module initialized successfully");
     return ESP_OK;
 }
@@ -673,29 +695,29 @@ esp_err_t check_for_ota_update(void) {
         ESP_LOGI(TAG, "OTA task already running, skipping one-time check");
         return ESP_OK;
     }
-    
+
     // For backward compatibility, do a one-time check
     get_current_version();
-    
+
     // Make sure we mark the app valid to prevent rollback
     mark_app_valid();
-    
+
     ESP_LOGI(TAG, "Checking for OTA updates from %s", MANIFEST_URL);
-    
+
     esp_http_client_config_t config = {};
     config.url = MANIFEST_URL;
     config.event_handler = http_event_handler;
     config.cert_pem = NULL;
     config.skip_cert_common_name_check = true;
     config.transport_type = HTTP_TRANSPORT_OVER_TCP;
-    
+
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);
-    
+
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
     }
-    
+
     esp_http_client_cleanup(client);
     return err;
 }
@@ -738,7 +760,7 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
     // Partition info
     const esp_partition_t *running = esp_ota_get_running_partition();
     if (running) {
-        cJSON_AddStringToObject(ota_json, "partition", 
+        cJSON_AddStringToObject(ota_json, "partition",
             running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY ? "factory" : "ota");
     }
 
@@ -803,7 +825,7 @@ void ota_report_status(void) {
 
     // Determine current status
     ota_status_t status;
-    
+
     // Check if running from factory partition - ALWAYS a dev build
     const esp_partition_t *running = esp_ota_get_running_partition();
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
@@ -815,7 +837,7 @@ void ota_report_status(void) {
             // We have remote version info, can determine exact status
             if (remote_timestamp > FIRMWARE_BUILD_TIME) {
                 // Remote is newer (shouldn't happen unless we skipped update)
-                status = OTA_STATUS_UPGRADING; 
+                status = OTA_STATUS_UPGRADING;
             } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
                 // Local is newer
                 status = OTA_STATUS_NEWER;
@@ -828,7 +850,7 @@ void ota_report_status(void) {
             status = OTA_STATUS_UP_TO_DATE;
         }
     }
-    
+
     // Report the status
     const char* remote_hash = (strlen(remote_version) > 0) ? extract_git_hash(remote_version) : NULL;
     report_ota_status(status, remote_hash);
