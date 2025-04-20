@@ -317,8 +317,9 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         return false;
     }
 
-    ESP_LOGI(TAG, "Remote firmware version: %s", remote_version_str);
-    ESP_LOGI(TAG, "Firmware URL: %s", firmware_url);
+    // Reduce logging verbosity - these are details, not essential status
+    // ESP_LOGI(TAG, "Remote firmware version: %s", remote_version_str);
+    // ESP_LOGI(TAG, "Firmware URL: %s", firmware_url);
 
     // Store remote version for status reporting
     strncpy(remote_version, remote_version_str, sizeof(remote_version) - 1);
@@ -332,17 +333,19 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         char remote_time_str[64];
         struct tm remote_tm;
         gmtime_r(&remote_timestamp, &remote_tm);
-        strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%d %H:%M:%S UTC", &remote_tm);
-        ESP_LOGI(TAG, "Remote firmware build time: %s (epoch: %ld)", remote_time_str, (long)remote_timestamp);
+        strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%dT%H:%M:%SZ", &remote_tm);
+        // Reduce logging verbosity
+        // ESP_LOGI(TAG, "Remote firmware build time: %s (epoch: %ld)", remote_time_str, (long)remote_timestamp);
 
         // Format local timestamp for comparison
         char local_time_str[64] = {0};
         if (FIRMWARE_BUILD_TIME > 0) {
             struct tm local_tm;
             gmtime_r(&FIRMWARE_BUILD_TIME, &local_tm);
-            strftime(local_time_str, sizeof(local_time_str), "%Y-%m-%d %H:%M:%S UTC", &local_tm);
-            ESP_LOGI(TAG, "Local firmware build time: %s (epoch: %ld)", 
-                     local_time_str, (long)FIRMWARE_BUILD_TIME);
+            strftime(local_time_str, sizeof(local_time_str), "%Y-%m-%dT%H:%M:%SZ", &local_tm);
+            // Reduce logging verbosity
+            // ESP_LOGI(TAG, "Local firmware build time: %s (epoch: %ld)", 
+            //          local_time_str, (long)FIRMWARE_BUILD_TIME);
         } else {
             ESP_LOGW(TAG, "Local firmware build time is not available");
         }
@@ -352,25 +355,25 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
     // Extract the hash part from the remote version
     const char* remote_hash = extract_git_hash(remote_version_str);
-    ESP_LOGI(TAG, "Local firmware hash: %s, Remote firmware hash: %s", 
-             extracted_hash, remote_hash);
+    // Reduce logging verbosity
+    // ESP_LOGI(TAG, "Local firmware hash: %s, Remote firmware hash: %s", 
+    //          extracted_hash, remote_hash);
 
     // Check if we're running from factory partition
     bool is_factory = false;
     const esp_partition_t *running = esp_ota_get_running_partition();
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
         is_factory = true;
-        ESP_LOGI(TAG, "Running from factory partition (development build)");
-        
-        // For factory partitions, always report DEV_BUILD status, but still allow updates
-        report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
+        // Report DEV_BUILD status - this will be done when status is published
+        // No need for extra log here
     }
 
     // PRIMARY CHECK: Compare build timestamps
-    // We only update if remote timestamp is newer than our firmware build time
     if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
-        // Log raw timestamp values for debugging
-        ESP_LOGI(TAG, "Raw timestamp values - Remote: %ld, Local: %ld", 
+        // Log raw timestamp values for debugging - change to DEBUG level
+        // ESP_LOGI(TAG, "Raw timestamp values - Remote: %ld, Local: %ld", 
+        //         (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
+        ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local: %ld", 
                 (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
         
         // Check for unrealistic timestamp values (e.g., more than 10 years in the future)
@@ -386,13 +389,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         if (remote_timestamp > FIRMWARE_BUILD_TIME) {
             time_t time_diff = remote_timestamp - FIRMWARE_BUILD_TIME;
             
-            ESP_LOGI(TAG, "Remote build is newer: Remote %ld > Local %ld (+%ld seconds)",
-                    (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME, (long)time_diff);
-            
-            // Special message for factory builds
-            if (is_factory) {
-                ESP_LOGI(TAG, "OTA update available for factory build - will upgrade to: %s", remote_hash);
-            }
+            // Keep this log concise
+            ESP_LOGI(TAG, "Newer version found (%ld sec newer), starting upgrade...", (long)time_diff);
 
             // Set system state to OTA_UPDATING to show white pulse animation
             ESP_LOGI(TAG, "Setting LED state to OTA_UPDATING for upgrade animation");
@@ -439,11 +437,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 return false;
             }
         } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
-            ESP_LOGI(TAG, "Remote build is older: Remote %ld < Local %ld (-%ld seconds)",
-                    (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME,
-                    (long)(FIRMWARE_BUILD_TIME - remote_timestamp));
-            ESP_LOGI(TAG, "Skipping update: current firmware is newer");
-            
+            // No need to log this common case
             // Report NEWER status, but only if not already reported as DEV_BUILD
             if (!is_factory) {
                 report_ota_status(OTA_STATUS_NEWER, remote_hash);
@@ -513,17 +507,19 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
 
         case HTTP_EVENT_ON_FINISH:
             if (manifest_data != NULL) {
-                ESP_LOGI(TAG, "Manifest downloaded (%d bytes)", data_len);
+                // Reduce logging verbosity for successful downloads
+                // ESP_LOGI(TAG, "Manifest downloaded (%d bytes)", data_len);
                 if (data_len > 0) {
-                    // Only show first 100 characters to avoid log spam
-                    char preview[101] = {0};
-                    strncpy(preview, manifest_data, 100);
-                    ESP_LOGI(TAG, "Manifest preview: %s%s", preview, 
-                             (strlen(manifest_data) > 100) ? "..." : "");
+                    // Only show preview at DEBUG level
+                    // ESP_LOGI(TAG, "Manifest preview: %s%s", preview, 
+                    //          (strlen(manifest_data) > 100) ? "..." : "");
+                    ESP_LOGD(TAG, "Manifest downloaded (%d bytes): %s%s", data_len, 
+                             preview, (strlen(manifest_data) > 100) ? "..." : "");
                     
                     // Process the manifest
                     bool update_result = parse_manifest_and_check_update(manifest_data);
-                    ESP_LOGI(TAG, "Manifest parse result: %s", update_result ? "Update triggered" : "No update needed");
+                    // Remove redundant log - the status report is the main output
+                    // ESP_LOGI(TAG, "Manifest parse result: %s", update_result ? "Update triggered" : "No update needed");
                 } else {
                     ESP_LOGW(TAG, "Empty manifest received");
                 }
@@ -624,7 +620,8 @@ static void ota_update_task(void *pvParameter) {
         } else {
             int status_code = esp_http_client_get_status_code(client);
             if (status_code == 200) {
-                ESP_LOGI(TAG, "OTA check completed successfully (HTTP 200)");
+                // Success, manifest handled by event handler
+                // No extra log needed here
             } else {
                 ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
             }
@@ -637,8 +634,9 @@ static void ota_update_task(void *pvParameter) {
         
 ota_check_delay:
         // Sleep for the specified interval before checking again
-        ESP_LOGI(TAG, "OTA check #%lu complete. Waiting %d ms before next check...", 
-                 check_count, OTA_CHECK_INTERVAL_MS);
+        // Reduce log verbosity here
+        // ESP_LOGI(TAG, "OTA check #%lu complete. Waiting %d ms before next check...", 
+        //          check_count, OTA_CHECK_INTERVAL_MS);
         
         // Explicitly yield to make sure other tasks can run
         vTaskDelay(pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS));
@@ -671,7 +669,8 @@ esp_err_t ota_init(void) {
     const esp_partition_t *running = esp_ota_get_running_partition();
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
         is_factory = true;
-        ESP_LOGI(TAG, "Running from factory partition (development build)");
+        // Report DEV_BUILD status - this will be done when status is published
+        // No need for extra log here
     }
     
     // Mark app as valid to prevent rollback
@@ -699,6 +698,7 @@ esp_err_t ota_init(void) {
         ESP_LOGI(TAG, "Will report DEV_BUILD status when network connects");
         // We can't report immediately because MQTT might not be connected yet
         // The status will be reported in parse_manifest_and_check_update when the manifest is fetched
+        // OR it will be reported by ota_report_status if called externally
     }
     
     ESP_LOGI(TAG, "OTA module initialized successfully");
@@ -809,14 +809,6 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
         gmtime_r(&remote_timestamp, &remote_tm);
         strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%dT%H:%M:%SZ", &remote_tm);
         cJSON_AddStringToObject(ota_json, "remote_build_time", remote_time_str);
-        
-        // If both timestamps available, include time difference
-        if (FIRMWARE_BUILD_TIME > 0) {
-            time_t time_diff = (remote_timestamp > FIRMWARE_BUILD_TIME) ? 
-                               (remote_timestamp - FIRMWARE_BUILD_TIME) : 
-                               (FIRMWARE_BUILD_TIME - remote_timestamp);
-            cJSON_AddNumberToObject(ota_json, "timestamp_diff_sec", (double)time_diff);
-        }
     }
 
     // Convert to string and publish
@@ -843,28 +835,28 @@ void ota_report_status(void) {
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
         // Always a development build for factory partition
         status = OTA_STATUS_DEV_BUILD;
-        ESP_LOGI(TAG, "Reporting DEV_BUILD status (factory partition)");
+        // No need for extra log here, it's in the JSON
     } else {
         // Only for OTA partitions - check version status
         if (remote_timestamp > 0) {
             // We have remote version info, can determine exact status
             if (remote_timestamp > FIRMWARE_BUILD_TIME) {
                 // Remote is newer (shouldn't happen unless we skipped update)
-                status = OTA_STATUS_UPGRADING;
-                ESP_LOGI(TAG, "Reporting UPGRADING status (OTA partition)");
+                status = OTA_STATUS_UPGRADING; 
+                // No extra log needed
             } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
                 // Local is newer
                 status = OTA_STATUS_NEWER;
-                ESP_LOGI(TAG, "Reporting NEWER status (OTA partition)");
+                // No extra log needed
             } else {
                 // Same version
                 status = OTA_STATUS_UP_TO_DATE;
-                ESP_LOGI(TAG, "Reporting UP_TO_DATE status (OTA partition)");
+                // No extra log needed
             }
         } else {
             // Default to UP_TO_DATE if we can't determine, but only for OTA partitions
             status = OTA_STATUS_UP_TO_DATE;
-            ESP_LOGI(TAG, "Reporting default UP_TO_DATE status (OTA partition)");
+            // No extra log needed
         }
     }
     
