@@ -29,3 +29,11 @@ esp_err_t check_for_ota_update(void);
  * to trigger the OTA checks. Without this call, OTA checking will be on hold.
  */
 void ota_notify_network_connected(void);
+
+/**
+ * @brief Report current OTA status via MQTT
+ * 
+ * This function determines the current status and sends a report to
+ * the roomsensor/device/{MAC}/ota topic with detailed information.
+ */
+void ota_report_status(void);

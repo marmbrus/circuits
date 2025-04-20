@@ -16,6 +16,7 @@
 #include "config.h"
 #include "system_state.h"
 #include "led_control.h"
+#include "communication.h"
 
 // Define build timestamp if not defined by CMake
 #ifndef BUILD_TIMESTAMP
@@ -40,6 +41,21 @@ static const time_t FIRMWARE_BUILD_TIME = (time_t)BUILD_TIMESTAMP;
 static const char* NVS_NAMESPACE = "ota";
 static const char* NVS_LAST_OTA_TIME = "last_ota_time";
 static const char* NVS_LAST_OTA_HASH = "last_ota_hash";
+
+// OTA status types
+typedef enum {
+    OTA_STATUS_DEV_BUILD,   // Factory partition (development build, flashed manually)
+    OTA_STATUS_UPGRADING,   // Currently being upgraded
+    OTA_STATUS_UP_TO_DATE,  // Running latest version from server
+    OTA_STATUS_NEWER        // Running newer version than on server
+} ota_status_t;
+
+// Store remote version info for status reporting
+static char remote_version[33] = {0};
+static time_t remote_timestamp = 0;
+
+// Forward declarations
+static void report_ota_status(ota_status_t status, const char* remote_hash);
 
 // Set the network connected bit when network is up
 void ota_notify_network_connected(void) {
@@ -261,20 +277,23 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         return false;
     }
 
-    const char *remote_version = version->valuestring;
+    const char *remote_version_str = version->valuestring;
     const char *firmware_url = url->valuestring;
 
-    if (remote_version == NULL || firmware_url == NULL) {
+    if (remote_version_str == NULL || firmware_url == NULL) {
         ESP_LOGE(TAG, "Null version or URL in manifest");
         cJSON_Delete(root);
         return false;
     }
 
-    ESP_LOGI(TAG, "Remote firmware version: %s", remote_version);
+    ESP_LOGI(TAG, "Remote firmware version: %s", remote_version_str);
     ESP_LOGI(TAG, "Firmware URL: %s", firmware_url);
 
+    // Store remote version for status reporting
+    strncpy(remote_version, remote_version_str, sizeof(remote_version) - 1);
+
     // Get remote timestamp for comparison
-    time_t remote_timestamp = 0;
+    remote_timestamp = 0;
     if (build_timestamp_epoch && cJSON_IsNumber(build_timestamp_epoch)) {
         remote_timestamp = (time_t)build_timestamp_epoch->valueint;
 
@@ -301,13 +320,39 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     }
 
     // Extract the hash part from the remote version
-    const char* remote_hash = extract_git_hash(remote_version);
+    const char* remote_hash = extract_git_hash(remote_version_str);
     ESP_LOGI(TAG, "Local firmware hash: %s, Remote firmware hash: %s", 
              extracted_hash, remote_hash);
 
+    // Check if we're running from factory partition
+    bool is_factory = false;
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
+        is_factory = true;
+        ESP_LOGI(TAG, "Running from factory partition (development build)");
+        
+        // Always report DEV_BUILD status for factory partition
+        report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
+        mark_app_valid();
+        cJSON_Delete(root);
+        
+        // Still proceed with the update check, but return with status already reported
+        if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0 && 
+            remote_timestamp > FIRMWARE_BUILD_TIME) {
+            // Only show update is available for factory builds
+            ESP_LOGI(TAG, "OTA update available for factory build: Remote %ld > Local %ld",
+                    (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
+        }
+        
+        return false;
+    }
+
+    // For OTA partitions, continue with normal version checking
     // Check if we already applied this update (based on timestamp in NVS)
     if (already_applied_update(remote_timestamp)) {
         ESP_LOGI(TAG, "Skipping update: already applied this version");
+        // Report UP_TO_DATE status because we're on the latest version
+        report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
         mark_app_valid();
         cJSON_Delete(root);
         return false;
@@ -325,6 +370,9 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             // Set system state to OTA_UPDATING to show white pulse animation
             ESP_LOGI(TAG, "Setting LED state to OTA_UPDATING for upgrade animation");
             led_control_set_state(OTA_UPDATING);
+
+            // Report OTA status as UPGRADING before starting the update
+            report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
 
             // Perform the OTA update
             ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
@@ -365,9 +413,15 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                     (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME,
                     (long)(FIRMWARE_BUILD_TIME - remote_timestamp));
             ESP_LOGI(TAG, "Skipping update: current firmware is newer");
+            
+            // Report NEWER status since our firmware is newer than server
+            report_ota_status(OTA_STATUS_NEWER, remote_hash);
         } else {
             ESP_LOGI(TAG, "Remote and local builds have same timestamp: %ld", (long)remote_timestamp);
             ESP_LOGI(TAG, "Skipping update: already at latest version");
+            
+            // Report UP_TO_DATE status since timestamps match
+            report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
         }
     } else {
         ESP_LOGW(TAG, "Cannot compare timestamps: Remote=%ld, Local=%ld. Skipping update.", 
@@ -575,6 +629,20 @@ esp_err_t ota_init(void) {
         ESP_LOGI(TAG, "Created network event group for OTA");
     }
     
+    // Get current firmware version and partition info
+    get_current_version();
+    
+    // Check if we're running from factory partition
+    bool is_factory = false;
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
+        is_factory = true;
+        ESP_LOGI(TAG, "Running from factory partition (development build)");
+    }
+    
+    // Mark app as valid to prevent rollback
+    mark_app_valid();
+    
     // Start OTA task if not already running
     if (!ota_running || ota_task_handle == NULL) {
         ota_running = true;
@@ -590,6 +658,13 @@ esp_err_t ota_init(void) {
         ESP_LOGI(TAG, "OTA task created successfully");
     } else {
         ESP_LOGW(TAG, "OTA task already running, skipping creation");
+    }
+    
+    // For factory builds, report DEV_BUILD status on boot - this will be sent when WiFi/MQTT connects
+    if (is_factory) {
+        ESP_LOGI(TAG, "Will report DEV_BUILD status when network connects");
+        // We can't report immediately because MQTT might not be connected yet
+        // The status will be reported in parse_manifest_and_check_update when the manifest is fetched
     }
     
     ESP_LOGI(TAG, "OTA module initialized successfully");
@@ -628,4 +703,130 @@ esp_err_t check_for_ota_update(void) {
     
     esp_http_client_cleanup(client);
     return err;
+}
+
+// Report OTA status to MQTT
+static void report_ota_status(ota_status_t status, const char* remote_hash) {
+    cJSON *ota_json = cJSON_CreateObject();
+    if (!ota_json) {
+        ESP_LOGE(TAG, "Failed to create OTA status JSON");
+        return;
+    }
+
+    // Current time for timestamp
+    time_t now;
+    time(&now);
+    char timestamp[64];
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+    cJSON_AddStringToObject(ota_json, "timestamp", timestamp);
+
+    // Status as string
+    const char* status_str = "UNKNOWN";
+    switch (status) {
+        case OTA_STATUS_DEV_BUILD:
+            status_str = "DEV_BUILD";
+            break;
+        case OTA_STATUS_UPGRADING:
+            status_str = "UPGRADING";
+            break;
+        case OTA_STATUS_UP_TO_DATE:
+            status_str = "UP_TO_DATE";
+            break;
+        case OTA_STATUS_NEWER:
+            status_str = "NEWER";
+            break;
+    }
+    cJSON_AddStringToObject(ota_json, "status", status_str);
+
+    // Partition info
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    if (running) {
+        cJSON_AddStringToObject(ota_json, "partition", 
+            running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY ? "factory" : "ota");
+    }
+
+    // Only include git hashes for non-dev builds
+    if (status != OTA_STATUS_DEV_BUILD) {
+        // Local firmware git hash
+        if (strlen(extracted_hash) > 0) {
+            cJSON_AddStringToObject(ota_json, "local_version", extracted_hash);
+        }
+    }
+
+    // Include remote version when available
+    if (remote_hash && strlen(remote_hash) > 0) {
+        cJSON_AddStringToObject(ota_json, "remote_version", remote_hash);
+    }
+
+    // Format build timestamps in ISO format
+    if (FIRMWARE_BUILD_TIME > 0) {
+        char build_time_str[64];
+        struct tm build_timeinfo;
+        gmtime_r(&FIRMWARE_BUILD_TIME, &build_timeinfo);
+        strftime(build_time_str, sizeof(build_time_str), "%Y-%m-%dT%H:%M:%SZ", &build_timeinfo);
+        cJSON_AddStringToObject(ota_json, "local_build_time", build_time_str);
+    }
+
+    if (remote_timestamp > 0) {
+        char remote_time_str[64];
+        struct tm remote_tm;
+        gmtime_r(&remote_timestamp, &remote_tm);
+        strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%dT%H:%M:%SZ", &remote_tm);
+        cJSON_AddStringToObject(ota_json, "remote_build_time", remote_time_str);
+    }
+
+    // Convert to string and publish
+    char *ota_string = cJSON_Print(ota_json);
+    if (ota_string) {
+        ESP_LOGI(TAG, "Publishing OTA status: %s", ota_string);
+        // Publish to ota subtopic - the publish_to_topic function will add the MAC address
+        publish_to_topic("ota", ota_string);
+        free(ota_string);
+    } else {
+        ESP_LOGE(TAG, "Failed to convert OTA status to string");
+    }
+
+    cJSON_Delete(ota_json);
+}
+
+// Public function to report OTA status
+void ota_report_status(void) {
+    // Determine current status
+    ota_status_t status;
+    
+    // Check if running from factory partition - ALWAYS a dev build
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
+        // Always a development build for factory partition
+        status = OTA_STATUS_DEV_BUILD;
+        ESP_LOGI(TAG, "Reporting DEV_BUILD status (factory partition)");
+    } else {
+        // Only for OTA partitions - check version status
+        if (remote_timestamp > 0) {
+            // We have remote version info, can determine exact status
+            if (remote_timestamp > FIRMWARE_BUILD_TIME) {
+                // Remote is newer (shouldn't happen unless we skipped update)
+                status = OTA_STATUS_UPGRADING;
+                ESP_LOGI(TAG, "Reporting UPGRADING status (OTA partition)");
+            } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
+                // Local is newer
+                status = OTA_STATUS_NEWER;
+                ESP_LOGI(TAG, "Reporting NEWER status (OTA partition)");
+            } else {
+                // Same version
+                status = OTA_STATUS_UP_TO_DATE;
+                ESP_LOGI(TAG, "Reporting UP_TO_DATE status (OTA partition)");
+            }
+        } else {
+            // Default to UP_TO_DATE if we can't determine, but only for OTA partitions
+            status = OTA_STATUS_UP_TO_DATE;
+            ESP_LOGI(TAG, "Reporting default UP_TO_DATE status (OTA partition)");
+        }
+    }
+    
+    // Report the status
+    const char* remote_hash = (strlen(remote_version) > 0) ? extract_git_hash(remote_version) : NULL;
+    report_ota_status(status, remote_hash);
 }

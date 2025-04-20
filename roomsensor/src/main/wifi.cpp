@@ -214,6 +214,9 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
             publish_device_info(ip_event.ip_info.ip);
             
+            // Report OTA status when MQTT connects
+            ota_report_status();
+            
             // Notify OTA again when MQTT is connected (fully network ready)
             ota_notify_network_connected();
         }
@@ -333,6 +336,13 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
     if (strcmp(subtopic, "device") == 0) {
         // New format: roomsensor/device/{MAC}
         snprintf(full_topic, sizeof(full_topic), "roomsensor/device/%02x%02x%02x%02x%02x%02x",
+                device_mac[0], device_mac[1], device_mac[2],
+                device_mac[3], device_mac[4], device_mac[5]);
+    } 
+    // Special handling for OTA status topic
+    else if (strcmp(subtopic, "ota") == 0) {
+        // Format: roomsensor/device/{MAC}/ota
+        snprintf(full_topic, sizeof(full_topic), "roomsensor/device/%02x%02x%02x%02x%02x%02x/ota",
                 device_mac[0], device_mac[1], device_mac[2],
                 device_mac[3], device_mac[4], device_mac[5]);
     } else {
