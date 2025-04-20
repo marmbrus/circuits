@@ -367,10 +367,9 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
             // Report OTA status as UPGRADING before starting the update
             // Factory builds were already reported as DEV_BUILD above
-            if (!is_factory) {
-                report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
-            }
 
+            report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
+            
             // Perform the OTA update
             ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
 
@@ -424,6 +423,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     }
 
     // If we reach here, no update is needed
+    ota_report_status();
     mark_app_valid();
     cJSON_Delete(root);
     return false;
@@ -590,7 +590,6 @@ static void ota_update_task(void *pvParameter) {
         } else {
             int status_code = esp_http_client_get_status_code(client);
             if (status_code == 200) {
-                ota_report_status();
             } else {
                 ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
             }
@@ -796,6 +795,12 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
 
 // Public function to report OTA status
 void ota_report_status(void) {
+    // Skip early reporting if remote version info isn't available yet
+    if (remote_timestamp == 0 || strlen(remote_version) == 0) {
+        ESP_LOGD(TAG, "Skipping OTA status report - remote version info not available yet");
+        return;
+    }
+
     // Determine current status
     ota_status_t status;
     
@@ -804,7 +809,6 @@ void ota_report_status(void) {
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
         // Always a development build for factory partition
         status = OTA_STATUS_DEV_BUILD;
-        // No need for extra log here, it's in the JSON
     } else {
         // Only for OTA partitions - check version status
         if (remote_timestamp > 0) {
@@ -812,20 +816,16 @@ void ota_report_status(void) {
             if (remote_timestamp > FIRMWARE_BUILD_TIME) {
                 // Remote is newer (shouldn't happen unless we skipped update)
                 status = OTA_STATUS_UPGRADING; 
-                // No extra log needed
             } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
                 // Local is newer
                 status = OTA_STATUS_NEWER;
-                // No extra log needed
             } else {
                 // Same version
                 status = OTA_STATUS_UP_TO_DATE;
-                // No extra log needed
             }
         } else {
             // Default to UP_TO_DATE if we can't determine, but only for OTA partitions
             status = OTA_STATUS_UP_TO_DATE;
-            // No extra log needed
         }
     }
     
