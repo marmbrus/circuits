@@ -240,9 +240,14 @@ static void mark_app_valid() {
 
 // Parse manifest and check if update is needed
 static bool parse_manifest_and_check_update(char *manifest_data) {
+    if (manifest_data == NULL || strlen(manifest_data) == 0) {
+        ESP_LOGE(TAG, "Empty manifest data");
+        return false;
+    }
+    
     cJSON *root = cJSON_Parse(manifest_data);
     if (!root) {
-        ESP_LOGE(TAG, "Failed to parse manifest JSON");
+        ESP_LOGE(TAG, "Failed to parse manifest JSON: %s", cJSON_GetErrorPtr() ? cJSON_GetErrorPtr() : "unknown error");
         return false;
     }
 
@@ -259,6 +264,15 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     const char *remote_version = version->valuestring;
     const char *firmware_url = url->valuestring;
 
+    if (remote_version == NULL || firmware_url == NULL) {
+        ESP_LOGE(TAG, "Null version or URL in manifest");
+        cJSON_Delete(root);
+        return false;
+    }
+
+    ESP_LOGI(TAG, "Remote firmware version: %s", remote_version);
+    ESP_LOGI(TAG, "Firmware URL: %s", firmware_url);
+
     // Get remote timestamp for comparison
     time_t remote_timestamp = 0;
     if (build_timestamp_epoch && cJSON_IsNumber(build_timestamp_epoch)) {
@@ -270,15 +284,26 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         gmtime_r(&remote_timestamp, &remote_tm);
         strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%d %H:%M:%S UTC", &remote_tm);
         ESP_LOGI(TAG, "Remote firmware build time: %s (epoch: %ld)", remote_time_str, (long)remote_timestamp);
+
+        // Format local timestamp for comparison
+        char local_time_str[64] = {0};
+        if (FIRMWARE_BUILD_TIME > 0) {
+            struct tm local_tm;
+            gmtime_r(&FIRMWARE_BUILD_TIME, &local_tm);
+            strftime(local_time_str, sizeof(local_time_str), "%Y-%m-%d %H:%M:%S UTC", &local_tm);
+            ESP_LOGI(TAG, "Local firmware build time: %s (epoch: %ld)", 
+                     local_time_str, (long)FIRMWARE_BUILD_TIME);
+        } else {
+            ESP_LOGW(TAG, "Local firmware build time is not available");
+        }
     } else {
         ESP_LOGW(TAG, "Remote manifest missing build timestamp");
     }
 
-    ESP_LOGI(TAG, "Remote firmware version: %s", remote_version);
-    ESP_LOGI(TAG, "Firmware URL: %s", firmware_url);
-
     // Extract the hash part from the remote version
     const char* remote_hash = extract_git_hash(remote_version);
+    ESP_LOGI(TAG, "Local firmware hash: %s, Remote firmware hash: %s", 
+             extracted_hash, remote_hash);
 
     // Check if we already applied this update (based on timestamp in NVS)
     if (already_applied_update(remote_timestamp)) {
@@ -298,6 +323,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                     (long)(remote_timestamp - FIRMWARE_BUILD_TIME));
 
             // Set system state to OTA_UPDATING to show white pulse animation
+            ESP_LOGI(TAG, "Setting LED state to OTA_UPDATING for upgrade animation");
             led_control_set_state(OTA_UPDATING);
 
             // Perform the OTA update
@@ -309,6 +335,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             config.skip_cert_common_name_check = true;
             config.transport_type = HTTP_TRANSPORT_OVER_TCP;
             config.buffer_size = 1024;
+            config.timeout_ms = 30000; // 30 second timeout for firmware download
 
             esp_https_ota_config_t ota_config = {};
             ota_config.http_config = &config;
@@ -343,7 +370,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             ESP_LOGI(TAG, "Skipping update: already at latest version");
         }
     } else {
-        ESP_LOGW(TAG, "Cannot compare timestamps, skipping update");
+        ESP_LOGW(TAG, "Cannot compare timestamps: Remote=%ld, Local=%ld. Skipping update.", 
+                (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
     }
 
     // If we reach here, no update is needed
@@ -359,39 +387,68 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
 
     switch(evt->event_id) {
         case HTTP_EVENT_ON_DATA:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
             // Allocate or reallocate buffer for the data
             if (manifest_data == NULL) {
                 manifest_data = (char*)malloc(evt->data_len + 1);
                 data_len = evt->data_len;
+                if (manifest_data == NULL) {
+                    ESP_LOGE(TAG, "Failed to allocate memory for manifest data");
+                    return ESP_FAIL;
+                }
             } else {
-                manifest_data = (char*)realloc(manifest_data, data_len + evt->data_len + 1);
+                // Calculate new buffer size and reallocate
+                char* new_data = (char*)realloc(manifest_data, data_len + evt->data_len + 1);
+                if (new_data == NULL) {
+                    ESP_LOGE(TAG, "Failed to reallocate memory for manifest data");
+                    free(manifest_data);
+                    manifest_data = NULL;
+                    data_len = 0;
+                    return ESP_FAIL;
+                }
+                manifest_data = new_data;
+                
+                // Update buffer position for the new data
+                memcpy(manifest_data + data_len, evt->data, evt->data_len);
                 data_len += evt->data_len;
             }
 
-            if (manifest_data == NULL) {
-                ESP_LOGE(TAG, "Failed to allocate memory for manifest data");
-                return ESP_FAIL;
-            }
-
             // Copy received data to the buffer
-            memcpy(manifest_data + data_len - evt->data_len, evt->data, evt->data_len);
-            manifest_data[data_len] = 0; // Null terminate
+            if (manifest_data != NULL) {
+                if (data_len == evt->data_len) {
+                    // First chunk of data
+                    memcpy(manifest_data, evt->data, evt->data_len);
+                }
+                manifest_data[data_len] = 0; // Null terminate
+            }
             break;
 
         case HTTP_EVENT_ON_FINISH:
             if (manifest_data != NULL) {
                 ESP_LOGI(TAG, "Manifest downloaded (%d bytes)", data_len);
                 if (data_len > 0) {
-                    ESP_LOGI(TAG, "Manifest content: %s", manifest_data);
+                    // Only show first 100 characters to avoid log spam
+                    char preview[101] = {0};
+                    strncpy(preview, manifest_data, 100);
+                    ESP_LOGI(TAG, "Manifest preview: %s%s", preview, 
+                             (strlen(manifest_data) > 100) ? "..." : "");
+                    
+                    // Process the manifest
+                    bool update_result = parse_manifest_and_check_update(manifest_data);
+                    ESP_LOGI(TAG, "Manifest parse result: %s", update_result ? "Update triggered" : "No update needed");
+                } else {
+                    ESP_LOGW(TAG, "Empty manifest received");
                 }
-                parse_manifest_and_check_update(manifest_data);
                 free(manifest_data);
                 manifest_data = NULL;
                 data_len = 0;
+            } else {
+                ESP_LOGW(TAG, "HTTP_EVENT_ON_FINISH with NULL manifest data");
             }
             break;
 
         case HTTP_EVENT_DISCONNECTED:
+            ESP_LOGD(TAG, "HTTP_EVENT_DISCONNECTED");
             if (manifest_data != NULL) {
                 free(manifest_data);
                 manifest_data = NULL;
@@ -399,6 +456,15 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
             }
             break;
 
+        case HTTP_EVENT_ERROR:
+            ESP_LOGE(TAG, "HTTP_EVENT_ERROR");
+            if (manifest_data != NULL) {
+                free(manifest_data);
+                manifest_data = NULL;
+                data_len = 0;
+            }
+            break;
+            
         default:
             break;
     }
@@ -408,13 +474,24 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
 
 // OTA update task that runs in the background
 static void ota_update_task(void *pvParameter) {
-    ESP_LOGI(TAG, "OTA update task started");
+    ESP_LOGI(TAG, "OTA update task started, waiting for network connection");
     
     // Wait for network to be connected before proceeding
+    if (network_event_group == NULL) {
+        ESP_LOGE(TAG, "Network event group is NULL! OTA task exiting.");
+        vTaskDelete(NULL);
+        return;
+    }
+    
     ESP_LOGI(TAG, "Waiting for network to be connected...");
-    xEventGroupWaitBits(network_event_group, NETWORK_CONNECTED_BIT, 
+    EventBits_t bits = xEventGroupWaitBits(network_event_group, NETWORK_CONNECTED_BIT, 
                         pdFALSE, pdTRUE, portMAX_DELAY);
-    ESP_LOGI(TAG, "Network connected, proceeding with OTA checks");
+                        
+    if (bits & NETWORK_CONNECTED_BIT) {
+        ESP_LOGI(TAG, "Network connected, proceeding with OTA checks");
+    } else {
+        ESP_LOGW(TAG, "Unexpected event bits: 0x%lx", bits);
+    }
     
     // Get current version on startup
     get_current_version();
@@ -422,51 +499,97 @@ static void ota_update_task(void *pvParameter) {
     // Ensure the app is marked valid to prevent rollback
     mark_app_valid();
     
+    uint32_t check_count = 0;
+    
+    // Main OTA loop
+    ESP_LOGI(TAG, "Starting periodic OTA checks every %d ms", OTA_CHECK_INTERVAL_MS);
+    
     while (1) {
         // Check for updates
-        ESP_LOGI(TAG, "Checking for OTA updates from %s", MANIFEST_URL);
+        check_count++;
+        ESP_LOGI(TAG, "OTA check #%lu: Checking for updates from %s", check_count, MANIFEST_URL);
         
+        esp_err_t err = ESP_OK;
+        esp_http_client_handle_t client = NULL;
+                
+        // Initialize HTTP client with proper error checking
         esp_http_client_config_t config = {};
         config.url = MANIFEST_URL;
         config.event_handler = http_event_handler;
         config.cert_pem = NULL;
         config.skip_cert_common_name_check = true;
         config.transport_type = HTTP_TRANSPORT_OVER_TCP;
+        config.timeout_ms = 10000; // Add 10s timeout to avoid hanging
         
-        esp_http_client_handle_t client = esp_http_client_init(&config);
-        esp_err_t err = esp_http_client_perform(client);
+        client = esp_http_client_init(&config);
+        if (client == NULL) {
+            ESP_LOGE(TAG, "Failed to initialize HTTP client");
+            // Skip to delay and try again later
+            goto ota_check_delay;
+        }
+        
+        // Perform HTTP request with proper error handling
+        err = esp_http_client_perform(client);
         
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
+        } else {
+            int status_code = esp_http_client_get_status_code(client);
+            if (status_code == 200) {
+                ESP_LOGI(TAG, "OTA check completed successfully (HTTP 200)");
+            } else {
+                ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
+            }
         }
         
-        esp_http_client_cleanup(client);
+        // Cleanup
+        if (client != NULL) {
+            esp_http_client_cleanup(client);
+        }
         
+ota_check_delay:
         // Sleep for the specified interval before checking again
+        ESP_LOGI(TAG, "OTA check #%lu complete. Waiting %d ms before next check...", 
+                 check_count, OTA_CHECK_INTERVAL_MS);
+        
+        // Explicitly yield to make sure other tasks can run
         vTaskDelay(pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS));
     }
+    
+    // This should never be reached, but just in case
+    ESP_LOGW(TAG, "OTA task unexpectedly exited the main loop!");
+    vTaskDelete(NULL);
 }
 
 // Initialize OTA module and start background task
 esp_err_t ota_init(void) {
     ESP_LOGI(TAG, "Initializing OTA module");
     
-    // Create event group for network synchronization
-    network_event_group = xEventGroupCreate();
+    // Create event group for network synchronization if it doesn't exist
     if (network_event_group == NULL) {
-        ESP_LOGE(TAG, "Failed to create event group");
-        return ESP_FAIL;
+        network_event_group = xEventGroupCreate();
+        if (network_event_group == NULL) {
+            ESP_LOGE(TAG, "Failed to create event group");
+            return ESP_FAIL;
+        }
+        ESP_LOGI(TAG, "Created network event group for OTA");
     }
     
-    // Start OTA task
-    ota_running = true;
-    BaseType_t ret = xTaskCreate(ota_update_task, "ota_task", 
-                                OTA_TASK_STACK_SIZE, NULL, 
-                                OTA_TASK_PRIORITY, &ota_task_handle);
-    
-    if (ret != pdPASS) {
-        ESP_LOGE(TAG, "Failed to create OTA task");
-        return ESP_FAIL;
+    // Start OTA task if not already running
+    if (!ota_running || ota_task_handle == NULL) {
+        ota_running = true;
+        BaseType_t ret = xTaskCreate(ota_update_task, "ota_task", 
+                                    OTA_TASK_STACK_SIZE, NULL, 
+                                    OTA_TASK_PRIORITY, &ota_task_handle);
+        
+        if (ret != pdPASS) {
+            ESP_LOGE(TAG, "Failed to create OTA task");
+            return ESP_FAIL;
+        }
+        
+        ESP_LOGI(TAG, "OTA task created successfully");
+    } else {
+        ESP_LOGW(TAG, "OTA task already running, skipping creation");
     }
     
     ESP_LOGI(TAG, "OTA module initialized successfully");

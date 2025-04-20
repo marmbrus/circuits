@@ -56,11 +56,11 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG, "HTTP server started successfully");
     }
 
-    // Check for OTA updates
-    if (check_for_ota_update() != ESP_OK) {
-        ESP_LOGW(TAG, "OTA update check failed");
+    // Initialize OTA update system
+    if (ota_init() != ESP_OK) {
+        ESP_LOGW(TAG, "OTA initialization failed");
     } else {
-        ESP_LOGI(TAG, "OTA update check completed - test");
+        ESP_LOGI(TAG, "OTA system initialized successfully");
     }
 
     // Main loop

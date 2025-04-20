@@ -14,6 +14,7 @@
 #include "esp_netif_ip_addr.h"
 #include "esp_flash.h"
 #include "cJSON.h"
+#include "ota.h"
 
 #include "communication.h"
 
@@ -184,6 +185,9 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 
         // Initialize SNTP to set time
         initialize_sntp();
+        
+        // Notify OTA system that network is connected
+        ota_notify_network_connected();
     }
     // Handle MQTT events
     else {
@@ -209,6 +213,9 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             ip_event_got_ip_t ip_event;
             esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
             publish_device_info(ip_event.ip_info.ip);
+            
+            // Notify OTA again when MQTT is connected (fully network ready)
+            ota_notify_network_connected();
         }
         else if (mqtt_event == MQTT_EVENT_DISCONNECTED) {
             ESP_LOGI(TAG, "MQTT Disconnected");
