@@ -331,28 +331,17 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         is_factory = true;
         ESP_LOGI(TAG, "Running from factory partition (development build)");
         
-        // Always report DEV_BUILD status for factory partition
+        // For factory partitions, always report DEV_BUILD status, but still allow updates
         report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
-        mark_app_valid();
-        cJSON_Delete(root);
-        
-        // Still proceed with the update check, but return with status already reported
-        if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0 && 
-            remote_timestamp > FIRMWARE_BUILD_TIME) {
-            // Only show update is available for factory builds
-            ESP_LOGI(TAG, "OTA update available for factory build: Remote %ld > Local %ld",
-                    (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
-        }
-        
-        return false;
     }
 
-    // For OTA partitions, continue with normal version checking
     // Check if we already applied this update (based on timestamp in NVS)
     if (already_applied_update(remote_timestamp)) {
         ESP_LOGI(TAG, "Skipping update: already applied this version");
-        // Report UP_TO_DATE status because we're on the latest version
-        report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
+        // If not factory build, report UP_TO_DATE
+        if (!is_factory) {
+            report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
+        }
         mark_app_valid();
         cJSON_Delete(root);
         return false;
@@ -367,12 +356,20 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                     (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME,
                     (long)(remote_timestamp - FIRMWARE_BUILD_TIME));
 
+            // Special message for factory builds
+            if (is_factory) {
+                ESP_LOGI(TAG, "OTA update available for factory build - will upgrade to: %s", remote_hash);
+            }
+
             // Set system state to OTA_UPDATING to show white pulse animation
             ESP_LOGI(TAG, "Setting LED state to OTA_UPDATING for upgrade animation");
             led_control_set_state(OTA_UPDATING);
 
             // Report OTA status as UPGRADING before starting the update
-            report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
+            // Factory builds were already reported as DEV_BUILD above
+            if (!is_factory) {
+                report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
+            }
 
             // Perform the OTA update
             ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
@@ -414,14 +411,18 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                     (long)(FIRMWARE_BUILD_TIME - remote_timestamp));
             ESP_LOGI(TAG, "Skipping update: current firmware is newer");
             
-            // Report NEWER status since our firmware is newer than server
-            report_ota_status(OTA_STATUS_NEWER, remote_hash);
+            // Report NEWER status, but only if not already reported as DEV_BUILD
+            if (!is_factory) {
+                report_ota_status(OTA_STATUS_NEWER, remote_hash);
+            }
         } else {
             ESP_LOGI(TAG, "Remote and local builds have same timestamp: %ld", (long)remote_timestamp);
             ESP_LOGI(TAG, "Skipping update: already at latest version");
             
-            // Report UP_TO_DATE status since timestamps match
-            report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
+            // Report UP_TO_DATE status, but only if not already reported as DEV_BUILD
+            if (!is_factory) {
+                report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
+            }
         }
     } else {
         ESP_LOGW(TAG, "Cannot compare timestamps: Remote=%ld, Local=%ld. Skipping update.", 
