@@ -366,8 +366,6 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             led_control_set_state(OTA_UPDATING);
 
             // Report OTA status as UPGRADING before starting the update
-            // Factory builds were already reported as DEV_BUILD above
-
             report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
 
             // Perform the OTA update
@@ -405,25 +403,44 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 return false;
             }
         } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
-            // No need to log this common case
-            // Report NEWER status, but only if not already reported as DEV_BUILD
-            if (!is_factory) {
+            // Local is newer than remote
+            if (is_factory) {
+                // Report as DEV_BUILD for factory partition
+                report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
+                ESP_LOGI(TAG, "Running factory build with newer version than server");
+            } else {
+                // Report as NEWER for OTA partition
                 report_ota_status(OTA_STATUS_NEWER, remote_hash);
+                ESP_LOGI(TAG, "Running newer version than available on server");
             }
         } else {
-            // No need to log this common case
-            // Report UP_TO_DATE status, but only if not already reported as DEV_BUILD
-            if (!is_factory) {
+            // Versions are identical
+            if (is_factory) {
+                // Report as DEV_BUILD for factory partition
+                report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
+                ESP_LOGI(TAG, "Running factory build with same version as server");
+            } else {
+                // Report as UP_TO_DATE for OTA partition
                 report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
+                ESP_LOGI(TAG, "Running the latest version");
             }
         }
     } else {
         ESP_LOGW(TAG, "Cannot compare timestamps: Remote=%ld, Local=%ld. Skipping update.",
                 (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
+
+        // Always report status even if we can't compare versions
+        if (is_factory) {
+            report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
+            ESP_LOGI(TAG, "Running factory build, status unknown (missing timestamp)");
+        } else {
+            // Default to UP_TO_DATE if we can't determine
+            report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
+            ESP_LOGI(TAG, "Running OTA partition, status unknown (missing timestamp)");
+        }
     }
 
     // If we reach here, no update is needed
-    ota_report_status();
     mark_app_valid();
     cJSON_Delete(root);
     return false;
