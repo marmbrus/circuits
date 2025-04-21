@@ -103,14 +103,14 @@ esp_err_t initialize_tag_system(void) {
     // Get MAC address from wifi.h
     const uint8_t* mac = get_device_mac();
     char mac_str[18];
-    snprintf(mac_str, sizeof(mac_str), "%02X:%02X:%02X:%02X:%02X:%02X", 
+    snprintf(mac_str, sizeof(mac_str), "%02X%02X%02X%02X%02X%02X", 
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     
     // Set device-specific tags
     esp_err_t err;
     
     // MAC address (always set from hardware)
-    err = add_device_tag("mac_address", mac_str);
+    err = add_device_tag("mac", mac_str);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add MAC address tag: %s", esp_err_to_name(err));
         return err;
@@ -124,6 +124,41 @@ esp_err_t initialize_tag_system(void) {
     if (area_err != ESP_OK || room_err != ESP_OK || id_err != ESP_OK) {
         ESP_LOGW(TAG, "Some device tags not found in NVS. Use set_device_tags_for_testing to configure them.");
         return ESP_ERR_NOT_FOUND;
+    }
+    
+    // Create a sensor tag that combines room and id
+    // Find the room and id tags in our collection
+    const char* room_value = "unknown";
+    const char* id_value = "unknown";
+    
+    for (int i = 0; i < s_tag_count; i++) {
+        if (strcmp(s_device_tags[i].key, "room") == 0) {
+            room_value = s_device_tags[i].value;
+        } else if (strcmp(s_device_tags[i].key, "id") == 0) {
+            id_value = s_device_tags[i].value;
+        }
+    }
+    
+    // Create the combined sensor tag (room-id) using safe string operations
+    char sensor_value[MAX_TAG_VALUE_LEN];
+    
+    // Start with an empty string
+    sensor_value[0] = '\0';
+    
+    // Copy room value, ensuring we don't exceed buffer size minus space for dash and null terminator
+    strncat(sensor_value, room_value, MAX_TAG_VALUE_LEN - 2);
+    
+    // Add dash
+    strcat(sensor_value, "-");
+    
+    // Add id, ensuring we don't exceed the remaining buffer size
+    strncat(sensor_value, id_value, MAX_TAG_VALUE_LEN - strlen(sensor_value) - 1);
+    
+    // Add the new sensor tag
+    err = add_device_tag("sensor", sensor_value);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add sensor tag: %s", esp_err_to_name(err));
+        // Continue anyway, this is not a critical error
     }
     
     // Log the tags
@@ -144,13 +179,16 @@ esp_err_t set_device_tags_for_testing(void) {
     char id_value[16];
     snprintf(id_value, sizeof(id_value), "test%02X%02X", mac[4], mac[5]);
     
+    // Room value for test
+    const char* room_value = "TestRoom";
+    
     // Test values to store
     struct {
         const char* key;
         const char* value;
     } test_tags[] = {
         {"area", "TestArea"},
-        {"room", "TestRoom"},
+        {"room", room_value},
         {"id", id_value}  // Dynamic ID using last 4 digits of MAC
     };
     
@@ -169,6 +207,31 @@ esp_err_t set_device_tags_for_testing(void) {
             return err;
         }
     }
+    
+    // Create and add the sensor tag (room-id)
+    char sensor_value[MAX_TAG_VALUE_LEN];
+    
+    // Start with an empty string
+    sensor_value[0] = '\0';
+    
+    // Copy room value, ensuring we don't exceed buffer size minus space for dash and null terminator
+    strncat(sensor_value, room_value, MAX_TAG_VALUE_LEN - 2);
+    
+    // Add dash
+    strcat(sensor_value, "-");
+    
+    // Add id, ensuring we don't exceed the remaining buffer size
+    strncat(sensor_value, id_value, MAX_TAG_VALUE_LEN - strlen(sensor_value) - 1);
+    
+    // Add the sensor tag to memory
+    err = add_device_tag("sensor", sensor_value);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add sensor tag: %s", esp_err_to_name(err));
+        return err;
+    }
+    
+    // No need to save sensor tag to NVS as it's derived from other tags
+    // and will be recreated on boot
     
     ESP_LOGI(TAG, "Test tags set and saved to NVS:");
     for (int i = 0; i < s_tag_count; i++) {

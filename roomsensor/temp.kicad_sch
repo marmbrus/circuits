@@ -296,6 +296,7 @@
 	(hierarchical_label "3v3"
 		(shape input)
 		(at 22.86 24.13 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -307,6 +308,7 @@
 	(hierarchical_label "temp"
 		(shape input)
 		(at 34.29 26.67 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)

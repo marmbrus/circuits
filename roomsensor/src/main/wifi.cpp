@@ -28,6 +28,14 @@ static bool sntp_initialized = false;
 static void wifi_init_sta(void);
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
+// Function to check if device tags are properly configured
+static bool are_device_tags_configured(const char* area, const char* room, const char* id) {
+    // Check if any of the critical tags are set to "unknown"
+    return (strcmp(area, "unknown") != 0 && 
+            strcmp(room, "unknown") != 0 && 
+            strcmp(id, "unknown") != 0);
+}
+
 void wifi_mqtt_init(void)
 {
     // Initialize WiFi
@@ -36,12 +44,71 @@ void wifi_mqtt_init(void)
     // Initialize WiFi as station
     wifi_init_sta();
 
-    // Configure MQTT
+    // Initialize tag system BEFORE MQTT to ensure we have proper configuration
+    // Call initialize_tag_system if not already done elsewhere in the application
+    extern esp_err_t initialize_tag_system(void);
+    esp_err_t tag_err = initialize_tag_system();
+    if (tag_err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize tag system: %s", esp_err_to_name(tag_err));
+    }
+
+    // Configure MQTT with LWT (Last Will and Testament)
     esp_mqtt_client_config_t mqtt_cfg = {};  // Zero initialize
     mqtt_cfg.broker.address.uri = MQTT_BROKER_URL;
     mqtt_cfg.network.reconnect_timeout_ms = MQTT_RECONNECT_TIMEOUT_MS;
     mqtt_cfg.network.timeout_ms = MQTT_OPERATION_TIMEOUT_MS;
-
+    
+    // Set up LWT (Last Will and Testament) only if we have proper configuration
+    extern TagCollection* create_tag_collection(void);
+    TagCollection* tags = create_tag_collection();
+    
+    if (tags) {
+        // Extract area, room, id from tags - limit to 20 chars each to prevent buffer overflow
+        char area[21] = "unknown";
+        char room[21] = "unknown";
+        char id[21] = "unknown";
+        
+        for (int i = 0; i < tags->count; i++) {
+            if (strcmp(tags->tags[i].key, "area") == 0) {
+                strncpy(area, tags->tags[i].value, 20);
+                area[20] = '\0'; // Ensure null termination
+            } else if (strcmp(tags->tags[i].key, "room") == 0) {
+                strncpy(room, tags->tags[i].value, 20);
+                room[20] = '\0'; // Ensure null termination
+            } else if (strcmp(tags->tags[i].key, "id") == 0) {
+                strncpy(id, tags->tags[i].value, 20);
+                id[20] = '\0'; // Ensure null termination
+            }
+        }
+        
+        // Only set up LWT if we have proper configuration
+        if (are_device_tags_configured(area, room, id)) {
+            // LWT topic - location/{area}/{room}/{id}/connected
+            char lwt_topic[128];
+            snprintf(lwt_topic, sizeof(lwt_topic), "location/%s/%s/%s/connected", area, room, id);
+            
+            // Create a compact LWT message - {"connected":false} without any whitespace
+            const char* lwt_message = "{\"connected\":false}";
+            
+            // Configure LWT
+            mqtt_cfg.session.last_will.topic = strdup(lwt_topic);
+            mqtt_cfg.session.last_will.msg = (const char*)strdup(lwt_message);
+            mqtt_cfg.session.last_will.msg_len = strlen(lwt_message);
+            mqtt_cfg.session.last_will.qos = 1;
+            mqtt_cfg.session.last_will.retain = 1;
+            
+            ESP_LOGI(TAG, "LWT configured for topic: %s", lwt_topic);
+        } else {
+            ESP_LOGW(TAG, "Device tags not properly configured. LWT will not be set up.");
+        }
+        
+        // Free tag collection
+        extern void free_tag_collection(TagCollection* collection);
+        free_tag_collection(tags);
+    } else {
+        ESP_LOGE(TAG, "Failed to get device tags for LWT setup");
+    }
+    
     mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(mqtt_client, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, event_handler, NULL);
 }
@@ -151,6 +218,93 @@ static void publish_device_info(esp_ip4_addr_t ip) {
     cJSON_Delete(device_json);
 }
 
+// Function to publish location information
+static void publish_location_info(esp_ip4_addr_t ip) {
+    // This function requires area, room, and id from tag system
+    
+    // Use ESP IDF API to get device tags from NVS or other storage
+    extern TagCollection* create_tag_collection(void); // Declare external function
+    TagCollection* tags = create_tag_collection();
+    
+    if (!tags) {
+        ESP_LOGE(TAG, "Failed to get device tags, can't publish location info");
+        return;
+    }
+    
+    // Extract area, room, id from tags - limit to 20 chars each to prevent buffer overflow
+    char area[21] = "unknown";
+    char room[21] = "unknown";
+    char id[21] = "unknown";
+    
+    for (int i = 0; i < tags->count; i++) {
+        if (strcmp(tags->tags[i].key, "area") == 0) {
+            strncpy(area, tags->tags[i].value, 20);
+            area[20] = '\0'; // Ensure null termination
+        } else if (strcmp(tags->tags[i].key, "room") == 0) {
+            strncpy(room, tags->tags[i].value, 20);
+            room[20] = '\0'; // Ensure null termination
+        } else if (strcmp(tags->tags[i].key, "id") == 0) {
+            strncpy(id, tags->tags[i].value, 20);
+            id[20] = '\0'; // Ensure null termination
+        }
+    }
+    
+    // Check if we have proper configuration before publishing
+    if (!are_device_tags_configured(area, room, id)) {
+        ESP_LOGW(TAG, "Device tags not properly configured. Not publishing location info.");
+        free_tag_collection(tags);
+        return;
+    }
+    
+    // Create JSON for device info
+    cJSON *device_json = cJSON_CreateObject();
+    
+    // MAC Address
+    char mac_str[18];
+    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
+             device_mac[0], device_mac[1], device_mac[2],
+             device_mac[3], device_mac[4], device_mac[5]);
+    cJSON_AddStringToObject(device_json, "mac", mac_str);
+    
+    // IP Address
+    char ip_str[16];
+    snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&ip));
+    cJSON_AddStringToObject(device_json, "ip", ip_str);
+    
+    char *device_string = cJSON_Print(device_json);
+    
+    // Build the topic: location/$area/$room/$id/device
+    char topic[128];
+    snprintf(topic, sizeof(topic), "location/%s/%s/%s/device", area, room, id);
+    
+    // Publish with retain flag set to 1 (retained message)
+    publish_to_topic(topic, device_string, 1, 1);
+    
+    // Now publish the connected status as a retained message with LWT
+    cJSON *connected_json = cJSON_CreateObject();
+    cJSON_AddBoolToObject(connected_json, "connected", true);
+    
+    // Use PrintUnformatted to generate a compact single-line JSON without indentation
+    char *connected_string = cJSON_PrintUnformatted(connected_json);
+    
+    // Build connected topic: location/$area/$room/$id/connected
+    char connected_topic[128];
+    snprintf(connected_topic, sizeof(connected_topic), "location/%s/%s/%s/connected", area, room, id);
+    
+    // Publish with retain flag set to 1
+    publish_to_topic(connected_topic, connected_string, 1, 1);
+    
+    // Cleanup
+    cJSON_free(device_string);
+    cJSON_Delete(device_json);
+    cJSON_free(connected_string);
+    cJSON_Delete(connected_json);
+    
+    // Free tag collection
+    extern void free_tag_collection(TagCollection* collection); // Declare external function
+    free_tag_collection(tags);
+}
+
 static void event_handler(void* arg, esp_event_base_t event_base,
                          int32_t event_id, void* event_data)
 {
@@ -209,10 +363,15 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             system_state = FULLY_CONNECTED;
             led_control_set_state(FULLY_CONNECTED);
 
-            // Publish device info when MQTT is connected
+            // Get IP info for publishing
             ip_event_got_ip_t ip_event;
             esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
+            
+            // Publish device boot info when MQTT is connected
             publish_device_info(ip_event.ip_info.ip);
+            
+            // Publish location info with retained flag
+            publish_location_info(ip_event.ip_info.ip);
             
             // Report OTA status when MQTT connects
             ota_report_status();
@@ -331,22 +490,67 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
     }
 
     char full_topic[128];
+    
+    // Format MAC address string for easier use
+    char mac_str[13];
+    snprintf(mac_str, sizeof(mac_str), "%02x%02x%02x%02x%02x%02x",
+            device_mac[0], device_mac[1], device_mac[2],
+            device_mac[3], device_mac[4], device_mac[5]);
 
-    // Special handling for device topic
+    // Special handling for device boot topic (previously "device")
     if (strcmp(subtopic, "device") == 0) {
-        // New format: roomsensor/device/{MAC}
-        snprintf(full_topic, sizeof(full_topic), "roomsensor/device/%02x%02x%02x%02x%02x%02x",
-                device_mac[0], device_mac[1], device_mac[2],
-                device_mac[3], device_mac[4], device_mac[5]);
+        // New format: sensor/{MAC}/device/boot
+        snprintf(full_topic, sizeof(full_topic), "sensor/%s/device/boot", mac_str);
     } 
     // Special handling for OTA status topic
     else if (strcmp(subtopic, "ota") == 0) {
-        // Format: roomsensor/device/{MAC}/ota
-        snprintf(full_topic, sizeof(full_topic), "roomsensor/device/%02x%02x%02x%02x%02x%02x/ota",
-                device_mac[0], device_mac[1], device_mac[2],
-                device_mac[3], device_mac[4], device_mac[5]);
-    } else {
-        // For all other topics including metrics, use the provided path directly
+        // New format: sensor/{MAC}/device/ota
+        snprintf(full_topic, sizeof(full_topic), "sensor/%s/device/ota", mac_str);
+    }
+    // Special handling for location topic
+    else if (strncmp(subtopic, "location/", 9) == 0) {
+        // Format already provided: location/{area}/{room}/{id}/device
+        strncpy(full_topic, subtopic, sizeof(full_topic) - 1);
+        full_topic[sizeof(full_topic) - 1] = '\0'; // Ensure null termination
+    }
+    // Special handling for LWT topic
+    else if (strncmp(subtopic, "location/", 9) == 0 && strstr(subtopic, "/connected") != NULL) {
+        // Format already provided: location/{area}/{room}/{id}/connected
+        strncpy(full_topic, subtopic, sizeof(full_topic) - 1);
+        full_topic[sizeof(full_topic) - 1] = '\0'; // Ensure null termination
+    }
+    // Handle metrics topics - check if it's coming from the metrics module
+    else if (strstr(subtopic, "roomsensor/") == subtopic) {
+        // This is from the old metrics format - extract the metric name
+        // Old format: roomsensor/$metric_name/$area/$room/$id
+        const char* metric_name_start = subtopic + 11; // Skip "roomsensor/"
+        const char* metric_name_end = strchr(metric_name_start, '/');
+        
+        if (metric_name_end != NULL) {
+            char metric_name[32];
+            size_t name_len = metric_name_end - metric_name_start;
+            if (name_len < sizeof(metric_name)) {
+                memcpy(metric_name, metric_name_start, name_len);
+                metric_name[name_len] = '\0';
+                
+                // New format: sensor/{MAC}/metrics/{metric_name}
+                snprintf(full_topic, sizeof(full_topic), "sensor/%s/metrics/%s", 
+                         mac_str, metric_name);
+            } else {
+                // Fallback if metric name is too long
+                ESP_LOGE(TAG, "Metric name too long, using original topic");
+                strncpy(full_topic, subtopic, sizeof(full_topic) - 1);
+                full_topic[sizeof(full_topic) - 1] = '\0';
+            }
+        } else {
+            // Fallback if we can't parse the metric name
+            ESP_LOGE(TAG, "Can't parse metric name, using original topic");
+            strncpy(full_topic, subtopic, sizeof(full_topic) - 1);
+            full_topic[sizeof(full_topic) - 1] = '\0';
+        }
+    }
+    else {
+        // For all other topics, use the provided path directly
         // If subtopic starts with '/', skip the first character
         const char* topic_path = (subtopic[0] == '/') ? subtopic + 1 : subtopic;
         strncpy(full_topic, topic_path, sizeof(full_topic) - 1);

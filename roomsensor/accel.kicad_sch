@@ -968,6 +968,7 @@
 	)
 	(label "I2C.SDA"
 		(at 85.09 66.04 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -978,6 +979,7 @@
 	)
 	(label "I2C.SCL"
 		(at 85.09 63.5 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -989,6 +991,7 @@
 	(hierarchical_label "INT"
 		(shape input)
 		(at 139.7 60.96 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1000,6 +1003,7 @@
 	(hierarchical_label "3v3"
 		(shape input)
 		(at 46.99 41.91 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1011,6 +1015,7 @@
 	(hierarchical_label "I2C{SDA,SCL}"
 		(shape input)
 		(at 81.28 60.96 180)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)

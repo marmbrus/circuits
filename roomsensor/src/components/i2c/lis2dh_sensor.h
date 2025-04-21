@@ -189,6 +189,9 @@ private:
     bool _movementDetected; // Flag indicating if movement was detected
     bool _initialized; // Flag indicating if the sensor has been initialized
     TagCollection* _tag_collection; // Tag collection for metrics reporting
+    TagCollection* _tag_collection_x; // Tag collection for X axis metrics
+    TagCollection* _tag_collection_y; // Tag collection for Y axis metrics
+    TagCollection* _tag_collection_z; // Tag collection for Z axis metrics
     
     // Variables for interrupt handling and rate limiting
     bool _interruptTriggered; // Flag indicating if an interrupt was triggered

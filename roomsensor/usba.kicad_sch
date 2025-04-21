@@ -1061,6 +1061,7 @@
 	)
 	(label "USB.DP"
 		(at 144.78 111.76 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1071,6 +1072,7 @@
 	)
 	(label "USB.DN"
 		(at 144.78 109.22 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1082,6 +1084,7 @@
 	(hierarchical_label "USB{DP,DN}"
 		(shape input)
 		(at 163.83 106.68 0)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1093,6 +1096,7 @@
 	(hierarchical_label "VUSB"
 		(shape input)
 		(at 158.75 83.82 90)
+		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)

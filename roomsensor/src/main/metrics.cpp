@@ -10,6 +10,10 @@
 #include <time.h>
 #include "freertos/semphr.h"
 
+// External function declarations from wifi.cpp
+extern const uint8_t* get_device_mac(void);
+extern SystemState get_system_state(void);
+
 static const char* TAG = "metrics";
 
 // Queue handle for metric reports
@@ -47,21 +51,19 @@ static void safe_strcat(char* dst, size_t dst_size, const char* src) {
 
 // Function to build the MQTT topic for a metric
 static char* build_metric_topic(const char* metric_name, const TagCollection* tags) {
-    // Find the necessary tags
-    const char* area = "unknown";
-    const char* room = "unknown";
-    const char* id = "unknown";
-
-    for (int i = 0; i < tags->count; i++) {
-        if (strcmp(tags->tags[i].key, "area") == 0) {
-            area = tags->tags[i].value;
-        } else if (strcmp(tags->tags[i].key, "room") == 0) {
-            room = tags->tags[i].value;
-        } else if (strcmp(tags->tags[i].key, "id") == 0) {
-            id = tags->tags[i].value;
-        }
+    // Get the device MAC address
+    const uint8_t* device_mac = get_device_mac();
+    if (device_mac == NULL) {
+        ESP_LOGE(TAG, "Failed to get device MAC address");
+        return NULL;
     }
-
+    
+    // Format MAC address string
+    char mac_str[13];
+    snprintf(mac_str, sizeof(mac_str), "%02x%02x%02x%02x%02x%02x",
+            device_mac[0], device_mac[1], device_mac[2],
+            device_mac[3], device_mac[4], device_mac[5]);
+    
     // Allocate topic buffer with generous size
     char* topic = (char*)malloc(512);
     if (topic == NULL) {
@@ -69,16 +71,12 @@ static char* build_metric_topic(const char* metric_name, const TagCollection* ta
         return NULL;
     }
 
-    // Use safe string operations with new format: roomsensor/$metric_name/$area/$room/$id
+    // Use safe string operations with new format: sensor/$mac/metrics/$metric_name
     topic[0] = '\0';  // Initialize to empty string
-    safe_strcat(topic, 512, "roomsensor/");
+    safe_strcat(topic, 512, "sensor/");
+    safe_strcat(topic, 512, mac_str);
+    safe_strcat(topic, 512, "/metrics/");
     safe_strcat(topic, 512, metric_name);
-    safe_strcat(topic, 512, "/");
-    safe_strcat(topic, 512, area);
-    safe_strcat(topic, 512, "/");
-    safe_strcat(topic, 512, room);
-    safe_strcat(topic, 512, "/");
-    safe_strcat(topic, 512, id);
 
     return topic;
 }
@@ -119,6 +117,28 @@ static char* create_json_message(const MetricReport* report) {
     }
 
     return json_str;
+}
+
+// Check if the required device tags are properly configured 
+static bool are_device_tags_properly_configured(const TagCollection* tags) {
+    bool has_area = false;
+    bool has_room = false;
+    bool has_id = false;
+    
+    // Check if all required tags are present and not "unknown"
+    for (int i = 0; i < tags->count; i++) {
+        const DeviceTag* tag = &tags->tags[i];
+        
+        if (strcmp(tag->key, "area") == 0) {
+            has_area = (strcmp(tag->value, "unknown") != 0);
+        } else if (strcmp(tag->key, "room") == 0) {
+            has_room = (strcmp(tag->value, "unknown") != 0);
+        } else if (strcmp(tag->key, "id") == 0) {
+            has_id = (strcmp(tag->value, "unknown") != 0);
+        }
+    }
+    
+    return has_area && has_room && has_id;
 }
 
 // Generate a hash key for a metric based on name and tags
@@ -312,6 +332,14 @@ static void metrics_reporting_task(void* pvParameters) {
                 }
 
                 ESP_LOGI(TAG, "System now connected, proceeding with publishing metric %s", report.metric_name);
+            }
+
+            // Check if device tags are properly configured
+            if (!are_device_tags_properly_configured(report.tags)) {
+                ESP_LOGW(TAG, "Device tags not properly configured, storing metric %s but not publishing", report.metric_name);
+                // Still store the metric locally but don't publish
+                store_latest_metric(report.metric_name, report.value, report.tags);
+                continue;
             }
 
             // Build the topic string

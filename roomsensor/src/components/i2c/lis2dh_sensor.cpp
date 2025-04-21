@@ -32,6 +32,9 @@ LIS2DHSensor::LIS2DHSensor() :
     _movementDetected(false),
     _initialized(false),
     _tag_collection(nullptr),
+    _tag_collection_x(nullptr),
+    _tag_collection_y(nullptr),
+    _tag_collection_z(nullptr),
     _interruptTriggered(false),
     _lastPollTime(0),
     _xAxisTriggerCount(0),
@@ -46,6 +49,18 @@ LIS2DHSensor::~LIS2DHSensor() {
     if (_tag_collection != nullptr) {
         free_tag_collection(_tag_collection);
         _tag_collection = nullptr;
+    }
+    if (_tag_collection_x != nullptr) {
+        free_tag_collection(_tag_collection_x);
+        _tag_collection_x = nullptr;
+    }
+    if (_tag_collection_y != nullptr) {
+        free_tag_collection(_tag_collection_y);
+        _tag_collection_y = nullptr;
+    }
+    if (_tag_collection_z != nullptr) {
+        free_tag_collection(_tag_collection_z);
+        _tag_collection_z = nullptr;
     }
 }
 
@@ -174,7 +189,7 @@ bool LIS2DHSensor::init(i2c_master_bus_handle_t bus_handle) {
 
     // Add sensor-specific tags
     esp_err_t err_type = add_tag_to_collection(_tag_collection, "type", "lis2dh");
-    esp_err_t err_name = add_tag_to_collection(_tag_collection, "name", "motion");
+    esp_err_t err_name = add_tag_to_collection(_tag_collection, "name", "accel");
 
     if (err_type != ESP_OK || err_name != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add tags to collection");
@@ -182,6 +197,34 @@ bool LIS2DHSensor::init(i2c_master_bus_handle_t bus_handle) {
         _tag_collection = nullptr;
         return false;
     }
+    
+    // Create axis-specific tag collections
+    _tag_collection_x = create_tag_collection();
+    _tag_collection_y = create_tag_collection();
+    _tag_collection_z = create_tag_collection();
+    
+    if (_tag_collection_x == nullptr || _tag_collection_y == nullptr || _tag_collection_z == nullptr) {
+        ESP_LOGE(TAG, "Failed to create axis tag collections");
+        if (_tag_collection_x) free_tag_collection(_tag_collection_x);
+        if (_tag_collection_y) free_tag_collection(_tag_collection_y);
+        if (_tag_collection_z) free_tag_collection(_tag_collection_z);
+        _tag_collection_x = _tag_collection_y = _tag_collection_z = nullptr;
+        free_tag_collection(_tag_collection);
+        _tag_collection = nullptr;
+        return false;
+    }
+    
+    // Copy base tags to each axis collection
+    for (int i = 0; i < _tag_collection->count; i++) {
+        add_tag_to_collection(_tag_collection_x, _tag_collection->tags[i].key, _tag_collection->tags[i].value);
+        add_tag_to_collection(_tag_collection_y, _tag_collection->tags[i].key, _tag_collection->tags[i].value);
+        add_tag_to_collection(_tag_collection_z, _tag_collection->tags[i].key, _tag_collection->tags[i].value);
+    }
+    
+    // Add axis-specific tags
+    add_tag_to_collection(_tag_collection_x, "axis", "x");
+    add_tag_to_collection(_tag_collection_y, "axis", "y");
+    add_tag_to_collection(_tag_collection_z, "axis", "z");
 
     // Mark as initialized BEFORE configuring sleep mode which uses public methods
     _initialized = true;
@@ -317,34 +360,39 @@ void LIS2DHSensor::poll() {
         // Set the movement detected flag for API consistency
         _movementDetected = true;
         
-        // Report metrics for each axis count
-        static const char* METRIC_X_AXIS = "accel_x_triggers";
-        static const char* METRIC_Y_AXIS = "accel_y_triggers";
-        static const char* METRIC_Z_AXIS = "accel_z_triggers";
+        // Report metrics for each axis count with simplified tag approach
+        static const char* METRIC_AXIS_TRIGGERS = "accel_triggers";
+        static const char* METRIC_AXIS_VALUE = "accel_value";
         static const char* METRIC_MAX_MAG = "accel_max_magnitude";
         
-        report_metric(METRIC_X_AXIS, (float)_xAxisTriggerCount, _tag_collection);
-        report_metric(METRIC_Y_AXIS, (float)_yAxisTriggerCount, _tag_collection);
-        report_metric(METRIC_Z_AXIS, (float)_zAxisTriggerCount, _tag_collection);
+        // First report the max magnitude which doesn't need axis tag
         report_metric(METRIC_MAX_MAG, _maxMagnitude, _tag_collection);
         
-        // Also report the current acceleration values for context
-        static const char* METRIC_ACCEL_X = "accel_x";
-        static const char* METRIC_ACCEL_Y = "accel_y";
-        static const char* METRIC_ACCEL_Z = "accel_z";
-        
-        report_metric(METRIC_ACCEL_X, accel.x, _tag_collection);
-        report_metric(METRIC_ACCEL_Y, accel.y, _tag_collection);
-        report_metric(METRIC_ACCEL_Z, accel.z, _tag_collection);
+        // Use the pre-created tag collections with axis tags
+        if (_tag_collection_x && _tag_collection_y && _tag_collection_z) {
+            // Report metrics for X axis
+            report_metric(METRIC_AXIS_TRIGGERS, (float)_xAxisTriggerCount, _tag_collection_x);
+            report_metric(METRIC_AXIS_VALUE, accel.x, _tag_collection_x);
+            
+            // Report metrics for Y axis
+            report_metric(METRIC_AXIS_TRIGGERS, (float)_yAxisTriggerCount, _tag_collection_y);
+            report_metric(METRIC_AXIS_VALUE, accel.y, _tag_collection_y);
+            
+            // Report metrics for Z axis
+            report_metric(METRIC_AXIS_TRIGGERS, (float)_zAxisTriggerCount, _tag_collection_z);
+            report_metric(METRIC_AXIS_VALUE, accel.z, _tag_collection_z);
+        } else {
+            ESP_LOGE(TAG, "Axis tag collections not available");
+        }
         
         // Report overall movement detection metric
-        static const char* METRIC_MOVEMENT = "movement";
+        static const char* METRIC_MOVEMENT = "accel_detected";
         report_metric(METRIC_MOVEMENT, 1.0f, _tag_collection);
     } else {
         ESP_LOGD(TAG, "No movement detected since last poll");
         
         // Report zero movement for metrics
-        static const char* METRIC_MOVEMENT = "movement";
+        static const char* METRIC_MOVEMENT = "accel_detected";
         report_metric(METRIC_MOVEMENT, 0.0f, _tag_collection);
     }
     

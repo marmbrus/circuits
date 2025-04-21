@@ -206,8 +206,8 @@ void BME280Sensor::poll() {
              _temperature, getTemperatureFahrenheit(), _pressure, _humidity);
 
     // Report temperature metric
-    static const char* METRIC_TEMPERATURE = "temperature";
-    report_metric(METRIC_TEMPERATURE, _temperature, _tag_collection);
+    static const char* METRIC_TEMPERATURE = "temperature_f";
+    report_metric(METRIC_TEMPERATURE, getTemperatureFahrenheit(), _tag_collection);
 
     // Report pressure metric
     static const char* METRIC_PRESSURE = "pressure";
