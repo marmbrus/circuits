@@ -733,6 +733,10 @@
 		(uuid "6c593812-2f7b-4fd9-9bbb-c609c0b9a4f9")
 	)
 	(no_connect
+		(at 132.08 63.5)
+		(uuid "840ad575-80c0-4b42-9eb3-3ae09f23155b")
+	)
+	(no_connect
 		(at 119.38 83.82)
 		(uuid "8508d45a-38a4-423f-ab76-3d402247edc3")
 	)

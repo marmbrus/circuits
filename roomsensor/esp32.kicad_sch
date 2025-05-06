@@ -1892,6 +1892,10 @@
 		(uuid "fafc99cb-4ee3-4937-8660-42c407935b4d")
 	)
 	(no_connect
+		(at 132.08 102.87)
+		(uuid "0d418e8c-b73a-40ee-8308-ed6e788f1179")
+	)
+	(no_connect
 		(at 162.56 102.87)
 		(uuid "151d3590-7822-4888-85ad-0e008e161ae8")
 	)
@@ -1900,8 +1904,44 @@
 		(uuid "1c8cb16d-1ce9-4fc9-8d3b-78fe5b10e979")
 	)
 	(no_connect
+		(at 132.08 113.03)
+		(uuid "230b0609-7819-438b-b55f-24a093515e80")
+	)
+	(no_connect
+		(at 132.08 90.17)
+		(uuid "236c442e-408e-4719-a4de-907138bc140e")
+	)
+	(no_connect
+		(at 132.08 87.63)
+		(uuid "28c2557f-b112-4965-942a-d670d19ec13e")
+	)
+	(no_connect
 		(at 162.56 87.63)
 		(uuid "29307696-2eed-4e00-ae43-70aff36b539d")
+	)
+	(no_connect
+		(at 162.56 74.93)
+		(uuid "49ddebf9-6285-4b80-8079-0c4ac788f9df")
+	)
+	(no_connect
+		(at 132.08 82.55)
+		(uuid "4e087fde-36dc-402b-918b-8e77dc5008d6")
+	)
+	(no_connect
+		(at 132.08 74.93)
+		(uuid "50d13616-bb2e-40e9-b315-fc26d332d5da")
+	)
+	(no_connect
+		(at 162.56 92.71)
+		(uuid "687db750-f15a-42ff-ac5c-75b5ccc7b67e")
+	)
+	(no_connect
+		(at 162.56 107.95)
+		(uuid "7a4f21f3-1960-40f3-a4ea-a681d604be2b")
+	)
+	(no_connect
+		(at 162.56 72.39)
+		(uuid "7a680f8d-8ac7-41c3-86d6-f70446c0612b")
 	)
 	(no_connect
 		(at 162.56 97.79)
@@ -1912,8 +1952,24 @@
 		(uuid "8e098011-d34f-45e3-9d29-76540266b8a5")
 	)
 	(no_connect
+		(at 132.08 85.09)
+		(uuid "92de7bae-97c3-460e-94c5-95142541407e")
+	)
+	(no_connect
+		(at 132.08 77.47)
+		(uuid "a7f05ca5-b708-4fde-9e46-c6edd6c39378")
+	)
+	(no_connect
+		(at 132.08 100.33)
+		(uuid "ad7cd215-e339-45b1-a5e7-14bb09c806a1")
+	)
+	(no_connect
 		(at 162.56 85.09)
 		(uuid "b58576e8-de84-4d7a-9602-613a3f52257c")
+	)
+	(no_connect
+		(at 132.08 110.49)
+		(uuid "d3bb88c4-74ea-444c-8660-6741d6a8c1dc")
 	)
 	(no_connect
 		(at 162.56 90.17)
@@ -3338,7 +3394,7 @@
 				)
 			)
 		)
-		(property "Value" "1uf"
+		(property "Value" "1uF"
 			(at 39.37 57.15 90)
 			(effects
 				(font
@@ -3924,7 +3980,7 @@
 				)
 			)
 		)
-		(property "Value" "10uf"
+		(property "Value" "10uF"
 			(at 68.58 57.15 90)
 			(effects
 				(font

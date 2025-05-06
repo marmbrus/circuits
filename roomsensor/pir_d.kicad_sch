@@ -2,7 +2,7 @@
 	(version 20231120)
 	(generator "eeschema")
 	(generator_version "8.0")
-	(uuid "c70702b6-57e6-4b02-ab96-845834a6beba")
+	(uuid "63c2d0f3-7efc-4ac8-9df4-b797ca28b366")
 	(paper "A4")
 	(lib_symbols
 		(symbol "Device:R"
@@ -126,28 +126,28 @@
 				)
 			)
 		)
-		(symbol "easyeda2kicad:SM03B-SRSS-TB(LF)(SN)(P)"
+		(symbol "easyeda2kicad:EKMC1601112"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
 			(property "Reference" "U"
-				(at 0 12.7 0)
+				(at 0 6.35 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
 			)
-			(property "Value" "SM03B-SRSS-TB(LF)(SN)(P)"
-				(at 0 -12.7 0)
+			(property "Value" "EKMC1601112"
+				(at 0 -6.35 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
 				)
 			)
-			(property "Footprint" "easyeda2kicad:CONN-SMD_SM03B-SRSS-TB-LF-SN-P"
-				(at 0 -15.24 0)
+			(property "Footprint" "easyeda2kicad:SENSOR-TH_EKMC1601111"
+				(at 0 -8.89 0)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -155,8 +155,8 @@
 					(hide yes)
 				)
 			)
-			(property "Datasheet" "https://lcsc.com/product-detail/Others_JST-Sales-America__JST-Sales-America-SM03B-SRSS-TB-LF-SN-P_C160403.html"
-				(at 0 -17.78 0)
+			(property "Datasheet" ""
+				(at 0 0 0)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -173,8 +173,8 @@
 					(hide yes)
 				)
 			)
-			(property "LCSC Part" "C160403"
-				(at 0 -20.32 0)
+			(property "LCSC Part" "C5128270"
+				(at 0 -11.43 0)
 				(effects
 					(font
 						(size 1.27 1.27)
@@ -182,10 +182,10 @@
 					(hide yes)
 				)
 			)
-			(symbol "SM03B-SRSS-TB(LF)(SN)(P)_0_1"
+			(symbol "EKMC1601112_0_1"
 				(rectangle
-					(start -2.54 5.08)
-					(end 7.62 -5.08)
+					(start -6.35 3.81)
+					(end 6.35 -3.81)
 					(stroke
 						(width 0)
 						(type default)
@@ -195,7 +195,7 @@
 					)
 				)
 				(circle
-					(center -1.27 3.81)
+					(center -5.08 2.54)
 					(radius 0.38)
 					(stroke
 						(width 0)
@@ -206,9 +206,9 @@
 					)
 				)
 				(pin unspecified line
-					(at -5.08 2.54 0)
+					(at -8.89 1.27 0)
 					(length 2.54)
-					(name "1"
+					(name "VDD"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -224,9 +224,9 @@
 					)
 				)
 				(pin unspecified line
-					(at -5.08 0 0)
+					(at -8.89 -1.27 0)
 					(length 2.54)
-					(name "2"
+					(name "OUT"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -242,9 +242,9 @@
 					)
 				)
 				(pin unspecified line
-					(at -5.08 -2.54 0)
+					(at 8.89 0 180)
 					(length 2.54)
-					(name "3"
+					(name "GND"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -259,35 +259,111 @@
 						)
 					)
 				)
-				(pin unspecified line
-					(at 5.08 -7.62 90)
-					(length 2.54)
-					(name "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
+			)
+		)
+		(symbol "easyeda2kicad:LabeledTestPoint"
+			(pin_numbers hide)
+			(pin_names
+				(offset 0.762) hide)
+			(exclude_from_sim no)
+			(in_bom no)
+			(on_board yes)
+			(property "Reference" "TP"
+				(at 0 6.858 0)
+				(effects
+					(font
+						(size 1.27 1.27)
 					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
+					(hide yes)
+				)
+			)
+			(property "Value" "LabeledTestPoint"
+				(at 0 5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:LabeledTestPoint"
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "test point"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Label" "label"
+				(at 0 5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
 					)
 				)
-				(pin unspecified line
-					(at 5.08 7.62 270)
+			)
+			(property "ki_keywords" "test point tp"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Pin* Test*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "LabeledTestPoint_0_1"
+				(circle
+					(center 0 3.302)
+					(radius 0.762)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "LabeledTestPoint_1_1"
+				(pin passive line
+					(at 0 0 90)
 					(length 2.54)
-					(name "5"
+					(name "1"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "5"
+					(number "1"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -395,100 +471,118 @@
 		)
 	)
 	(junction
-		(at 43.18 36.83)
+		(at 35.56 30.48)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "423aa318-60fb-417e-999c-c31f8027f243")
+		(uuid "4eb052a4-2cb4-4fc0-8204-a265e0a7b104")
 	)
 	(junction
-		(at 43.18 25.4)
+		(at 35.56 38.1)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "c81ab29d-a0e8-4115-b884-d3637653887a")
+		(uuid "6fb97953-0c32-400b-827a-127f7b445161")
+	)
+	(junction
+		(at 30.48 38.1)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "f6b5044d-cfdd-4786-9dcf-c12de1c3c1ec")
 	)
 	(wire
 		(pts
-			(xy 43.18 34.29) (xy 43.18 36.83)
+			(xy 26.67 38.1) (xy 30.48 38.1)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "05d1dbbd-ffb0-436d-8129-19468c6c2b57")
+		(uuid "0aa1b83e-e88a-497b-8243-639dfa75832b")
 	)
 	(wire
 		(pts
-			(xy 38.1 36.83) (xy 43.18 36.83)
+			(xy 68.58 35.56) (xy 68.58 31.75)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "0648666f-962f-466d-8f2d-793a6b08f509")
+		(uuid "3df49fc1-93cc-4089-83cd-705dc27e7993")
 	)
 	(wire
 		(pts
-			(xy 43.18 36.83) (xy 57.15 36.83)
+			(xy 46.99 33.02) (xy 46.99 38.1)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "0c757e45-41a8-4a1c-91e5-08bba7b7e3a7")
+		(uuid "410889ec-9de5-47d6-988d-d9f0e872c56b")
 	)
 	(wire
 		(pts
-			(xy 57.15 36.83) (xy 57.15 27.94)
+			(xy 35.56 30.48) (xy 46.99 30.48)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "1c21023b-a3a0-4032-b606-c428f0b8db80")
+		(uuid "59776ead-9abf-466d-8026-d23786f09d01")
 	)
 	(wire
 		(pts
-			(xy 57.15 27.94) (xy 63.5 27.94)
+			(xy 46.99 38.1) (xy 35.56 38.1)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "368babc2-cb75-436a-8a3d-b1241a7d66a7")
+		(uuid "5cd24a72-a170-49dd-af6d-c7d463e39a92")
 	)
 	(wire
 		(pts
-			(xy 43.18 25.4) (xy 63.5 25.4)
+			(xy 25.4 30.48) (xy 35.56 30.48)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "4bec3d0c-c96c-4c7a-8469-8b6d8521816c")
+		(uuid "6de7371a-aa96-4775-9588-3720ce1dbe82")
 	)
 	(wire
 		(pts
-			(xy 43.18 25.4) (xy 43.18 26.67)
+			(xy 30.48 38.1) (xy 35.56 38.1)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "604dac21-0589-40d6-885c-15e5075f53fd")
+		(uuid "dca6089a-29f3-48a3-bb07-37cddc60ac2c")
 	)
 	(wire
 		(pts
-			(xy 38.1 25.4) (xy 43.18 25.4)
+			(xy 68.58 31.75) (xy 64.77 31.75)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "c11d3a7a-4b25-4e0c-ad5e-c403e2a7d199")
+		(uuid "ec03c1cf-2f54-4db1-8954-4fae2f3dbcbd")
+	)
+	(hierarchical_label "VOUT"
+		(shape input)
+		(at 26.67 38.1 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "a4e1a86e-5bb2-4913-ad5d-eaa50852843a")
 	)
 	(hierarchical_label "3v3"
 		(shape input)
-		(at 38.1 25.4 180)
+		(at 25.4 30.48 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -496,208 +590,36 @@
 			)
 			(justify right)
 		)
-		(uuid "5476ae19-959a-402f-923f-c179d7bd9bd5")
-	)
-	(hierarchical_label "temp"
-		(shape input)
-		(at 38.1 36.83 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "c8ac6676-fa06-405e-9003-b7b91741630d")
+		(uuid "fbb16904-204b-48fd-87a0-99245afff31b")
 	)
 	(symbol
-		(lib_id "Device:R")
-		(at 43.18 30.48 0)
+		(lib_id "easyeda2kicad:EKMC1601112")
+		(at 55.88 31.75 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "22e5e8d5-ba22-467c-b568-89f985cd2372")
-		(property "Reference" "R1301"
-			(at 45.72 29.2099 0)
+		(uuid "06c6c30d-a923-4abc-8b70-a1668f001d80")
+		(property "Reference" "U2001"
+			(at 55.88 22.86 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
 			)
 		)
-		(property "Value" "4.7k"
-			(at 45.72 31.7499 0)
+		(property "Value" "EKMC1601112"
+			(at 55.88 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
-			(at 41.402 30.48 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 43.18 30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 43.18 30.48 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "6c8e7426-1707-4caa-9254-37c3ad5b4c7a")
-		)
-		(pin "2"
-			(uuid "391f740e-90fc-43be-969a-f12edd2211b0")
-		)
-		(instances
-			(project ""
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3b00346c-fbb8-429e-b3cf-6f4ae8b7689d"
-					(reference "R1301")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:SM03B-SRSS-TB(LF)(SN)(P)")
-		(at 68.58 25.4 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "bb964168-cdf9-4cb5-89aa-cabffb12ae71")
-		(property "Reference" "U1301"
-			(at 77.47 24.1299 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "SM03B-SRSS-TB(LF)(SN)(P)"
-			(at 77.47 26.6699 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:CONN-SMD_SM03B-SRSS-TB-LF-SN-P"
-			(at 68.58 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://lcsc.com/product-detail/Others_JST-Sales-America__JST-Sales-America-SM03B-SRSS-TB-LF-SN-P_C160403.html"
-			(at 68.58 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 68.58 25.4 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C160403"
-			(at 68.58 45.72 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "3"
-			(uuid "87697eca-b3a1-4e8a-90de-45c2bf0dbe50")
-		)
-		(pin "4"
-			(uuid "d69b7ae9-b686-43c7-9bc7-b1c9caa7552c")
-		)
-		(pin "5"
-			(uuid "d86ee996-2598-4b9c-b897-0526594d123a")
-		)
-		(pin "1"
-			(uuid "758b2a8a-3087-417a-8ae1-e9d289a8b149")
-		)
-		(pin "2"
-			(uuid "d43777fc-e1a6-4209-8dad-a2925f3c2f23")
-		)
-		(instances
-			(project ""
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3b00346c-fbb8-429e-b3cf-6f4ae8b7689d"
-					(reference "U1301")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 63.5 22.86 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "f3243614-50b2-479a-9449-e089d78debad")
-		(property "Reference" "#PWR01301"
-			(at 57.15 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 59.69 22.8599 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 63.5 22.86 0)
+		(property "Footprint" "easyeda2kicad:SENSOR-TH_EKMC1601111"
+			(at 55.88 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -706,7 +628,88 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 63.5 22.86 0)
+			(at 55.88 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 55.88 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C5128270"
+			(at 55.88 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "3"
+			(uuid "32ae01ff-f058-4a28-894c-43ee5dc0a46e")
+		)
+		(pin "2"
+			(uuid "1531be4c-b506-4a92-b001-045d39e4fe37")
+		)
+		(pin "1"
+			(uuid "f47981b6-db12-4bbf-9554-1d67761f3287")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/a4f40cd2-b1c4-4cc8-a8a7-6d313b90c4e1"
+					(reference "U2001")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 68.58 35.56 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6e0f51a8-d5c7-4c87-a9e4-f5a48edf4a8e")
+		(property "Reference" "#PWR02001"
+			(at 68.58 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 68.58 40.64 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 68.58 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 68.58 35.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -715,7 +718,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 63.5 22.86 0)
+			(at 68.58 35.56 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -724,12 +727,158 @@
 			)
 		)
 		(pin "1"
-			(uuid "f6183df0-88b4-4e23-99a8-054de0f75db2")
+			(uuid "97d667e2-2755-42f1-a5e7-3e8b06b49d21")
 		)
 		(instances
 			(project ""
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3b00346c-fbb8-429e-b3cf-6f4ae8b7689d"
-					(reference "#PWR01301")
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/a4f40cd2-b1c4-4cc8-a8a7-6d313b90c4e1"
+					(reference "#PWR02001")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:LabeledTestPoint")
+		(at 30.48 38.1 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "9bbace4a-a8e8-4b04-8a7a-03d8b84a3abf")
+		(property "Reference" "TP1901"
+			(at 30.48 44.958 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "LabeledTestPoint"
+			(at 30.48 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
+			(at 25.4 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 25.4 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 30.48 38.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" "PIR"
+			(at 33.02 41.4019 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "1"
+			(uuid "9dd840ca-dba0-497e-81b8-ea4029f9a9c0")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/a4f40cd2-b1c4-4cc8-a8a7-6d313b90c4e1"
+					(reference "TP1901")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 35.56 34.29 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "b1ba7a5b-acf1-4c8d-9479-d33ef9cf8b0a")
+		(property "Reference" "R2001"
+			(at 38.1 33.0199 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10k"
+			(at 38.1 35.5599 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 33.782 34.29 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 35.56 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 35.56 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "1fd95e04-fe22-4e18-a9e9-0923136dcde0")
+		)
+		(pin "2"
+			(uuid "93750675-9962-49bc-869a-1bc8a822cf75")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/a4f40cd2-b1c4-4cc8-a8a7-6d313b90c4e1"
+					(reference "R2001")
 					(unit 1)
 				)
 			)

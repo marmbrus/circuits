@@ -4,1690 +4,220 @@
 	(generator_version "8.0")
 	(uuid "113e4874-f516-4521-ba12-7d3da8d9e60f")
 	(paper "A4")
-	(lib_symbols
-		(symbol "easyeda2kicad:XL-5050RGBC-WS2812B-S"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "LED"
-				(at 0 6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "XL-5050RGBC-WS2812B-S"
-				(at 0 -6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-				(at 0 -8.89 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "LCSC Part" "C22461793"
-				(at 0 -11.43 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "XL-5050RGBC-WS2812B-S_0_1"
-				(rectangle
-					(start -6.35 3.81)
-					(end 6.35 -3.81)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(circle
-					(center -5.08 2.54)
-					(radius 0.38)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(pin unspecified line
-					(at -8.89 1.27 0)
-					(length 2.54)
-					(name "VDD"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
-					(at -8.89 -1.27 0)
-					(length 2.54)
-					(name "DO"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
-					(at 8.89 -1.27 180)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
-					(at 8.89 1.27 180)
-					(length 2.54)
-					(name "DI"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-		)
-		(symbol "power:GND"
-			(power)
-			(pin_numbers hide)
-			(pin_names
-				(offset 0) hide)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "#PWR"
-				(at 0 -6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Value" "GND"
-				(at 0 -3.81 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "global power"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "GND_0_1"
-				(polyline
-					(pts
-						(xy 0 0) (xy 0 -1.27) (xy 1.27 -1.27) (xy 0 -2.54) (xy -1.27 -1.27) (xy 0 -1.27)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "GND_1_1"
-				(pin power_in line
-					(at 0 0 270)
-					(length 0)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-		)
-	)
-	(wire
-		(pts
-			(xy 158.75 27.94) (xy 163.83 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "004503e3-3c1a-4b84-bc4a-e85aa3ad2dc3")
-	)
-	(wire
-		(pts
-			(xy 109.22 118.11) (xy 109.22 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "052a7f64-de6f-4671-b013-a6a160deb01c")
-	)
-	(wire
-		(pts
-			(xy 82.55 27.94) (xy 82.55 33.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "059beb34-4d18-427e-a3a2-ee2f8ed7db78")
-	)
-	(wire
-		(pts
-			(xy 140.97 27.94) (xy 138.43 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0a1d2596-51e7-487e-b369-8b5b05eb1589")
-	)
-	(wire
-		(pts
-			(xy 86.36 118.11) (xy 83.82 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0b233db7-6c06-42bf-b092-6edb6f222b47")
-	)
-	(wire
-		(pts
-			(xy 74.93 96.52) (xy 80.01 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0e301d00-fe92-41b0-b5ed-2ec4897b4087")
-	)
-	(wire
-		(pts
-			(xy 163.83 27.94) (xy 163.83 40.64)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0fcb9d9d-fde4-4980-9ccd-879eca931283")
-	)
-	(wire
-		(pts
-			(xy 30.48 118.11) (xy 27.94 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "11cd1c98-b556-4a16-b057-3e0f51aec08e")
-	)
-	(wire
-		(pts
-			(xy 130.81 96.52) (xy 135.89 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "12c29fa1-ebe4-4c49-ab00-bf6f75e47268")
-	)
-	(wire
-		(pts
-			(xy 46.99 73.66) (xy 52.07 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "147863ce-2671-4d27-8bc2-c9146f93bb8b")
-	)
-	(wire
-		(pts
-			(xy 85.09 96.52) (xy 82.55 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1678dddc-3d24-4ee0-933a-00334bcbda4b")
-	)
-	(wire
-		(pts
-			(xy 158.75 96.52) (xy 163.83 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "17d6f550-93a0-42e9-bb12-474bcb4b8370")
-	)
-	(wire
-		(pts
-			(xy 163.83 86.36) (xy 21.59 86.36)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1b25e6b1-e8f1-4b9f-b34a-c08cf3557f25")
-	)
-	(wire
-		(pts
-			(xy 52.07 50.8) (xy 52.07 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1eb45bdc-0908-4c49-872b-e463d7619f7b")
-	)
-	(wire
-		(pts
-			(xy 85.09 27.94) (xy 82.55 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "203fbd11-10a5-4061-87b1-96431ce4e542")
-	)
-	(wire
-		(pts
-			(xy 57.15 73.66) (xy 54.61 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "287c70b0-b916-4234-ba7a-5aa863b9998e")
-	)
-	(wire
-		(pts
-			(xy 135.89 53.34) (xy 140.97 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2bf39539-de5d-474e-97f0-f0c5b5ca993e")
-	)
-	(wire
-		(pts
-			(xy 111.76 118.11) (xy 111.76 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2c8a494c-c0fc-4abf-93e8-b4bbe8947c9c")
-	)
-	(wire
-		(pts
-			(xy 57.15 50.8) (xy 54.61 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2cedcc5d-4cea-4880-9f58-7dd23bcf2654")
-	)
-	(wire
-		(pts
-			(xy 107.95 30.48) (xy 113.03 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2d6bebfd-d49a-4922-b81c-3899c2419944")
-	)
-	(wire
-		(pts
-			(xy 53.34 118.11) (xy 53.34 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "2fc30dc9-8efc-4a36-b307-dc7355e76c8f")
-	)
-	(wire
-		(pts
-			(xy 137.16 118.11) (xy 137.16 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3086e249-0cce-4964-8e6f-5b7ac3ba753c")
-	)
-	(wire
-		(pts
-			(xy 22.86 76.2) (xy 29.21 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "32f6d809-6a1f-4ac5-9e38-6e171c6faa32")
-	)
-	(wire
-		(pts
-			(xy 52.07 96.52) (xy 52.07 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "337fed29-965e-4a4b-9330-c1c438afef0a")
-	)
-	(wire
-		(pts
-			(xy 138.43 27.94) (xy 138.43 33.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "35254790-8fd5-41f4-9cf9-b07ab9e912c4")
-	)
-	(wire
-		(pts
-			(xy 54.61 50.8) (xy 54.61 55.88)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "362ab052-b24f-4d3f-bec4-e9b568f20616")
-	)
-	(wire
-		(pts
-			(xy 80.01 99.06) (xy 85.09 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "37dbfe12-ef07-42c7-8c4d-569a8c4c5281")
-	)
-	(wire
-		(pts
-			(xy 81.28 118.11) (xy 81.28 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3a1ac1b0-b2a4-4177-8f54-c3517ed1b40d")
-	)
-	(wire
-		(pts
-			(xy 52.07 27.94) (xy 52.07 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3c163c01-a62f-40ed-ba94-cd72d0a08a03")
-	)
-	(wire
-		(pts
-			(xy 135.89 50.8) (xy 135.89 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3dcbd881-4368-4922-9cbd-318ae8508939")
-	)
-	(wire
-		(pts
-			(xy 22.86 53.34) (xy 29.21 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4275ff41-f894-40a3-b358-d191abac49ea")
-	)
-	(wire
-		(pts
-			(xy 139.7 118.11) (xy 139.7 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "43d6317e-3917-431e-8204-c7e82da935c6")
-	)
-	(wire
-		(pts
-			(xy 46.99 96.52) (xy 52.07 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "456b3abd-1a4c-4d60-a7d0-bab9e4a288bc")
-	)
-	(wire
-		(pts
-			(xy 113.03 73.66) (xy 110.49 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4704610c-b0ee-4511-b7ce-1d02e4ba6463")
-	)
-	(wire
-		(pts
-			(xy 102.87 27.94) (xy 107.95 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "48477f95-963a-44b8-baab-51f39b88bd40")
-	)
-	(wire
-		(pts
-			(xy 130.81 73.66) (xy 135.89 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4ab2da5e-cd02-4567-9737-b998f753a8a4")
-	)
-	(wire
-		(pts
-			(xy 82.55 50.8) (xy 82.55 55.88)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4c35dfd1-cc1a-4657-ae85-994e98eec553")
-	)
-	(wire
-		(pts
-			(xy 22.86 30.48) (xy 29.21 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4f80e906-39c0-442c-a07b-430b7eb3023b")
-	)
-	(wire
-		(pts
-			(xy 109.22 120.65) (xy 114.3 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "50399648-c22b-41cf-a8db-d33ae2da105a")
-	)
-	(wire
-		(pts
-			(xy 163.83 96.52) (xy 163.83 107.95)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "512f6269-3f24-4261-87dd-9e4793b7b95a")
-	)
-	(wire
-		(pts
-			(xy 80.01 30.48) (xy 85.09 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "519a3608-88a1-4919-8809-bc9b87f3277b")
-	)
-	(wire
-		(pts
-			(xy 57.15 27.94) (xy 54.61 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "54d03b9d-1ae7-445d-92ba-8bcffd00b6da")
-	)
-	(wire
-		(pts
-			(xy 80.01 53.34) (xy 85.09 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "551d893f-f0a8-4791-83a9-d282c273a58b")
-	)
-	(wire
-		(pts
-			(xy 163.83 63.5) (xy 22.86 63.5)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5817f362-4733-486d-9728-d38c44c75faf")
-	)
-	(wire
-		(pts
-			(xy 29.21 96.52) (xy 26.67 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "58f258fa-9e62-4f8c-8127-8af935940659")
-	)
-	(wire
-		(pts
-			(xy 135.89 30.48) (xy 140.97 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5a2a6a19-289c-441a-8bc5-1533d4ca19ac")
-	)
-	(wire
-		(pts
-			(xy 76.2 118.11) (xy 81.28 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5c14523b-ccc2-4813-a2bc-e6cb60f457be")
-	)
-	(wire
-		(pts
-			(xy 140.97 73.66) (xy 138.43 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5c889ccb-2777-4ec6-a564-154066f7d105")
-	)
-	(wire
-		(pts
-			(xy 21.59 86.36) (xy 21.59 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5ea1a14f-a87b-434a-a079-1715a0a2bd05")
-	)
-	(wire
-		(pts
-			(xy 107.95 27.94) (xy 107.95 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6822bca1-1983-4169-9e90-a9f21267c14a")
-	)
-	(wire
-		(pts
-			(xy 74.93 50.8) (xy 80.01 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "68631d61-0553-4df4-b0a4-dc0b5bee3a85")
-	)
-	(wire
-		(pts
-			(xy 104.14 118.11) (xy 109.22 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "69781eea-ddb7-4f6f-81a6-e618683a51d4")
-	)
-	(wire
-		(pts
-			(xy 135.89 96.52) (xy 135.89 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6b769afd-2b85-495a-ab68-63e65e871d6b")
-	)
-	(wire
-		(pts
-			(xy 130.81 50.8) (xy 135.89 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6c872334-39f7-4e00-ac45-ec023265b637")
-	)
-	(wire
-		(pts
-			(xy 80.01 73.66) (xy 80.01 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6d53c8e8-0f5f-4351-a8ea-8d6ee9f44bc2")
-	)
-	(wire
-		(pts
-			(xy 21.59 99.06) (xy 29.21 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6d94d0c8-5b51-4fe0-8ed8-4f00e7e2730a")
-	)
-	(wire
-		(pts
-			(xy 107.95 50.8) (xy 107.95 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6f88b02e-7e97-4fbf-9e07-fdc31eb66986")
-	)
-	(wire
-		(pts
-			(xy 22.86 63.5) (xy 22.86 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "703f7cc3-684a-40d2-9d94-7ef8b2ba5711")
-	)
-	(wire
-		(pts
-			(xy 110.49 27.94) (xy 110.49 33.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "70839dc8-75fa-4770-9e97-1c1cf0016b2a")
-	)
-	(wire
-		(pts
-			(xy 80.01 96.52) (xy 80.01 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "70b8e73f-5978-4dcf-943b-da370aacbcef")
-	)
-	(wire
-		(pts
-			(xy 158.75 73.66) (xy 163.83 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "74eb56db-e138-4880-bd87-e5c3da308525")
-	)
-	(wire
-		(pts
-			(xy 102.87 50.8) (xy 107.95 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "78044d24-9b01-453e-b6a6-70fca0e1c991")
-	)
-	(wire
-		(pts
-			(xy 130.81 27.94) (xy 135.89 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "783bed9e-fd6b-4344-90cc-797eab043476")
-	)
-	(wire
-		(pts
-			(xy 53.34 120.65) (xy 58.42 120.65)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7971fe1f-0961-42f2-8447-680c3c507717")
-	)
-	(wire
-		(pts
-			(xy 80.01 76.2) (xy 85.09 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "79d3e7ba-f60d-4a40-81b6-1d9768b0ce28")
-	)
-	(wire
-		(pts
-			(xy 80.01 27.94) (xy 80.01 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7b847325-c457-42fd-b570-202775c305ed")
-	)
-	(wire
-		(pts
-			(xy 114.3 118.11) (xy 111.76 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7da9eb70-9a08-4b75-bf3a-6a8efa3efe2d")
-	)
-	(wire
-		(pts
-			(xy 27.94 118.11) (xy 27.94 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7f17e32a-7d25-41aa-88fc-d97a93e01636")
-	)
-	(wire
-		(pts
-			(xy 52.07 76.2) (xy 57.15 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8414c770-4bc1-4e27-b680-bbcb60cfcd83")
-	)
-	(wire
-		(pts
-			(xy 140.97 96.52) (xy 138.43 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "85ee3ced-cec2-4719-b1cf-8060a811a668")
-	)
-	(wire
-		(pts
-			(xy 74.93 73.66) (xy 80.01 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8c440521-c9a8-48fd-be5d-7c0728562b30")
-	)
-	(wire
-		(pts
-			(xy 135.89 76.2) (xy 140.97 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "94019cea-2406-40b0-9ffc-4464f370f5f6")
-	)
-	(wire
-		(pts
-			(xy 52.07 53.34) (xy 57.15 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "94b57067-803a-4378-b915-164128030665")
-	)
-	(wire
-		(pts
-			(xy 107.95 99.06) (xy 113.03 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "95ecd701-556b-464d-8e85-4f480d610fad")
-	)
-	(wire
-		(pts
-			(xy 85.09 73.66) (xy 82.55 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9b7cb713-be28-45f6-a298-eb418f29947e")
-	)
-	(wire
-		(pts
-			(xy 107.95 73.66) (xy 107.95 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9d6572cb-5df3-4353-87da-eeea394993ae")
-	)
-	(wire
-		(pts
-			(xy 113.03 50.8) (xy 110.49 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9f8bb48d-c57f-4568-9ca5-7d677f48a1a6")
-	)
-	(wire
-		(pts
-			(xy 54.61 73.66) (xy 54.61 78.74)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a20abdf6-c196-40c4-9731-3db3cf246833")
-	)
-	(wire
-		(pts
-			(xy 46.99 50.8) (xy 52.07 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a4afb330-4086-481e-9326-0c6745c70481")
-	)
-	(wire
-		(pts
-			(xy 102.87 96.52) (xy 107.95 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a5a68637-5e49-448b-bcad-4e538b3dd9c0")
-	)
-	(wire
-		(pts
-			(xy 29.21 50.8) (xy 26.67 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a8f84bf3-8fd9-4bba-bf9f-8ca9730d7258")
-	)
-	(wire
-		(pts
-			(xy 52.07 30.48) (xy 57.15 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "aa0858e6-2b1f-40ad-be72-8b25ee3e38c2")
-	)
-	(wire
-		(pts
-			(xy 132.08 118.11) (xy 137.16 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "aac2c666-b4d0-490c-b5af-90bc6591ca32")
-	)
-	(wire
-		(pts
-			(xy 57.15 96.52) (xy 54.61 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ab331d7d-b51d-47af-afb0-1810fe81b160")
-	)
-	(wire
-		(pts
-			(xy 163.83 107.95) (xy 21.59 107.95)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "adeecb49-8b8f-4641-92c7-801d58fedd4b")
-	)
-	(wire
-		(pts
-			(xy 110.49 73.66) (xy 110.49 78.74)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b1e5bc7d-a664-4a23-b3fa-5cff898da8eb")
-	)
-	(wire
-		(pts
-			(xy 58.42 118.11) (xy 55.88 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b2302d46-2022-4cd0-aad3-474d18b6ac59")
-	)
-	(wire
-		(pts
-			(xy 158.75 50.8) (xy 163.83 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b36ef86e-6655-4d9a-b726-8d3951a95502")
-	)
-	(wire
-		(pts
-			(xy 22.86 40.64) (xy 22.86 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b43415c3-9748-43ef-a923-c74406715126")
-	)
-	(wire
-		(pts
-			(xy 107.95 76.2) (xy 113.03 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b5fd671d-75ac-4efa-af3a-9d301df578c8")
-	)
-	(wire
-		(pts
-			(xy 140.97 50.8) (xy 138.43 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b6eaadf1-bf25-4cc3-8330-cd890f87837a")
-	)
-	(wire
-		(pts
-			(xy 107.95 96.52) (xy 107.95 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b8bb0b61-2c05-4acb-8826-61b49535425f")
-	)
-	(wire
-		(pts
-			(xy 26.67 96.52) (xy 26.67 101.6)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ba8249c5-7ec8-4dd9-8092-44a8e61ed063")
-	)
-	(wire
-		(pts
-			(xy 135.89 27.94) (xy 135.89 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "bb527262-482e-4e42-9516-9da7a01bc8fd")
-	)
-	(wire
-		(pts
-			(xy 138.43 50.8) (xy 138.43 55.88)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "bfd72b77-e5fe-473b-80d5-3aac109f26ae")
-	)
-	(wire
-		(pts
-			(xy 80.01 50.8) (xy 80.01 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c15a7cbb-41f8-4094-98b5-1b80cd08b867")
-	)
-	(wire
-		(pts
-			(xy 52.07 73.66) (xy 52.07 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c2e17ead-5381-412d-855c-9d62bad46c90")
-	)
-	(wire
-		(pts
-			(xy 138.43 73.66) (xy 138.43 78.74)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c6a4429d-99b9-401d-b9c8-40fc10345e55")
-	)
-	(wire
-		(pts
-			(xy 83.82 118.11) (xy 83.82 123.19)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c7d96b8c-e464-42f5-b848-3bfd3ccb5a9c")
-	)
-	(wire
-		(pts
-			(xy 163.83 40.64) (xy 22.86 40.64)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cc9f3a35-39a2-452c-bedb-1552423e42b8")
-	)
-	(wire
-		(pts
-			(xy 46.99 27.94) (xy 52.07 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ccfce1eb-4ef5-492b-8e75-8b37e78ffd2a")
-	)
-	(wire
-		(pts
-			(xy 29.21 27.94) (xy 26.67 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cf4863f6-a082-4d49-a889-e4e17f2372f5")
-	)
-	(wire
-		(pts
-			(xy 135.89 73.66) (xy 135.89 76.2)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cf81b98a-59df-4889-a81f-23988106f259")
-	)
-	(wire
-		(pts
-			(xy 74.93 27.94) (xy 80.01 27.94)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d75f7623-d9ea-4732-bf28-d01f93595c31")
-	)
-	(wire
-		(pts
-			(xy 110.49 96.52) (xy 110.49 101.6)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d7a01c4b-6952-4a16-9ffc-f7bf9dc286c3")
-	)
-	(wire
-		(pts
-			(xy 102.87 73.66) (xy 107.95 73.66)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d885c861-76d5-4012-a40b-198bd3861db6")
-	)
-	(wire
-		(pts
-			(xy 110.49 50.8) (xy 110.49 55.88)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d900e734-1afd-4a7e-b3ec-11754656d34c")
-	)
-	(wire
-		(pts
-			(xy 26.67 50.8) (xy 26.67 55.88)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d9068cec-7d49-425a-8893-0d13ca7b16fd")
-	)
-	(wire
-		(pts
-			(xy 48.26 118.11) (xy 53.34 118.11)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d999e626-4cde-4a55-9616-2f95d14432f2")
+	(lib_symbols)
+	(junction
+		(at 55.88 15.24)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8b6fed59-07bc-41cc-95e6-57761977796f")
 	)
-	(wire
-		(pts
-			(xy 54.61 27.94) (xy 54.61 33.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d9c186c8-1416-4c83-a324-5ec4386c0029")
+	(junction
+		(at 135.89 15.24)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8d47249d-67fa-46dc-a9c6-7b631592e623")
 	)
-	(wire
-		(pts
-			(xy 26.67 73.66) (xy 26.67 78.74)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dc50b402-e1a2-4bec-8c09-8ed6ca215a49")
+	(junction
+		(at 109.22 15.24)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "b920a4b1-0fc5-4ae7-8d0d-963dc91fc376")
 	)
-	(wire
-		(pts
-			(xy 107.95 53.34) (xy 113.03 53.34)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dc6ac82d-df08-4fb7-a19d-2c45e9a491b9")
+	(junction
+		(at 29.21 15.24)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "c0d5b6ef-5892-4388-aeb6-524162d0160b")
 	)
-	(wire
-		(pts
-			(xy 138.43 96.52) (xy 138.43 101.6)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "dc6df211-6c05-4a5c-ad83-3d5b89489dab")
+	(junction
+		(at 82.55 15.24)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "ed61aa6d-f9b2-431c-8daa-ad87fb3e8276")
 	)
 	(wire
 		(pts
-			(xy 52.07 99.06) (xy 57.15 99.06)
+			(xy 116.84 25.4) (xy 128.27 25.4)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "dea6f241-c2df-4c60-86cf-20e861289130")
+		(uuid "090b045e-a3fb-45fc-a5c4-080fc2dc3cbd")
 	)
 	(wire
 		(pts
-			(xy 54.61 96.52) (xy 54.61 101.6)
+			(xy 55.88 15.24) (xy 82.55 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "dec4c40f-d295-4bb6-a3bb-907067bcddd1")
+		(uuid "0a93210f-15e4-4d20-94f5-b50ac210f1ae")
 	)
 	(wire
 		(pts
-			(xy 82.55 96.52) (xy 82.55 101.6)
+			(xy 135.89 15.24) (xy 109.22 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "e2fd929c-f74e-45e3-84ac-91b266d5dafb")
+		(uuid "19ca6325-7bf8-4fb7-994c-e590aa2b4600")
 	)
 	(wire
 		(pts
-			(xy 21.59 120.65) (xy 30.48 120.65)
+			(xy 90.17 25.4) (xy 101.6 25.4)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "e797df72-7728-4221-9dfb-0c90bea7cc41")
+		(uuid "27dd8425-1b6d-4500-b194-c3fdf48fc8cb")
 	)
 	(wire
 		(pts
-			(xy 137.16 120.65) (xy 142.24 120.65)
+			(xy 135.89 19.05) (xy 135.89 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "e8495561-9bfc-4546-97d9-b62acdddfcf4")
+		(uuid "39e63172-296b-4a1b-ab55-9a035081e4cb")
 	)
 	(wire
 		(pts
-			(xy 85.09 50.8) (xy 82.55 50.8)
+			(xy 29.21 19.05) (xy 29.21 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "e952cd74-2dc3-4177-845f-de4451530a35")
+		(uuid "456af404-7abe-4277-ae98-a232ce4f03ef")
 	)
 	(wire
 		(pts
-			(xy 113.03 27.94) (xy 110.49 27.94)
+			(xy 82.55 15.24) (xy 109.22 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "ea0febbd-7b4a-490d-b7d2-830267426039")
+		(uuid "48888d57-c19f-4247-935b-675b2e1cafc0")
 	)
 	(wire
 		(pts
-			(xy 82.55 73.66) (xy 82.55 78.74)
+			(xy 162.56 15.24) (xy 135.89 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "ea73d3ce-e4a0-4252-8248-4cbb8626880c")
+		(uuid "64086866-29fe-40c2-916f-118186fb5e8f")
 	)
 	(wire
 		(pts
-			(xy 21.59 107.95) (xy 21.59 120.65)
+			(xy 82.55 19.05) (xy 82.55 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "ecd62357-cdef-4ff2-9826-353812f1252d")
+		(uuid "68f460c3-d545-4f67-b813-78411416d850")
 	)
 	(wire
 		(pts
-			(xy 142.24 118.11) (xy 139.7 118.11)
+			(xy 29.21 15.24) (xy 19.05 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f0a5cbd5-2246-4a81-bd00-89b5e829aeda")
+		(uuid "7ad1dfe9-a093-408e-be3b-e7398622ee96")
 	)
 	(wire
 		(pts
-			(xy 113.03 96.52) (xy 110.49 96.52)
+			(xy 36.83 25.4) (xy 48.26 25.4)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f0a917f1-fe08-4e46-8dff-06d83adf573c")
+		(uuid "906ffc81-98ee-4bdd-9b51-91f5c2044771")
 	)
 	(wire
 		(pts
-			(xy 55.88 118.11) (xy 55.88 123.19)
+			(xy 55.88 19.05) (xy 55.88 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f3a5deab-602d-4525-b8ef-45e878b6558b")
+		(uuid "90d0ed1d-eb91-41d5-90c4-ee81a048be1b")
 	)
 	(wire
 		(pts
-			(xy 163.83 73.66) (xy 163.83 86.36)
+			(xy 17.78 25.4) (xy 21.59 25.4)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f5b50624-4015-4599-84af-86529d8c5f22")
+		(uuid "9ccbebd7-afd9-4f03-b214-0ee8c108aa98")
 	)
 	(wire
 		(pts
-			(xy 81.28 120.65) (xy 86.36 120.65)
+			(xy 29.21 15.24) (xy 55.88 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f5bf30d0-81f8-47ed-863f-631530ccb91a")
+		(uuid "db162ebc-c574-459a-916d-bab3301b1f00")
 	)
 	(wire
 		(pts
-			(xy 26.67 27.94) (xy 26.67 33.02)
+			(xy 162.56 19.05) (xy 162.56 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f5fa311d-e615-438a-96b2-0c536065b906")
+		(uuid "f1c165cc-8d44-4b0f-a256-3fd33990df58")
 	)
 	(wire
 		(pts
-			(xy 29.21 73.66) (xy 26.67 73.66)
+			(xy 109.22 19.05) (xy 109.22 15.24)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "fb383174-0159-413c-8cd7-b97d770e3711")
+		(uuid "f8db3923-0708-4232-83c5-9ff2190dd236")
 	)
 	(wire
 		(pts
-			(xy 135.89 99.06) (xy 140.97 99.06)
+			(xy 143.51 25.4) (xy 154.94 25.4)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "fb3d56eb-3acd-451c-bcac-98e98d3ce8e1")
+		(uuid "fa95847d-43c7-4378-8884-624c57f35a30")
 	)
 	(wire
 		(pts
-			(xy 163.83 50.8) (xy 163.83 63.5)
+			(xy 63.5 25.4) (xy 74.93 25.4)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "fc7ebbdc-a7b4-490c-98ed-981afb7b7b18")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 132.08 120.65 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "0133170d-e757-49b2-a775-cc436ef06623")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 102.87 99.06 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "07e8db58-e16c-4e84-9275-063b5ecb6717")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 158.75 99.06 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "0948a935-2e34-4fb6-9b52-ce781a315508")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 158.75 53.34 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "09e0451d-df85-47ee-9479-b897dffc7715")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 74.93 76.2 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "0ac7bf55-2db7-4745-b916-275ed44e8889")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 130.81 30.48 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "18f071ae-ca4d-4a6e-a771-24a0d75db41c")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 158.75 76.2 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "1f4cad21-707b-40ee-ae6f-1581ba1cc3f3")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 76.2 120.65 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "24761a5f-29c1-4175-9c85-4f7e8e5645d6")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 74.93 53.34 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "4a0ce98b-4395-4728-9c57-85d23c5ddd18")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 158.75 30.48 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "552f5627-3b73-49cc-97f8-9c444a8a2577")
+		(uuid "ff70af09-5872-4359-9396-63a5b5dd3e26")
 	)
 	(hierarchical_label "DIN"
 		(shape input)
-		(at 22.86 30.48 180)
+		(at 17.78 25.4 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -1695,3909 +225,424 @@
 			)
 			(justify right)
 		)
-		(uuid "6562a682-a9c0-495f-93d5-9ae3daf2379f")
+		(uuid "0ec308ab-0ee5-4d04-b4b0-907522353bd8")
 	)
 	(hierarchical_label "5V"
 		(shape input)
-		(at 46.99 76.2 0)
+		(at 19.05 15.24 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left)
+			(justify right)
 		)
-		(uuid "6d6b2650-9e5b-44cf-a5ba-90bdc548068c")
+		(uuid "4c2947ac-ada2-4986-8b2a-c4e7971a67f4")
 	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 74.93 30.48 0)
+	(sheet
+		(at 101.6 19.05)
+		(size 15.24 12.7)
 		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
+		(stroke
+			(width 0.1524)
+			(type solid)
 		)
-		(uuid "86f91a91-b7e8-4244-b1d5-ef87debd7b60")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 130.81 76.2 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
+		(fill
+			(color 0 0 0 0.0000)
 		)
-		(uuid "878ebb4f-020c-432e-9089-40501c7be8da")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 160.02 120.65 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "8e2ba7dd-226b-4a4d-8d34-363fcf8c3aea")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 130.81 99.06 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "9c88530e-54ac-4a2b-909c-de36a5e2d80c")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 130.81 53.34 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "aa415ef3-bd72-4ff7-835f-cb3fd3e63141")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 46.99 99.06 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "aed2a1bf-1096-465a-b64a-7e1a6168f3cf")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 102.87 76.2 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "b7f52f05-afa0-4b00-9ed1-65b1a8d462be")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 46.99 53.34 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "bf12f55c-4165-4592-984d-090c0cfa83f0")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 48.26 120.65 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "dad5c45c-214b-4b63-8d76-10d651c282c3")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 104.14 120.65 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "e1e5c843-6365-424f-a8ca-5e75bf5f20e7")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 102.87 53.34 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "e89dc367-f0c1-4fad-a70f-7ddc34195f34")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 74.93 99.06 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "f6a6f1eb-2686-4eaa-8a17-403704da8f3c")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 102.87 30.48 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "fb3db368-d8aa-444f-90d4-cea3129812ca")
-	)
-	(hierarchical_label "5V"
-		(shape input)
-		(at 46.99 30.48 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "fd209f0b-3f19-45d4-a141-d5a4246f66bf")
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 82.55 55.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "00456927-16b9-48ae-98eb-44eb39f4154e")
-		(property "Reference" "#PWR0408"
-			(at 82.55 62.23 0)
+		(uuid "0ecc1ad5-0806-4ddd-8982-8d74f4493808")
+		(property "Sheetname" "column3"
+			(at 101.6 18.3384 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left bottom)
 			)
 		)
-		(property "Value" "GND"
-			(at 82.55 60.96 0)
+		(property "Sheetfile" "led_column.kicad_sch"
+			(at 101.6 32.3346 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left top)
 			)
 		)
-		(property "Footprint" ""
-			(at 82.55 55.88 0)
+		(pin "5V" input
+			(at 109.22 19.05 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
+			(uuid "6aaa80b2-ccf6-4e4e-87b2-c55aff46a6c1")
 		)
-		(property "Datasheet" ""
-			(at 82.55 55.88 0)
+		(pin "DIN" input
+			(at 101.6 25.4 180)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left)
 			)
+			(uuid "20dad879-3e5c-4a0a-abeb-05dc843ea48b")
 		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 82.55 55.88 0)
+		(pin "DOUT" input
+			(at 116.84 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
-		)
-		(pin "1"
-			(uuid "32895edb-290f-49e6-afe6-a6181d1d150f")
+			(uuid "d66eda2d-be8e-4bfe-a308-3e1d1b0eb9c5")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0408")
-					(unit 1)
+					(page "17")
 				)
 			)
 		)
 	)
-	(symbol
-		(lib_id "power:GND")
-		(at 111.76 123.19 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+	(sheet
+		(at 128.27 19.05)
+		(size 15.24 12.7)
 		(fields_autoplaced yes)
-		(uuid "01b4ac9f-2e55-42bc-930b-2a96fbde28cd")
-		(property "Reference" "#PWR0424"
-			(at 111.76 129.54 0)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "11bf6454-b3e9-4e0f-a2bf-d86f4991b37a")
+		(property "Sheetname" "column4"
+			(at 128.27 18.3384 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left bottom)
 			)
 		)
-		(property "Value" "GND"
-			(at 111.76 128.27 0)
+		(property "Sheetfile" "led_column.kicad_sch"
+			(at 128.27 32.3346 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left top)
 			)
 		)
-		(property "Footprint" ""
-			(at 111.76 123.19 0)
+		(pin "5V" input
+			(at 135.89 19.05 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
+			(uuid "15643367-a0f2-4eb8-b3be-09887362fbe9")
 		)
-		(property "Datasheet" ""
-			(at 111.76 123.19 0)
+		(pin "DIN" input
+			(at 128.27 25.4 180)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left)
 			)
+			(uuid "ddfb6cae-d320-40d1-9404-e0f3540c8d49")
 		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 111.76 123.19 0)
+		(pin "DOUT" input
+			(at 143.51 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
-		)
-		(pin "1"
-			(uuid "dfb64e22-7b18-482c-bb70-036f0d4034f9")
+			(uuid "d877ea39-083f-4d8c-a94f-37ffd6abb68c")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0424")
-					(unit 1)
+					(page "18")
 				)
 			)
 		)
 	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 149.86 74.93 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+	(sheet
+		(at 48.26 19.05)
+		(size 15.24 12.7)
 		(fields_autoplaced yes)
-		(uuid "079b8d9c-7b7a-4256-b4a9-064ee35b9ef8")
-		(property "Reference" "LED415"
-			(at 149.86 66.04 0)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "6f60ff22-6882-4045-aed9-b264e225e22d")
+		(property "Sheetname" "column1"
+			(at 48.26 18.3384 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left bottom)
 			)
 		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 149.86 68.58 0)
+		(property "Sheetfile" "led_column.kicad_sch"
+			(at 48.26 32.3346 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left top)
 			)
 		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 149.86 66.04 0)
+		(pin "5V" input
+			(at 55.88 19.05 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
+			(uuid "1991fdd0-be38-4a9f-87e6-2cf89e410d69")
 		)
-		(property "Datasheet" ""
-			(at 149.86 74.93 0)
+		(pin "DIN" input
+			(at 48.26 25.4 180)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left)
 			)
+			(uuid "e2e81d06-4425-4cf6-86f5-2169a5c77071")
 		)
-		(property "Description" ""
-			(at 149.86 74.93 0)
+		(pin "DOUT" input
+			(at 63.5 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 149.86 63.5 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "eb6f85a8-d9cb-4d46-9566-6787e3aee312")
-		)
-		(pin "1"
-			(uuid "cf5f5971-1972-41af-a1de-abc896e8623f")
-		)
-		(pin "3"
-			(uuid "25a8b9c1-586f-4f33-9bc7-0d164b317b87")
-		)
-		(pin "2"
-			(uuid "00a69a2a-9660-4cff-add7-4f53efd02a36")
+			(uuid "3173e874-afa5-4961-973c-45e52a9e102f")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED415")
-					(unit 1)
+					(page "15")
 				)
 			)
 		)
 	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 66.04 74.93 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+	(sheet
+		(at 154.94 19.05)
+		(size 15.24 12.7)
 		(fields_autoplaced yes)
-		(uuid "07ca28fd-344e-4dd1-b262-a15462c4aa76")
-		(property "Reference" "LED412"
-			(at 66.04 66.04 0)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "778dbb70-b1a5-4e69-8a33-f49ea4aaaaff")
+		(property "Sheetname" "column5"
+			(at 154.94 18.3384 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left bottom)
 			)
 		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 66.04 68.58 0)
+		(property "Sheetfile" "led_column.kicad_sch"
+			(at 154.94 32.3346 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left top)
 			)
 		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 66.04 66.04 0)
+		(pin "5V" input
+			(at 162.56 19.05 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
+			(uuid "f0fc3b01-115c-4e14-a3aa-6767e5b92005")
 		)
-		(property "Datasheet" ""
-			(at 66.04 74.93 0)
+		(pin "DIN" input
+			(at 154.94 25.4 180)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left)
 			)
+			(uuid "151d6dc3-1f10-41ef-9660-ce7d70f8e65c")
 		)
-		(property "Description" ""
-			(at 66.04 74.93 0)
+		(pin "DOUT" input
+			(at 170.18 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 66.04 63.5 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "8414a312-4003-4bd2-a108-2b6bdb6080a4")
-		)
-		(pin "1"
-			(uuid "44e5066a-d80f-47b9-b188-c32da72eb1b0")
-		)
-		(pin "3"
-			(uuid "35f81d76-5f52-4b05-8836-c5492b856904")
-		)
-		(pin "2"
-			(uuid "86c2c5d8-2c9a-4ab9-9af3-357b8bbca4eb")
+			(uuid "963f4c03-6b72-45da-93a7-bad28958f650")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED412")
-					(unit 1)
+					(page "19")
 				)
 			)
 		)
 	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 149.86 97.79 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+	(sheet
+		(at 21.59 19.05)
+		(size 15.24 12.7)
 		(fields_autoplaced yes)
-		(uuid "177b782a-48f0-4e18-aeb1-b6fca32c4eb9")
-		(property "Reference" "LED420"
-			(at 149.86 88.9 0)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "a7449c57-9bac-43ec-8ed7-432d7f1a6e1f")
+		(property "Sheetname" "column"
+			(at 21.59 18.3384 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left bottom)
 			)
 		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 149.86 91.44 0)
+		(property "Sheetfile" "led_column.kicad_sch"
+			(at 21.59 32.3346 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left top)
 			)
 		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 149.86 88.9 0)
+		(pin "5V" input
+			(at 29.21 19.05 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
+			(uuid "5762bd57-e9c3-4408-a57b-c688dca09bd2")
 		)
-		(property "Datasheet" ""
-			(at 149.86 97.79 0)
+		(pin "DIN" input
+			(at 21.59 25.4 180)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left)
 			)
+			(uuid "6512ff4d-333f-44c3-a7d3-9222e09a9adb")
 		)
-		(property "Description" ""
-			(at 149.86 97.79 0)
+		(pin "DOUT" input
+			(at 36.83 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 149.86 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "ca9e6232-1862-47c2-b5cd-527caf35026f")
-		)
-		(pin "1"
-			(uuid "10362457-4688-44b7-9d63-15ef375865cb")
-		)
-		(pin "3"
-			(uuid "92cfd9e4-cfc4-4dcc-8863-e8da08fe4069")
-		)
-		(pin "2"
-			(uuid "4923390b-0de3-4be2-a36a-457335b9856e")
+			(uuid "109d035c-e294-4fce-964a-26a0168defe9")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED420")
-					(unit 1)
+					(page "14")
 				)
 			)
 		)
 	)
-	(symbol
-		(lib_id "power:GND")
-		(at 54.61 78.74 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
+	(sheet
+		(at 74.93 19.05)
+		(size 15.24 12.7)
 		(fields_autoplaced yes)
-		(uuid "2923626f-34fb-49d2-aaa9-7f4ae6880ab5")
-		(property "Reference" "#PWR0412"
-			(at 54.61 85.09 0)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "fe8b48c0-855d-44c3-964c-edaa634fd58c")
+		(property "Sheetname" "column2"
+			(at 74.93 18.3384 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left bottom)
 			)
 		)
-		(property "Value" "GND"
-			(at 54.61 83.82 0)
+		(property "Sheetfile" "led_column.kicad_sch"
+			(at 74.93 32.3346 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left top)
 			)
 		)
-		(property "Footprint" ""
-			(at 54.61 78.74 0)
+		(pin "5V" input
+			(at 82.55 19.05 90)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
+			(uuid "2a67be44-d521-4866-8512-25fd27359346")
 		)
-		(property "Datasheet" ""
-			(at 54.61 78.74 0)
+		(pin "DIN" input
+			(at 74.93 25.4 180)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify left)
 			)
+			(uuid "343c3f29-9cbc-4604-8e39-44b66e1e2538")
 		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 54.61 78.74 0)
+		(pin "DOUT" input
+			(at 90.17 25.4 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
+				(justify right)
 			)
-		)
-		(pin "1"
-			(uuid "7856e71d-dbc2-4a6e-a226-7ca024f290ab")
+			(uuid "5901ecae-6f47-405c-9f41-e8701ba20d2f")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0412")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 121.92 29.21 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "2d604135-c83e-4b5d-abfe-719a8ce0cf76")
-		(property "Reference" "LED404"
-			(at 121.92 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 121.92 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 121.92 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 121.92 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 121.92 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 121.92 17.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "4bf4c98c-c8a1-40ad-b623-10763ed2d7cf")
-		)
-		(pin "1"
-			(uuid "88106020-cb52-4b27-a0bf-15f800115ab8")
-		)
-		(pin "3"
-			(uuid "30cfe9f7-c434-43dc-bbca-2dfb0cf3dd1e")
-		)
-		(pin "2"
-			(uuid "b5fdb9ed-442b-4a52-8340-66a7a6d9a830")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED404")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 149.86 52.07 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "3b7b925d-afe6-48b5-b01e-9d8cad4fb538")
-		(property "Reference" "LED410"
-			(at 149.86 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 149.86 45.72 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 149.86 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 149.86 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 149.86 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 149.86 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "695e8bf7-4456-4857-b9f1-24e64a93b1dc")
-		)
-		(pin "1"
-			(uuid "7b82601a-0526-453a-a793-b760b67206ba")
-		)
-		(pin "3"
-			(uuid "b50f4ab9-2518-4895-8fa7-c0c2f70d9568")
-		)
-		(pin "2"
-			(uuid "6d0b9680-fcc2-49fe-8c13-14f390ed52d8")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED410")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 38.1 29.21 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "3ccc1b65-0b9b-4709-b838-5d8f2c3111e9")
-		(property "Reference" "LED401"
-			(at 38.1 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 38.1 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 38.1 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 38.1 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 38.1 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 38.1 17.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "e970c204-a50c-4823-a278-c3b8ae34516b")
-		)
-		(pin "1"
-			(uuid "8be689c5-20f0-4673-a386-37821cf82762")
-		)
-		(pin "3"
-			(uuid "1cca60c0-784a-4aed-ab9d-885325d426f3")
-		)
-		(pin "2"
-			(uuid "945f0c6b-44b1-4f57-b9d9-badafc30874f")
-		)
-		(instances
-			(project ""
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED401")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 110.49 101.6 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "3d0d39f4-5041-43f4-93e2-36d79c97e6ff")
-		(property "Reference" "#PWR0419"
-			(at 110.49 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 110.49 106.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 110.49 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 110.49 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 110.49 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "13cc1f82-510d-4d95-a8e0-c9de385c3c70")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0419")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 121.92 97.79 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "3d80cfed-3942-4074-8950-e48f7bf0d254")
-		(property "Reference" "LED419"
-			(at 121.92 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 121.92 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 121.92 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 121.92 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 121.92 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 121.92 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "9dca3c6d-94da-4bc6-b536-01879f464967")
-		)
-		(pin "1"
-			(uuid "6037a879-0a89-4265-bafd-39ebd3f6b3c9")
-		)
-		(pin "3"
-			(uuid "2364e4b2-026b-4265-b43f-bffeeb9c5a2d")
-		)
-		(pin "2"
-			(uuid "3d1a8f49-58c0-4781-8afa-b3534f688026")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED419")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 38.1 74.93 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "3e29e9b8-982c-4938-aa3d-91dd976a4137")
-		(property "Reference" "LED411"
-			(at 38.1 66.04 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 38.1 68.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 38.1 66.04 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 38.1 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 38.1 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 38.1 63.5 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "fa4cafc2-c498-4a34-8b7b-1f5d353860d5")
-		)
-		(pin "1"
-			(uuid "5379ab17-9125-4808-ac59-b3a277f6b943")
-		)
-		(pin "3"
-			(uuid "5267a3d8-a3ed-4b44-b902-741cd70a765c")
-		)
-		(pin "2"
-			(uuid "8e6b0b6f-0bfe-44b6-a248-9d319e621f6a")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED411")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 26.67 101.6 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "45544c83-e600-4309-967d-b5719b4decd0")
-		(property "Reference" "#PWR0416"
-			(at 26.67 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 26.67 106.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 26.67 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 26.67 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 26.67 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "3c325f7f-6022-4120-83dd-78dfe93a2d41")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0416")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 110.49 33.02 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "52708ee2-1902-4c01-a70d-39355afea436")
-		(property "Reference" "#PWR0404"
-			(at 110.49 39.37 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 110.49 38.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 110.49 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 110.49 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 110.49 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "25088527-6b35-4282-a599-849d2a79c912")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0404")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 138.43 78.74 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "564c03b7-a10b-49d4-8eee-1d0dfc023721")
-		(property "Reference" "#PWR0415"
-			(at 138.43 85.09 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 138.43 83.82 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 138.43 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 138.43 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 138.43 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "317bdd84-71f7-417a-969d-6bee3ca44ce2")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0415")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 93.98 74.93 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "698694ca-f2ba-4191-a576-1bbeec351f88")
-		(property "Reference" "LED413"
-			(at 93.98 66.04 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 93.98 68.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 93.98 66.04 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 93.98 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 93.98 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 93.98 63.5 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "122e2f46-01cb-4789-a01f-616d01f37bdf")
-		)
-		(pin "1"
-			(uuid "351648a5-6652-4a7f-b110-01f506b57c25")
-		)
-		(pin "3"
-			(uuid "7dc69899-ce7b-48f1-bb15-6a9eab8c59c1")
-		)
-		(pin "2"
-			(uuid "e88d6abe-7de6-4832-b1b5-22a57e36f50d")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED413")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 66.04 52.07 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "6f7907fe-a9ab-46ff-9247-887f57d79ff6")
-		(property "Reference" "LED407"
-			(at 66.04 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 66.04 45.72 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 66.04 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 66.04 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 66.04 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 66.04 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "6f519ff4-5af0-40f9-a862-ae78276ba5ae")
-		)
-		(pin "1"
-			(uuid "55ba08ad-921f-4495-af56-82ee206abf47")
-		)
-		(pin "3"
-			(uuid "a699ac80-b68a-4fb3-a76c-6ea81c287fc2")
-		)
-		(pin "2"
-			(uuid "699f0d45-59e7-4673-ae15-f9c1ce033268")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED407")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 27.94 123.19 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "749e97c7-d6de-4d93-bb39-fb80d883d1bf")
-		(property "Reference" "#PWR0421"
-			(at 27.94 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 27.94 128.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 27.94 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 27.94 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 27.94 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "537b2a3a-6519-4ae9-a63f-cd31ae02771a")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0421")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 121.92 74.93 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "79e06941-3188-4be3-8ad7-4fcf33b9a50a")
-		(property "Reference" "LED414"
-			(at 121.92 66.04 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 121.92 68.58 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 121.92 66.04 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 121.92 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 121.92 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 121.92 63.5 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "56abc6f2-f90d-4089-9b4a-cd61bba7632f")
-		)
-		(pin "1"
-			(uuid "ea7966b7-665d-4ca0-8f99-6c25739ec1b4")
-		)
-		(pin "3"
-			(uuid "a84d4791-ec63-48ce-a654-ae2aa582b09c")
-		)
-		(pin "2"
-			(uuid "5709c99d-f909-44dd-80ce-82d845821862")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED414")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 93.98 29.21 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "7c01288e-90fc-48f0-9164-4a64cf824d5a")
-		(property "Reference" "LED403"
-			(at 93.98 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 93.98 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 93.98 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 93.98 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 93.98 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 93.98 17.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "aac6fc80-cfb5-414d-a4a6-21517b952d76")
-		)
-		(pin "1"
-			(uuid "a94b0808-28c9-4efd-90d1-89862a99fc8f")
-		)
-		(pin "3"
-			(uuid "bd1307b5-7fad-4607-a87c-2e986f80b72e")
-		)
-		(pin "2"
-			(uuid "a53531e0-f39d-41b4-8e86-283b31e5fa42")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED403")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 66.04 29.21 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "7c6b2a52-b795-49c7-826e-486c1617aa98")
-		(property "Reference" "LED402"
-			(at 66.04 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 66.04 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 66.04 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 66.04 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 66.04 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 66.04 17.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "fd586102-ae8c-4896-8e81-a65cf8d37d67")
-		)
-		(pin "1"
-			(uuid "8635734e-8108-47b1-aa48-f58bcce447dd")
-		)
-		(pin "3"
-			(uuid "cf98e265-6fae-446f-b472-20fb8c2f432b")
-		)
-		(pin "2"
-			(uuid "72301192-81b5-4204-8eee-b8472e3d1c94")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED402")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 54.61 33.02 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "7edb7e7b-229c-455f-9584-1867247b4a91")
-		(property "Reference" "#PWR0402"
-			(at 54.61 39.37 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 54.61 38.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 54.61 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 54.61 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 54.61 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "3f36a455-fd7a-4696-9c69-1473023706d9")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0402")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 67.31 119.38 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "830f5179-2969-4a52-ba5b-c41000a22184")
-		(property "Reference" "LED422"
-			(at 67.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 67.31 113.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 67.31 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 67.31 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 67.31 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 67.31 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "bfcf625d-c566-44f6-a922-25aae12115e6")
-		)
-		(pin "1"
-			(uuid "83752027-8a40-4ea3-b0aa-32dc37fbab1b")
-		)
-		(pin "3"
-			(uuid "67de6a93-d940-4934-9045-d26365313296")
-		)
-		(pin "2"
-			(uuid "966ec944-ac19-4aa3-a2c5-ffae9f13a687")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED422")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 93.98 52.07 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "836ef25a-9a95-4165-8bce-97d3d094d135")
-		(property "Reference" "LED408"
-			(at 93.98 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 93.98 45.72 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 93.98 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 93.98 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 93.98 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 93.98 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "9635bcf5-971b-4c17-a439-0c421a323483")
-		)
-		(pin "1"
-			(uuid "d3b3175b-98fc-485e-8144-558c86472a3a")
-		)
-		(pin "3"
-			(uuid "9256f85b-551d-4c26-b475-4d6868e4814e")
-		)
-		(pin "2"
-			(uuid "a8e296a9-3207-48f2-86e5-764623b7a785")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED408")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 110.49 78.74 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "8ded6bac-10d4-408f-aebd-efe513aa5f0e")
-		(property "Reference" "#PWR0414"
-			(at 110.49 85.09 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 110.49 83.82 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 110.49 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 110.49 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 110.49 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "d1892213-16fc-44f0-a6cf-24a9585f796f")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0414")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 66.04 97.79 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "8e4b263a-9a01-442c-bec2-672d9da991d0")
-		(property "Reference" "LED417"
-			(at 66.04 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 66.04 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 66.04 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 66.04 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 66.04 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 66.04 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "d001fb2e-41c0-4fbb-a554-bf17419692ba")
-		)
-		(pin "1"
-			(uuid "fec5da5d-4007-4d99-a2a5-1ff6513603ba")
-		)
-		(pin "3"
-			(uuid "2a7473d5-66c9-4360-aede-c09808c9ef26")
-		)
-		(pin "2"
-			(uuid "066ffe1b-4886-4229-bbf4-5bb7027d1b90")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED417")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 138.43 101.6 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "90a4b2b1-82df-4528-ad4d-d7604663e9fb")
-		(property "Reference" "#PWR0420"
-			(at 138.43 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 138.43 106.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 138.43 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 138.43 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 138.43 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "6265358c-b142-44a2-86e7-1d9bcf0cae87")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0420")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 82.55 78.74 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "924aca7b-0f2b-4997-8ba8-d8cddb706d51")
-		(property "Reference" "#PWR0413"
-			(at 82.55 85.09 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 82.55 83.82 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 82.55 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 82.55 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 82.55 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "9d30c943-5d1a-4208-bd32-627d718e3245")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0413")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 95.25 119.38 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "92e045b5-6745-4aee-87c3-d6bc26574363")
-		(property "Reference" "LED423"
-			(at 95.25 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 95.25 113.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 95.25 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 95.25 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 95.25 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 95.25 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "b73adf98-1634-486f-b7e0-d51a60feddb1")
-		)
-		(pin "1"
-			(uuid "22745d0c-7b29-4486-90b1-f777fa00e785")
-		)
-		(pin "3"
-			(uuid "bfe2c4b2-3118-4985-a8bd-396222c48b13")
-		)
-		(pin "2"
-			(uuid "6d4a615b-5513-4bef-8ca8-aab587940419")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED423")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 26.67 55.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "94484427-458f-4d9a-bdb7-03a389188894")
-		(property "Reference" "#PWR0406"
-			(at 26.67 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 26.67 60.96 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 26.67 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 26.67 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 26.67 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "2c740920-3610-4d6d-add3-a6444d09a7e2")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0406")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 93.98 97.79 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "9d6ee1f6-a202-4988-9ee8-cd1c1512ff68")
-		(property "Reference" "LED418"
-			(at 93.98 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 93.98 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 93.98 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 93.98 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 93.98 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 93.98 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "d690edf9-a3c8-40e0-9fa4-8122cee19e5d")
-		)
-		(pin "1"
-			(uuid "f7c4c11a-b617-4384-a6d0-cd958ddaadbc")
-		)
-		(pin "3"
-			(uuid "4ec796f7-2329-4fa6-8726-8d312deadb01")
-		)
-		(pin "2"
-			(uuid "efeae184-aed9-4244-ab30-8729353a91a4")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED418")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 26.67 33.02 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "9dd411c1-2392-4d24-be5f-9b75db16d3ee")
-		(property "Reference" "#PWR0401"
-			(at 26.67 39.37 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 26.67 38.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 26.67 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 26.67 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 26.67 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "fc86f148-7e3f-45c1-bd4b-f36e45b57e0f")
-		)
-		(instances
-			(project ""
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0401")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 121.92 52.07 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "9df3d3a4-e0f5-4725-97f1-41c3407a2862")
-		(property "Reference" "LED409"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 121.92 45.72 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 121.92 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 121.92 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 121.92 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "b19f531d-0791-4b6f-93ca-7b2967d62b62")
-		)
-		(pin "1"
-			(uuid "6bfe65a1-9d3b-4034-bb81-f6f66736d8af")
-		)
-		(pin "3"
-			(uuid "712e12c0-ff72-4499-a108-6ea043c59451")
-		)
-		(pin "2"
-			(uuid "507bd31d-f87f-4159-8a12-f0e10853170e")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED409")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 26.67 78.74 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "9f46d55a-7a36-4c2e-b671-077d7bd1771d")
-		(property "Reference" "#PWR0411"
-			(at 26.67 85.09 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 26.67 83.82 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 26.67 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 26.67 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 26.67 78.74 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "3b51ba58-471a-4a68-b5e5-6b92716754e1")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0411")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 82.55 101.6 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ac9ef7d4-18e0-4f43-941c-f54fb08a7fb3")
-		(property "Reference" "#PWR0418"
-			(at 82.55 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 82.55 106.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 82.55 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 82.55 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 82.55 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "92c7d6fd-fd7c-4fd4-953b-978fd8f4ff34")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0418")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 149.86 29.21 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "b2cb4d81-98aa-41fb-9bb1-f7ee55d741a4")
-		(property "Reference" "LED405"
-			(at 149.86 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 149.86 22.86 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 149.86 20.32 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 149.86 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 149.86 29.21 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 149.86 17.78 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "912cc281-29ab-4fb0-99c4-c8980d10832d")
-		)
-		(pin "1"
-			(uuid "ca51e5e6-accf-4769-80bc-3748893ebbb1")
-		)
-		(pin "3"
-			(uuid "0d8537a5-88cf-485b-bc82-fdc75b34767d")
-		)
-		(pin "2"
-			(uuid "dda18291-cbe2-4e30-b6e2-062a99ce5945")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED405")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 54.61 55.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "bee1f97d-03f2-4420-855c-6d7a0db7a59d")
-		(property "Reference" "#PWR0407"
-			(at 54.61 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 54.61 60.96 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 54.61 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 54.61 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 54.61 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "23961b7d-6b69-4a4b-82fe-6c3a92833f11")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0407")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 123.19 119.38 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "bf16d5a5-f067-4b3e-92aa-f6ad2e00df72")
-		(property "Reference" "LED424"
-			(at 123.19 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 123.19 113.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 123.19 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 123.19 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 123.19 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 123.19 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "f625fa44-13cf-4567-965f-a4291cc9a8e9")
-		)
-		(pin "1"
-			(uuid "f4376a66-a172-4c04-98f2-309c8f742458")
-		)
-		(pin "3"
-			(uuid "74be08cd-7488-4317-9db7-f6fe070e9678")
-		)
-		(pin "2"
-			(uuid "14739385-62c4-45f9-b74b-c9fcb15b9933")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED424")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 110.49 55.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "bf935629-d229-4407-ab86-190d8f0e04bb")
-		(property "Reference" "#PWR0409"
-			(at 110.49 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 110.49 60.96 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 110.49 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 110.49 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 110.49 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "da6cc1f1-fbdf-4f46-afed-40bd394f95d3")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0409")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 38.1 52.07 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c0935542-14a9-489c-b148-bf00403cacdc")
-		(property "Reference" "LED406"
-			(at 38.1 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 38.1 45.72 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 38.1 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 38.1 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 38.1 52.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 38.1 40.64 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "3db2a838-741f-456d-9f71-1293b6670e3c")
-		)
-		(pin "1"
-			(uuid "ec3436e9-08f0-4984-93ca-5f44de468e65")
-		)
-		(pin "3"
-			(uuid "ec9a196e-357c-44b8-ab76-42bc375076d5")
-		)
-		(pin "2"
-			(uuid "928eaa33-4232-4986-8ec8-0815163b40ef")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED406")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 83.82 123.19 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c0c68b6f-886e-480d-aa1c-425afc59772a")
-		(property "Reference" "#PWR0423"
-			(at 83.82 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 83.82 128.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 83.82 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 83.82 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 83.82 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "ddd53770-3765-4332-a9c2-79f825e3014e")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0423")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 55.88 123.19 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c57fce27-6254-4b4a-944c-551c18e2d788")
-		(property "Reference" "#PWR0422"
-			(at 55.88 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 55.88 128.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 55.88 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 55.88 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 55.88 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "e33b420f-596b-438c-9659-51e323751b45")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0422")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 38.1 97.79 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c64f686b-59a8-455c-9802-f3abc56d4960")
-		(property "Reference" "LED416"
-			(at 38.1 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 38.1 91.44 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 38.1 88.9 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 38.1 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 38.1 97.79 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 38.1 86.36 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "1346becf-7286-4acc-8f84-bc8e724321c5")
-		)
-		(pin "1"
-			(uuid "a6e7f3bf-6e10-4563-b9ee-186bafbfa7e2")
-		)
-		(pin "3"
-			(uuid "85662e10-5a25-46fd-b1fb-904a6ae6d780")
-		)
-		(pin "2"
-			(uuid "4b99db38-1ba3-4426-bacf-c67256a2997e")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED416")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 82.55 33.02 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c9fea737-1ce8-4d49-aeff-bbdadb0bf693")
-		(property "Reference" "#PWR0403"
-			(at 82.55 39.37 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 82.55 38.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 82.55 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 82.55 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 82.55 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "f14b32e9-5bda-4409-88ea-4d96e14e360b")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0403")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 139.7 123.19 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ccb0d7be-9f0a-41ff-a09a-aecf54a64f66")
-		(property "Reference" "#PWR0425"
-			(at 139.7 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 139.7 128.27 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 139.7 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 139.7 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 139.7 123.19 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "aefc30dc-78b6-447f-b7c0-0b8e00673f4e")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0425")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 151.13 119.38 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "d0537eba-02b5-49cd-b9ed-05bf5933af5b")
-		(property "Reference" "LED425"
-			(at 151.13 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 151.13 113.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 151.13 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 151.13 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 151.13 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 151.13 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "4592d69d-334f-49c9-84a7-fd3516dc4f8f")
-		)
-		(pin "1"
-			(uuid "2bb3776b-eac8-4ce0-b8eb-ec4ada6c8951")
-		)
-		(pin "3"
-			(uuid "d7c3e96e-572e-4701-ba0b-f09ba97f2459")
-		)
-		(pin "2"
-			(uuid "3ba40dc0-01a9-4fd1-8bda-ad21e50fe2a8")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED425")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:XL-5050RGBC-WS2812B-S")
-		(at 39.37 119.38 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "d2a49253-1492-440c-bd2d-237d37d71ce8")
-		(property "Reference" "LED421"
-			(at 39.37 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "XL-5050RGBC-WS2812B-S"
-			(at 39.37 113.03 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LED-SMD_4P-L5.0-W5.0-TL-1"
-			(at 39.37 110.49 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 39.37 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 39.37 119.38 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C22461793"
-			(at 39.37 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "4"
-			(uuid "73ee6a13-8e14-4ac5-aff0-1c76f5d50ce6")
-		)
-		(pin "1"
-			(uuid "9bd885ca-5e58-4c8f-af6c-d12f1f3cadce")
-		)
-		(pin "3"
-			(uuid "5d087a9e-9a44-4096-a58d-0c1a960117ea")
-		)
-		(pin "2"
-			(uuid "a8a76355-a20c-4c9f-97f5-9e8f76a45ccc")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "LED421")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 138.43 33.02 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "d4e30b64-1a18-4c66-ba05-6971813a696e")
-		(property "Reference" "#PWR0405"
-			(at 138.43 39.37 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 138.43 38.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 138.43 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 138.43 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 138.43 33.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "bc98797b-79d3-43b5-b409-16c6107da02e")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0405")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 54.61 101.6 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "fbb93235-e085-4d96-9f20-dd2c21e2fb6c")
-		(property "Reference" "#PWR0417"
-			(at 54.61 107.95 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 54.61 106.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 54.61 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 54.61 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 54.61 101.6 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "238ff203-b4c9-4e46-b853-a2d3704e3c29")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0417")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 138.43 55.88 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "fd8652b2-63fc-418d-ab95-690508eb0708")
-		(property "Reference" "#PWR0410"
-			(at 138.43 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 138.43 60.96 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 138.43 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 138.43 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 138.43 55.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "4ccd137e-237a-40ea-be57-911125addaaf")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5cee5b65-7904-4d4d-b514-47220b319d3c"
-					(reference "#PWR0410")
-					(unit 1)
+					(page "16")
 				)
 			)
 		)
