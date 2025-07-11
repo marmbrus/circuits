@@ -2567,7 +2567,7 @@
 		)
 		(uuid "b8abd403-e62e-43fe-a2af-52834bb78519")
 	)
-	(text "AIN2=7\nMAX=20V"
+	(text "AIN2=3\nMAX=12V"
 		(exclude_from_sim no)
 		(at 151.13 138.43 0)
 		(effects
@@ -6186,7 +6186,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "37.4"
+		(property "Value" "38.3k"
 			(at 133.35 115.5699 0)
 			(effects
 				(font
@@ -6622,7 +6622,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "191k"
+		(property "Value" "38.3k"
 			(at 153.67 115.5699 0)
 			(effects
 				(font
@@ -6977,7 +6977,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "9.31k"
+		(property "Value" "162k"
 			(at 153.67 107.9499 0)
 			(effects
 				(font

@@ -5,6 +5,145 @@
 	(uuid "59b5ce50-f714-499c-91bb-7dd8fd21ef8f")
 	(paper "A4")
 	(lib_symbols
+		(symbol "Device:C"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0.254)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "C"
+				(at 0.635 2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Value" "C"
+				(at 0.635 -2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 0.9652 -3.81 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Unpolarized capacitor"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "cap capacitor"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "C_*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "C_0_1"
+				(polyline
+					(pts
+						(xy -2.032 0.762) (xy 2.032 0.762)
+					)
+					(stroke
+						(width 0.508)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -2.032 -0.762) (xy 2.032 -0.762)
+					)
+					(stroke
+						(width 0.508)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "C_1_1"
+				(pin passive line
+					(at 0 3.81 270)
+					(length 2.794)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 2.794)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "easyeda2kicad:ADS1115IDGSR"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -369,6 +508,30 @@
 			(embedded_fonts no)
 		)
 	)
+	(junction
+		(at 62.23 58.42)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "0307e3aa-5298-4adf-91ad-8f4610dc8bc7")
+	)
+	(junction
+		(at 50.8 58.42)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "151c09c2-8061-4a9e-a14e-123d115ae938")
+	)
+	(junction
+		(at 38.1 50.8)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8313a869-23ae-4913-9d32-25416666b599")
+	)
+	(junction
+		(at 50.8 50.8)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "bee52c88-45b4-4deb-8d6a-2d69872a1512")
+	)
 	(bus_entry
 		(at 53.34 44.45)
 		(size 2.54 2.54)
@@ -397,6 +560,16 @@
 		)
 		(uuid "0618a8e8-1b0b-4fbd-b86a-a8f5a35323f2")
 	)
+	(wire
+		(pts
+			(xy 38.1 50.8) (xy 50.8 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "151f3c62-6eb4-4697-ac34-1e722bca2b53")
+	)
 	(bus
 		(pts
 			(xy 53.34 40.64) (xy 53.34 41.91)
@@ -416,6 +589,26 @@
 			(type default)
 		)
 		(uuid "410a47d3-f6a9-4ebb-be0c-118226a8ed5d")
+	)
+	(wire
+		(pts
+			(xy 62.23 58.42) (xy 62.23 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "46a1917c-16d6-4d79-bcda-749c2c49cb42")
+	)
+	(wire
+		(pts
+			(xy 38.1 58.42) (xy 50.8 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "50a36cc8-39a7-430f-87da-172f36fe70e9")
 	)
 	(bus
 		(pts
@@ -449,13 +642,33 @@
 	)
 	(wire
 		(pts
-			(xy 60.96 50.8) (xy 66.04 50.8)
+			(xy 31.75 50.8) (xy 38.1 50.8)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "81bc8274-7b41-48ad-a40c-3e87f5553b3e")
+	)
+	(wire
+		(pts
+			(xy 50.8 58.42) (xy 62.23 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8d4cf828-2926-44b6-9f95-b7c45b969867")
+	)
+	(wire
+		(pts
+			(xy 50.8 50.8) (xy 66.04 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bd0f6ce9-6763-4eee-ae21-ed61d7bebb73")
 	)
 	(wire
 		(pts
@@ -530,7 +743,7 @@
 	)
 	(hierarchical_label "5V"
 		(shape input)
-		(at 60.96 50.8 180)
+		(at 31.75 50.8 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -582,6 +795,76 @@
 			(justify right)
 		)
 		(uuid "af1c881d-bcb8-4c40-8768-65b538a22a1b")
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 38.1 54.61 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3ca7e432-2fcd-4bfa-8275-75db9ff590bf")
+		(property "Reference" "C29"
+			(at 41.91 53.3399 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "1uF"
+			(at 41.91 55.8799 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 39.0652 58.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 38.1 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 38.1 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "648c70ff-c269-4df2-b7af-17d5d810a353")
+		)
+		(pin "2"
+			(uuid "aba9e7a5-d2b6-4771-b5bc-a2a7e1fa1108")
+		)
+		(instances
+			(project "leds"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/e9719c33-edbb-4c34-a1ec-3f6b22cc8297"
+					(reference "C29")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "easyeda2kicad:ADS1115IDGSR")
@@ -686,7 +969,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 62.23 58.42 0)
+		(at 62.23 71.12 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -695,7 +978,7 @@
 		(fields_autoplaced yes)
 		(uuid "a2915061-a6e0-44a6-8a38-84c5d2c5d801")
 		(property "Reference" "#PWR010"
-			(at 62.23 64.77 0)
+			(at 62.23 77.47 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -704,7 +987,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 62.23 63.5 0)
+			(at 62.23 76.2 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -712,7 +995,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 62.23 58.42 0)
+			(at 62.23 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -721,7 +1004,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 62.23 58.42 0)
+			(at 62.23 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -730,7 +1013,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 62.23 58.42 0)
+			(at 62.23 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -745,6 +1028,76 @@
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/e9719c33-edbb-4c34-a1ec-3f6b22cc8297"
 					(reference "#PWR010")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 50.8 54.61 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "cbf66a75-7f48-439b-a395-15803d905f93")
+		(property "Reference" "C28"
+			(at 54.61 53.3399 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100nF"
+			(at 54.61 55.8799 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 51.7652 58.42 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 50.8 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 50.8 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "8505956d-2543-4871-a508-084870c63bb5")
+		)
+		(pin "2"
+			(uuid "bdaf34cb-1a08-415b-ab60-ef9122d2dd2f")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/e9719c33-edbb-4c34-a1ec-3f6b22cc8297"
+					(reference "C28")
 					(unit 1)
 				)
 			)
