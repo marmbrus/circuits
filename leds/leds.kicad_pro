@@ -190,6 +190,7 @@
       "track_widths": [
         0.0,
         1.0,
+        5.0,
         6.0
       ],
       "tuning_pattern_settings": {
@@ -657,20 +658,32 @@
       "buckconverter"
     ],
     [
-      "1f2b9b33-e6fe-4f64-b080-f2e78eab70c6",
-      "led_channel1"
+      "35a4a023-801a-4ad8-aaa9-651a71e86f56",
+      "i2c"
     ],
     [
       "ff982210-6c86-422a-a66b-20bff67bd030",
       "3v3"
     ],
     [
-      "35a4a023-801a-4ad8-aaa9-651a71e86f56",
-      "i2c"
+      "e9719c33-edbb-4c34-a1ec-3f6b22cc8297",
+      "a2d"
     ],
     [
       "f2bbebe1-7e19-419b-a0b6-59692ffc8a76",
       "led_channel"
+    ],
+    [
+      "12e1977d-52a8-4b65-9b00-e4fe663befea",
+      "led_channel1"
+    ],
+    [
+      "ec821e09-438d-4557-b77c-9ca8e64b8f3a",
+      "led_channel2"
+    ],
+    [
+      "9b9dd91b-f208-4d6c-b904-d99499405bcc",
+      "led_channel3"
     ]
   ],
   "text_variables": {}
