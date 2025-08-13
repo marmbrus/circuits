@@ -7,6 +7,7 @@
 #include "config.h"
 #include "driver/gpio.h"
 #include "esp_timer.h"
+#include "esp_rom_sys.h"
 #include "ConnectingLights.h"
 #include "ConnectedLights.h"
 #include "DisconnectedLights.h"
@@ -83,7 +84,19 @@ void ChristmasLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightn
     }
 }
 
-static led_strip_handle_t led_strip;
+// Support multiple LED strips configured via LED_STRIP_CONFIG
+static led_strip_handle_t led_strips[LED_STRIP_CONFIG_COUNT] = {0};
+static uint16_t strip_lengths[LED_STRIP_CONFIG_COUNT] = {0};
+static size_t num_initialized_strips = 0;
+
+static int find_strip_index(led_strip_handle_t handle) {
+    for (size_t i = 0; i < num_initialized_strips; ++i) {
+        if (led_strips[i] == handle) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
 static SystemState current_state = WIFI_CONNECTING;
 static uint8_t pulse_brightness = 0;
 static bool pulse_increasing = true;
@@ -149,45 +162,61 @@ static void update_led_task(void* pvParameters) {
         if (current_state == WIFI_CONNECTING) {
             if (!has_been_connected) {
                 // Only show connecting animation on first boot
-                connecting_lights.update(led_strip, pulse_brightness);
+                for (size_t s = 0; s < num_initialized_strips; ++s) {
+                    connecting_lights.update(led_strips[s], pulse_brightness);
+                }
             } else {
                 // After first connection, show disconnected animation after a threshold
                 disconnected_time_ms += LED_UPDATE_INTERVAL_MS;
                 
                 if (disconnected_time_ms < DISCONNECTED_THRESHOLD_MS) {
                     // Brief disconnect, just keep LEDs off
-                    no_lights.update(led_strip, pulse_brightness);
+                    for (size_t s = 0; s < num_initialized_strips; ++s) {
+                        no_lights.update(led_strips[s], pulse_brightness);
+                    }
                 } else {
                     // Persistent WiFi disconnect
                     disconnected_lights.setDisconnectType(WIFI_DISCONNECT);
-                    disconnected_lights.update(led_strip, pulse_brightness);
+                    for (size_t s = 0; s < num_initialized_strips; ++s) {
+                        disconnected_lights.update(led_strips[s], pulse_brightness);
+                    }
                 }
             }
         } else if (current_state == WIFI_CONNECTED_MQTT_CONNECTING) {
             if (!has_been_connected) {
                 // On initial connection, show connecting animation
-                connecting_lights.update(led_strip, pulse_brightness);
+                for (size_t s = 0; s < num_initialized_strips; ++s) {
+                    connecting_lights.update(led_strips[s], pulse_brightness);
+                }
             } else if (previous_state == FULLY_CONNECTED) {
                 // We were fully connected before but now MQTT is disconnected
                 disconnected_time_ms += LED_UPDATE_INTERVAL_MS;
                 
                 if (disconnected_time_ms < DISCONNECTED_THRESHOLD_MS) {
                     // Brief disconnect, just keep LEDs off
-                    no_lights.update(led_strip, pulse_brightness);
+                    for (size_t s = 0; s < num_initialized_strips; ++s) {
+                        no_lights.update(led_strips[s], pulse_brightness);
+                    }
                 } else {
                     // Persistent MQTT disconnect
                     disconnected_lights.setDisconnectType(MQTT_DISCONNECT);
-                    disconnected_lights.update(led_strip, pulse_brightness);
+                    for (size_t s = 0; s < num_initialized_strips; ++s) {
+                        disconnected_lights.update(led_strips[s], pulse_brightness);
+                    }
                 }
             } else {
                 // For any other state transition in MQTT connecting state
                 // Check if this is a reconnection (has been connected before)
                 if (has_been_connected) {
                     // This is a reconnection, don't show connecting animation
-                    no_lights.update(led_strip, pulse_brightness);
+                    for (size_t s = 0; s < num_initialized_strips; ++s) {
+                        no_lights.update(led_strips[s], pulse_brightness);
+                    }
                 } else {
                     // Initial connection process, show connecting animation
-                    connecting_lights.update(led_strip, pulse_brightness);
+                    for (size_t s = 0; s < num_initialized_strips; ++s) {
+                        connecting_lights.update(led_strips[s], pulse_brightness);
+                    }
                 }
             }
         } else if (current_state == FULLY_CONNECTED) {
@@ -198,7 +227,9 @@ static void update_led_task(void* pvParameters) {
                 // First time connection - show startup ripple
                 // This check should never happen since we set has_been_connected above
                 // but included for safety
-                connected_lights.update(led_strip, pulse_brightness);
+                for (size_t s = 0; s < num_initialized_strips; ++s) {
+                    connected_lights.update(led_strips[s], pulse_brightness);
+                }
                 ripple_time = 0;
             } else if (has_been_connected && ripple_time < 5000) {
                 // Currently showing the startup ripple - only log at start and end
@@ -206,30 +237,51 @@ static void update_led_task(void* pvParameters) {
                     ESP_LOGI(TAG, "Starting startup ripple animation");
                 }
                 
-                connected_lights.update(led_strip, pulse_brightness);
+                for (size_t s = 0; s < num_initialized_strips; ++s) {
+                    connected_lights.update(led_strips[s], pulse_brightness);
+                }
                 ripple_time += LED_UPDATE_INTERVAL_MS;
                 
                 if (ripple_time >= 5000) {
                     ESP_LOGI(TAG, "Startup ripple display complete");
                 }
             } else {
-                // Normal connected state - no animation
-                no_lights.update(led_strip, pulse_brightness);
+                // Normal connected state
+#if defined(BOARD_LED_CONTROLLER)
+                // LED controller: keep strips on at full brightness (white)
+                for (size_t s = 0; s < num_initialized_strips; ++s) {
+                    uint16_t length = strip_lengths[s];
+                    for (uint16_t i = 0; i < length; ++i) {
+                        led_control_set_pixel(led_strips[s], i, 100, 100, 100);
+                    }
+                }
+#else
+                // Room sensor: no lights when fully connected
+                for (size_t s = 0; s < num_initialized_strips; ++s) {
+                    no_lights.update(led_strips[s], pulse_brightness);
+                }
+#endif
             }
         } else if (current_state == MQTT_ERROR_STATE) {
             // For error state, use a specific error indication
-            for (int i = 0; i < LED_STRIP_NUM_PIXELS; ++i) {
-                led_control_set_pixel(led_strip, i, 100, 0, 0); // All red for error
+            for (size_t s = 0; s < num_initialized_strips; ++s) {
+                for (int i = 0; i < LED_STRIP_NUM_PIXELS; ++i) {
+                    led_control_set_pixel(led_strips[s], i, 100, 0, 0); // All red for error
+                }
             }
         } else if (current_state == OTA_UPDATING) {
             // For OTA updates, pulse all LEDs white
-            ota_update_lights.update(led_strip, pulse_brightness);
+            for (size_t s = 0; s < num_initialized_strips; ++s) {
+                ota_update_lights.update(led_strips[s], pulse_brightness);
+            }
         }
         
         // Remember the current state for next time
         previous_state = current_state;
 
-        led_strip_refresh(led_strip);
+        for (size_t s = 0; s < num_initialized_strips; ++s) {
+            led_strip_refresh(led_strips[s]);
+        }
         vTaskDelay(pdMS_TO_TICKS(LED_UPDATE_INTERVAL_MS));
     }
 }
@@ -237,41 +289,77 @@ static void update_led_task(void* pvParameters) {
 void led_control_init(void) {
     ESP_LOGI(TAG, "Initializing LED Control");
 
-    // LED strip configuration
-    led_strip_config_t strip_config = {
-        .strip_gpio_num = LED_STRIP_GPIO,
-        .max_leds = LED_STRIP_NUM_PIXELS,
-        .led_pixel_format = LED_PIXEL_FORMAT_GRB,
-        .led_model = LED_MODEL_WS2812,
-        .flags = {
-            .invert_out = false,
+    // Initialize each configured strip
+    for (size_t i = 0; i < LED_STRIP_CONFIG_COUNT; ++i) {
+        const led_strip_config_entry_t &cfg = LED_STRIP_CONFIG[i];
+        if (cfg.data_gpio == GPIO_NUM_NC || cfg.num_pixels == 0) {
+            ESP_LOGI(TAG, "Strip %d skipped (gpio=%d, pixels=%d)", (int)i, (int)cfg.data_gpio, (int)cfg.num_pixels);
+            continue; // Skip unconfigured entries
         }
-    };
 
-    // RMT configuration
-    led_strip_rmt_config_t rmt_config = {
-        .clk_src = RMT_CLK_SRC_DEFAULT,
-        .resolution_hz = 10 * 1000 * 1000,
-        .mem_block_symbols = 64,
-        .flags = {
-            .with_dma = false,
+        // Optional power enable pin
+        if (cfg.enable_gpio != GPIO_NUM_NC) {
+            gpio_reset_pin(cfg.enable_gpio);
+            gpio_set_direction(cfg.enable_gpio, GPIO_MODE_OUTPUT);
+            gpio_set_level(cfg.enable_gpio, 1);
+            ESP_LOGI(TAG, "Strip %d: enable gpio %d set HIGH", (int)i, (int)cfg.enable_gpio);
         }
-    };
 
-    // Create LED strip
-    ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip));
+        // Do not manipulate data GPIOs here; RMT/LED driver will configure pins
 
-    // Clear LED strip initially
-    led_strip_clear(led_strip);
-    led_strip_refresh(led_strip);
+        led_strip_config_t strip_config = {};
+        strip_config.strip_gpio_num = cfg.data_gpio;
+        strip_config.max_leds = cfg.num_pixels;
+
+        // Select pixel format and model based on chipset
+        switch (cfg.chipset) {
+            case LED_CHIPSET_SK6812_RGBW:
+                strip_config.led_pixel_format = LED_PIXEL_FORMAT_GRBW;
+                strip_config.led_model = LED_MODEL_SK6812;
+                break;
+            case LED_CHIPSET_WS2812_GRB:
+            default:
+                strip_config.led_pixel_format = LED_PIXEL_FORMAT_GRB;
+                strip_config.led_model = LED_MODEL_WS2812;
+                break;
+        }
+        strip_config.flags.invert_out = false;
+
+        led_strip_rmt_config_t rmt_config = {};
+        rmt_config.clk_src = RMT_CLK_SRC_DEFAULT;
+        rmt_config.resolution_hz = 10 * 1000 * 1000;
+        // Per RMT docs, use an even value >= 48; 64 improves throughput while remaining safe
+        rmt_config.mem_block_symbols = 64;
+        // Disable DMA to match previously working configuration and keep channel allocation simple
+        rmt_config.flags.with_dma = false;
+
+        led_strip_handle_t handle = nullptr;
+        esp_err_t err = led_strip_new_rmt_device(&strip_config, &rmt_config, &handle);
+        if (err == ESP_OK && handle != nullptr) {
+            led_strips[num_initialized_strips] = handle;
+            strip_lengths[num_initialized_strips] = cfg.num_pixels;
+            num_initialized_strips++;
+            led_strip_clear(handle);
+            led_strip_refresh(handle);
+            ESP_LOGI(TAG, "Strip %d initialized: data gpio=%d, pixels=%d, chipset=%d", (int)i, (int)cfg.data_gpio, (int)cfg.num_pixels, (int)cfg.chipset);
+        } else {
+            ESP_LOGE(TAG, "Failed to initialize LED strip %d (gpio=%d, pixels=%d): %s", (int)i, (int)cfg.data_gpio, (int)cfg.num_pixels, esp_err_to_name(err));
+        }
+    }
+
+    ESP_LOGI(TAG, "Total initialized strips: %d", (int)num_initialized_strips);
+
+    // No additional pre-task test; steady state logic will continuously refresh
 
     // LED counting test code - run once to determine number of LEDs (found 42)
     if (false) {
         ESP_LOGI(TAG, "Starting LED counting test...");
         for (int i = 0; i < 1024; i++) {
             ESP_LOGI(TAG, "Testing LED %d", i);
-            led_strip_set_pixel(led_strip, i, 20, 20, 20);  // Dim white
-            led_strip_refresh(led_strip);
+            for (size_t s = 0; s < num_initialized_strips; ++s) {
+                led_strip_set_pixel(led_strips[s], i, 20, 20, 20);  // Dim white
+                led_strip_refresh(led_strips[s]);
+            }
             vTaskDelay(pdMS_TO_TICKS(500));  // Half second delay
 
             if (i % 10 == 9) {
@@ -281,8 +369,10 @@ void led_control_init(void) {
         ESP_LOGI(TAG, "LED counting test complete");
 
         // Clear LEDs after test
-        led_strip_clear(led_strip);
-        led_strip_refresh(led_strip);
+        for (size_t s = 0; s < num_initialized_strips; ++s) {
+            led_strip_clear(led_strips[s]);
+            led_strip_refresh(led_strips[s]);
+        }
     }
 
     // Create LED update task
@@ -339,9 +429,11 @@ void led_control_set_state(SystemState state) {
 }
 
 void led_control_clear() {
-    if (led_strip) {
-        led_strip_clear(led_strip);
-        led_strip_refresh(led_strip);
+    for (size_t s = 0; s < num_initialized_strips; ++s) {
+        if (led_strips[s]) {
+            led_strip_clear(led_strips[s]);
+            led_strip_refresh(led_strips[s]);
+        }
     }
 }
 
@@ -363,6 +455,14 @@ void led_control_set_behavior(LEDBehavior* behavior) {
 }
 
 esp_err_t led_control_set_pixel(led_strip_handle_t led_strip, uint32_t index, uint8_t red, uint8_t green, uint8_t blue) {
+    // Guard against out-of-range pixel access per strip
+    int strip_index = find_strip_index(led_strip);
+    if (strip_index >= 0) {
+        if (index >= strip_lengths[strip_index]) {
+            return ESP_OK; // Silently ignore out-of-range to support generic effects
+        }
+    }
+
     // Scale all color components according to LED_STRIP_NUM_BRIGHTNESS
     red = (red * LED_STRIP_NUM_BRIGHTNESS) / 100;
     green = (green * LED_STRIP_NUM_BRIGHTNESS) / 100;

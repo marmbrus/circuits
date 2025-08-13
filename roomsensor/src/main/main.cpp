@@ -3,7 +3,9 @@
 #include "esp_netif.h"
 #include "esp_event.h"
 #include "mqtt_client.h"
+#include "driver/gpio.h"
 #include "wifi.h"
+#include "config.h"
 #include "led_control.h"
 #include "cJSON.h"
 #include "communication.h"
@@ -25,6 +27,14 @@ extern "C" void app_main(void)
 
     // Initialize LED control
     led_control_init();
+    // Example: board-specific LED power enable (legacy hack)
+#ifdef BOARD_LED_CONTROLLER
+    // If your LED controller board uses a global enable on GPIO15, keep it on.
+    // Prefer configuring per-strip enable pins in LED_STRIP_CONFIG instead.
+    gpio_set_direction(GPIO_NUM_15, GPIO_MODE_OUTPUT);
+    gpio_set_level(GPIO_NUM_15, 1);
+    ESP_LOGI(TAG, "GPIO15 set to high");
+#endif
 
     // Initialize WiFi and MQTT
     wifi_mqtt_init();
