@@ -43,9 +43,9 @@
 
 // LED Configuration
 // Brightness is applied as a percentage [0-100]
-#define LED_STRIP_NUM_BRIGHTNESS    40
+#define LED_STRIP_NUM_BRIGHTNESS    5
 #define LED_UPDATE_TASK_STACK_SIZE  4096
-#define LED_UPDATE_INTERVAL_MS      50
+#define LED_UPDATE_INTERVAL_MS      53
 
 // Chipset description for LED strips used by different boards
 typedef enum {
@@ -85,9 +85,9 @@ static const led_strip_config_entry_t LED_STRIP_CONFIG[] = {
     {
         .data_gpio = GPIO_NUM_11,
         .enable_gpio = GPIO_NUM_15, // Optional power enable; set to a GPIO to use
-        .grid_width = 8,
+        .grid_width = 700,
         .grid_height = 1,
-        .num_pixels = 8,
+        .num_pixels = 700,
         .chipset = LED_CHIPSET_SK6812_RGBW,
     },
     {

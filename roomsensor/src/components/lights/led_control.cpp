@@ -8,6 +8,8 @@
 #include "driver/gpio.h"
 #include "esp_timer.h"
 #include "esp_rom_sys.h"
+#include <cstdlib>
+#include <cstring>
 #include "ConnectingLights.h"
 #include "ConnectedLights.h"
 #include "DisconnectedLights.h"
@@ -88,6 +90,34 @@ void ChristmasLights::update(led_strip_handle_t led_strip, uint8_t pulse_brightn
 static led_strip_handle_t led_strips[LED_STRIP_CONFIG_COUNT] = {0};
 static uint16_t strip_lengths[LED_STRIP_CONFIG_COUNT] = {0};
 static size_t num_initialized_strips = 0;
+static uint64_t strip_last_refresh_us[LED_STRIP_CONFIG_COUNT] = {0};
+static uint32_t strip_frame_time_us[LED_STRIP_CONFIG_COUNT] = {0};
+static uint8_t strip_base_hue[LED_STRIP_CONFIG_COUNT] = {0};
+// Cache previous group values to avoid rewriting unchanged pixels
+static uint8_t* group_prev_vals[LED_STRIP_CONFIG_COUNT] = {0};
+static uint16_t group_counts[LED_STRIP_CONFIG_COUNT] = {0};
+static const uint16_t k_group_size = 8;
+// Slowest-ramp state: increment one LED by 1 each frame
+static uint8_t* pixel_vals[LED_STRIP_CONFIG_COUNT] = {0};
+static uint16_t ramp_strip_idx = 0;
+static uint16_t ramp_pixel_idx = 0;
+static bool ramp_all_max = false;
+static uint64_t fps_last_log_us = 0;
+static uint32_t fps_frames = 0;
+
+// Cycle control: on -> fade up -> log/hold -> fade down -> off
+typedef enum {
+	RAMP_PHASE_UP = 0,
+	RAMP_PHASE_AT_MAX_HOLD,
+	RAMP_PHASE_DOWN,
+	RAMP_PHASE_OFF_HOLD,
+} ramp_phase_t;
+static ramp_phase_t g_ramp_phase = RAMP_PHASE_UP;
+static uint32_t g_hold_elapsed_ms = 0;
+static const uint32_t HOLD_AT_MAX_MS = 1000; // 1s hold at full before fading down
+static const uint32_t HOLD_OFF_MS = 5000;    // 5s power-off
+static uint32_t ramp_total_leds = 0;
+static uint32_t ramp_completed_leds = 0;
 
 static int find_strip_index(led_strip_handle_t handle) {
     for (size_t i = 0; i < num_initialized_strips; ++i) {
@@ -106,6 +136,10 @@ static bool has_been_connected = false;
 // Make this static variable accessible to other functions in this file
 static uint32_t disconnected_time_ms = 0;
 static constexpr uint32_t DISCONNECTED_THRESHOLD_MS = 10000; // 10 seconds threshold
+// Post-startup pulse control
+static uint32_t post_ripple_elapsed_ms = 0;     // milliseconds elapsed in brightness ramp (0-15000)
+static bool in_disable_window = false;          // true when enable pins are held low
+static uint32_t disable_window_elapsed_ms = 0;  // milliseconds elapsed in disable window (0-5000)
 
 extern uint8_t g_battery_soc;
 
@@ -138,6 +172,55 @@ static void update_led_task(void* pvParameters) {
     
     while (1) {
         update_pulse_brightness();
+        // Temporary: render rainbow fade across all channels (8 LEDs per strip) as smoothly as possible
+#if defined(BOARD_LED_CONTROLLER)
+        auto hsv_to_rgb = [](uint8_t h, uint8_t s, uint8_t v, uint8_t &r, uint8_t &g, uint8_t &b) {
+            if (s == 0) { r = g = b = v; return; }
+            uint8_t region = h / 43; // 0..5
+            uint8_t remainder = (uint8_t)((h - region * 43) * 6);
+            uint16_t p = (uint16_t)v * (255 - s) / 255;
+            uint16_t q = (uint16_t)v * (255 - ((uint16_t)s * remainder) / 255) / 255;
+            uint16_t t = (uint16_t)v * (255 - ((uint16_t)s * (255 - remainder)) / 255) / 255;
+            switch (region) {
+                default:
+                case 0: r = v; g = (uint8_t)t; b = (uint8_t)p; break;
+                case 1: r = (uint8_t)q; g = v; b = (uint8_t)p; break;
+                case 2: r = (uint8_t)p; g = v; b = (uint8_t)t; break;
+                case 3: r = (uint8_t)p; g = (uint8_t)q; b = v; break;
+                case 4: r = (uint8_t)t; g = (uint8_t)p; b = v; break;
+                case 5: r = v; g = (uint8_t)p; b = (uint8_t)q; break;
+            }
+        };
+
+        uint64_t now_us_loop = esp_timer_get_time();
+        // Advance hue slowly for smooth fade; ~25.6 deg/s at divisor 10
+        // We'll increment hue per-strip only when we actually refresh that strip
+        const uint8_t sat = 255;
+        const uint8_t val = 255; // global brightness scaling is applied in led_control_set_pixel
+
+        for (size_t s = 0; s < num_initialized_strips; ++s) {
+            // Gate refresh to avoid overlapping a transmission in progress
+            uint64_t last_us = strip_last_refresh_us[s];
+            uint32_t frame_us = strip_frame_time_us[s] ? strip_frame_time_us[s] : 1000;
+            if (now_us_loop - last_us >= frame_us) {
+                // Compute and write this frame only when we're going to refresh
+                uint16_t length = strip_lengths[s] ? strip_lengths[s] : 8;
+                uint16_t step16 = (length > 0) ? (uint16_t)(65536 / length) : 0;
+                uint16_t base16 = ((uint16_t)strip_base_hue[s]) << 8;
+                for (uint16_t i = 0; i < length; ++i) {
+                    uint8_t hue = (uint8_t)((base16 + (uint32_t)i * step16) >> 8);
+                    uint8_t r, g, b;
+                    hsv_to_rgb(hue, sat, val, r, g, b);
+                    led_control_set_pixel(led_strips[s], i, r, g, b);
+                }
+                led_strip_refresh(led_strips[s]);
+                strip_last_refresh_us[s] = now_us_loop;
+                strip_base_hue[s]++; // advance slowly by 1 step per refresh
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(LED_UPDATE_INTERVAL_MS));
+        continue;
+#endif
         
         // Check if we've just connected for the first time
         bool just_connected = (previous_state != FULLY_CONNECTED && current_state == FULLY_CONNECTED);
@@ -248,11 +331,116 @@ static void update_led_task(void* pvParameters) {
             } else {
                 // Normal connected state
 #if defined(BOARD_LED_CONTROLLER)
-                // LED controller: keep strips on at full brightness (white)
-                for (size_t s = 0; s < num_initialized_strips; ++s) {
-                    uint16_t length = strip_lengths[s];
-                    for (uint16_t i = 0; i < length; ++i) {
-                        led_control_set_pixel(led_strips[s], i, 100, 100, 100);
+                if (num_initialized_strips > 0) {
+                    switch (g_ramp_phase) {
+                        case RAMP_PHASE_UP: {
+                            // Ensure power enabled
+                            for (size_t i = 0; i < LED_STRIP_CONFIG_COUNT; ++i) {
+                                if (LED_STRIP_CONFIG[i].enable_gpio != GPIO_NUM_NC) gpio_set_level(LED_STRIP_CONFIG[i].enable_gpio, 1);
+                            }
+                            // Increment current LED by +1 per frame until it reaches 255; only then advance to the next LED
+                            if (pixel_vals[ramp_strip_idx]) {
+                                uint8_t &pv = pixel_vals[ramp_strip_idx][ramp_pixel_idx];
+                                if (pv < 255) {
+                                    pv++;
+                                    led_control_set_pixel(led_strips[ramp_strip_idx], ramp_pixel_idx, pv, pv, pv);
+                                }
+                                if (pv >= 255) {
+                                    // Current LED completed; move to next
+                                    ramp_completed_leds++;
+                                    ramp_pixel_idx++;
+                                    if (ramp_pixel_idx >= strip_lengths[ramp_strip_idx]) {
+                                        ramp_pixel_idx = 0;
+                                        ramp_strip_idx++;
+                                        if (ramp_strip_idx >= num_initialized_strips) ramp_strip_idx = 0;
+                                    }
+                                }
+                            }
+                            // Check if all at max
+                            bool any_not_max = false;
+                            if (ramp_completed_leds < ramp_total_leds) any_not_max = true;
+                            fps_frames++;
+                            if (!any_not_max) {
+                                // Reached max: log FPS for this cycle, then hold
+                                uint64_t now_us = esp_timer_get_time();
+                                if (fps_last_log_us == 0) fps_last_log_us = now_us;
+                                uint64_t delta_us = now_us - fps_last_log_us;
+                                if (delta_us == 0) delta_us = 1;
+                                uint32_t fps_x100 = (uint32_t)((fps_frames * 1000000ull * 100ull) / delta_us);
+                                ESP_LOGI(TAG, "LED ramp cycle FPS: %u.%02u", (unsigned)(fps_x100 / 100u), (unsigned)(fps_x100 % 100u));
+                                fps_last_log_us = now_us;
+                                fps_frames = 0;
+                                g_ramp_phase = RAMP_PHASE_AT_MAX_HOLD;
+                                g_hold_elapsed_ms = 0;
+                            }
+                            break;
+                        }
+                        case RAMP_PHASE_AT_MAX_HOLD: {
+                            g_hold_elapsed_ms += LED_UPDATE_INTERVAL_MS;
+                            if (g_hold_elapsed_ms >= HOLD_AT_MAX_MS) {
+                                g_ramp_phase = RAMP_PHASE_DOWN;
+                                // Reset pointers for down ramp
+                                ramp_strip_idx = 0;
+                                ramp_pixel_idx = 0;
+                            }
+                            break;
+                        }
+                        case RAMP_PHASE_DOWN: {
+                            // Decrement one LED by -1 per frame until all are zero
+                            if (pixel_vals[ramp_strip_idx] && pixel_vals[ramp_strip_idx][ramp_pixel_idx] > 0) {
+                                pixel_vals[ramp_strip_idx][ramp_pixel_idx]--;
+                                uint8_t v = pixel_vals[ramp_strip_idx][ramp_pixel_idx];
+                                led_control_set_pixel(led_strips[ramp_strip_idx], ramp_pixel_idx, v, v, v);
+                            }
+                            ramp_pixel_idx++;
+                            if (ramp_pixel_idx >= strip_lengths[ramp_strip_idx]) {
+                                ramp_pixel_idx = 0;
+                                ramp_strip_idx++;
+                                if (ramp_strip_idx >= num_initialized_strips) ramp_strip_idx = 0;
+                            }
+                            // Check if all zero
+                            bool any_non_zero = false;
+                            for (size_t s = 0; s < num_initialized_strips && !any_non_zero; ++s) {
+                                if (!pixel_vals[s]) continue;
+                                uint16_t len = strip_lengths[s];
+                                for (uint16_t i = 0; i < len; ++i) { if (pixel_vals[s][i] != 0) { any_non_zero = true; break; } }
+                            }
+                            if (!any_non_zero) {
+                                // Clear and power off
+                                for (size_t s = 0; s < num_initialized_strips; ++s) {
+                                    uint16_t len = strip_lengths[s];
+                                    for (uint16_t i = 0; i < len; ++i) {
+                                        led_control_set_pixel(led_strips[s], i, 0, 0, 0);
+                                    }
+                                }
+                                for (size_t i = 0; i < LED_STRIP_CONFIG_COUNT; ++i) {
+                                    if (LED_STRIP_CONFIG[i].enable_gpio != GPIO_NUM_NC) gpio_set_level(LED_STRIP_CONFIG[i].enable_gpio, 0);
+                                }
+                                g_ramp_phase = RAMP_PHASE_OFF_HOLD;
+                                g_hold_elapsed_ms = 0;
+                            }
+                            break;
+                        }
+                        case RAMP_PHASE_OFF_HOLD: {
+                            g_hold_elapsed_ms += LED_UPDATE_INTERVAL_MS;
+                            if (g_hold_elapsed_ms >= HOLD_OFF_MS) {
+                                // Re-enable and restart ramp from zero
+                                for (size_t i = 0; i < LED_STRIP_CONFIG_COUNT; ++i) {
+                                    if (LED_STRIP_CONFIG[i].enable_gpio != GPIO_NUM_NC) gpio_set_level(LED_STRIP_CONFIG[i].enable_gpio, 1);
+                                }
+                                for (size_t s = 0; s < num_initialized_strips; ++s) {
+                                    if (!pixel_vals[s]) continue;
+                                    memset(pixel_vals[s], 0x00, strip_lengths[s]);
+                                }
+                                ramp_strip_idx = 0;
+                                ramp_pixel_idx = 0;
+                                g_ramp_phase = RAMP_PHASE_UP;
+                                // Reset FPS counters for new cycle
+                                fps_last_log_us = esp_timer_get_time();
+                                fps_frames = 0;
+                            }
+                            break;
+                        }
                     }
                 }
 #else
@@ -289,12 +477,23 @@ static void update_led_task(void* pvParameters) {
 void led_control_init(void) {
     ESP_LOGI(TAG, "Initializing LED Control");
 
-    // Initialize each configured strip
+    // Select the longest strip as the DMA target (ESP32-S3: only TX channel 3 supports DMA)
+    int dma_target_index = -1;
+    uint16_t dma_target_len = 0;
     for (size_t i = 0; i < LED_STRIP_CONFIG_COUNT; ++i) {
+        const led_strip_config_entry_t &cfg = LED_STRIP_CONFIG[i];
+        if (cfg.data_gpio != GPIO_NUM_NC && cfg.num_pixels > dma_target_len) {
+            dma_target_len = cfg.num_pixels;
+            dma_target_index = (int)i;
+        }
+    }
+
+    // Helper to init strip, optionally with DMA
+    auto init_strip = [&](size_t i, bool want_dma) {
         const led_strip_config_entry_t &cfg = LED_STRIP_CONFIG[i];
         if (cfg.data_gpio == GPIO_NUM_NC || cfg.num_pixels == 0) {
             ESP_LOGI(TAG, "Strip %d skipped (gpio=%d, pixels=%d)", (int)i, (int)cfg.data_gpio, (int)cfg.num_pixels);
-            continue; // Skip unconfigured entries
+            return; // Skip unconfigured entries
         }
 
         // Optional power enable pin
@@ -327,29 +526,101 @@ void led_control_init(void) {
 
         led_strip_rmt_config_t rmt_config = {};
         rmt_config.clk_src = RMT_CLK_SRC_DEFAULT;
+        // Use 10 MHz tick for stable timing across 4 TX channels
         rmt_config.resolution_hz = 10 * 1000 * 1000;
-        // Per RMT docs, use an even value >= 48; 64 improves throughput while remaining safe
-        rmt_config.mem_block_symbols = 64;
-        // Disable DMA to match previously working configuration and keep channel allocation simple
-        rmt_config.flags.with_dma = false;
+        if (want_dma) {
+            // With DMA, mem_block_symbols controls internal DMA buffer size; larger reduces CPU load
+            rmt_config.mem_block_symbols = 1024; // try 1024 symbols buffer
+            rmt_config.flags.with_dma = true;
+        } else {
+            // Without DMA, must be even and >=48; keep one 48-symbol block per channel
+            rmt_config.mem_block_symbols = 48;
+            rmt_config.flags.with_dma = false;
+        }
 
         led_strip_handle_t handle = nullptr;
         esp_err_t err = led_strip_new_rmt_device(&strip_config, &rmt_config, &handle);
+        if (err != ESP_OK && want_dma) {
+            // Fallback without DMA if channel 3 unavailable
+            ESP_LOGW(TAG, "Strip %d: DMA allocation failed (%s), retrying without DMA", (int)i, esp_err_to_name(err));
+            rmt_config.flags.with_dma = false;
+            rmt_config.mem_block_symbols = 48;
+            err = led_strip_new_rmt_device(&strip_config, &rmt_config, &handle);
+        }
         if (err == ESP_OK && handle != nullptr) {
             led_strips[num_initialized_strips] = handle;
             strip_lengths[num_initialized_strips] = cfg.num_pixels;
+            // Compute per-strip frame time correctly in microseconds:
+            // frame_us = num_pixels * bits_per_led * 1.25us + ~80us reset
+            // 1.25us = 1250ns => (1250 / 1000) us; do integer math with rounding
+            uint32_t bits_per_led = (cfg.chipset == LED_CHIPSET_SK6812_RGBW) ? 32u : 24u;
+            uint64_t us = ((uint64_t)cfg.num_pixels * (uint64_t)bits_per_led * 1250ull + 999ull) / 1000ull;
+            us += 80ull;
+            strip_frame_time_us[num_initialized_strips] = (uint32_t)us;
+            strip_last_refresh_us[num_initialized_strips] = 0;
+            // Allocate group cache
+            uint16_t groups = (cfg.num_pixels + k_group_size - 1) / k_group_size;
+            group_counts[num_initialized_strips] = groups;
+            group_prev_vals[num_initialized_strips] = (uint8_t*)malloc(groups);
+            if (group_prev_vals[num_initialized_strips]) {
+                memset(group_prev_vals[num_initialized_strips], 0xFF, groups); // force first write
+            }
+            // Allocate pixel ramp cache
+            pixel_vals[num_initialized_strips] = nullptr;
+            if (cfg.num_pixels > 0) {
+                pixel_vals[num_initialized_strips] = (uint8_t*)malloc(cfg.num_pixels);
+                if (pixel_vals[num_initialized_strips]) {
+                    memset(pixel_vals[num_initialized_strips], 0x00, cfg.num_pixels);
+                }
+            }
             num_initialized_strips++;
             led_strip_clear(handle);
             led_strip_refresh(handle);
-            ESP_LOGI(TAG, "Strip %d initialized: data gpio=%d, pixels=%d, chipset=%d", (int)i, (int)cfg.data_gpio, (int)cfg.num_pixels, (int)cfg.chipset);
+            ESP_LOGI(TAG, "Strip %d initialized: gpio=%d, pixels=%d, chipset=%d, DMA=%s", (int)i, (int)cfg.data_gpio, (int)cfg.num_pixels, (int)cfg.chipset, want_dma ? "yes" : "no");
         } else {
             ESP_LOGE(TAG, "Failed to initialize LED strip %d (gpio=%d, pixels=%d): %s", (int)i, (int)cfg.data_gpio, (int)cfg.num_pixels, esp_err_to_name(err));
         }
+    };
+
+    // Initialize DMA target first to maximize chance it maps to DMA-capable RMT channel 3
+    if (dma_target_index >= 0) init_strip((size_t)dma_target_index, true);
+    // Initialize the rest without DMA
+    for (size_t i = 0; i < LED_STRIP_CONFIG_COUNT; ++i) {
+        if ((int)i == dma_target_index) continue;
+        init_strip(i, false);
     }
 
     ESP_LOGI(TAG, "Total initialized strips: %d", (int)num_initialized_strips);
 
     // No additional pre-task test; steady state logic will continuously refresh
+    // Initialize ramp for the first strip only (cycle is per-strip)
+    ramp_strip_idx = 0;
+    ramp_pixel_idx = 0;
+    ramp_completed_leds = 0;
+    ramp_total_leds = (num_initialized_strips > 0) ? strip_lengths[0] : 0;
+    g_ramp_phase = RAMP_PHASE_UP;
+    fps_frames = 0;
+    fps_last_log_us = esp_timer_get_time();
+
+    // One-shot pulse test for channel on GPIO14 (strip typically indexed as 3)
+    for (size_t i = 0; i < LED_STRIP_CONFIG_COUNT; ++i) {
+        if (LED_STRIP_CONFIG[i].data_gpio == GPIO_NUM_14 && LED_STRIP_CONFIG[i].num_pixels > 0 && led_strips[i]) {
+            // Ensure enable is high
+            if (LED_STRIP_CONFIG[i].enable_gpio != GPIO_NUM_NC) {
+                gpio_set_level(LED_STRIP_CONFIG[i].enable_gpio, 1);
+            }
+            // Brief white pulse on first pixel
+            led_strip_set_pixel(led_strips[i], 0, 80, 80, 80);
+            led_strip_refresh(led_strips[i]);
+            vTaskDelay(pdMS_TO_TICKS(250));
+            led_strip_clear(led_strips[i]);
+            led_strip_refresh(led_strips[i]);
+            ESP_LOGI(TAG, "GPIO14 (channel 4) pulse test complete");
+            break;
+        }
+    }
+
+    // Keep update cadence fixed per config to ensure smooth ramp and predictable FPS
 
     // LED counting test code - run once to determine number of LEDs (found 42)
     if (false) {
@@ -441,6 +712,18 @@ void led_control_stop() {
     if (led_update_task_handle != NULL) {
         vTaskDelete(led_update_task_handle);
         led_update_task_handle = NULL;
+    }
+    // Free caches
+    for (size_t s = 0; s < num_initialized_strips; ++s) {
+        if (group_prev_vals[s]) {
+            free(group_prev_vals[s]);
+            group_prev_vals[s] = nullptr;
+            group_counts[s] = 0;
+        }
+        if (pixel_vals[s]) {
+            free(pixel_vals[s]);
+            pixel_vals[s] = nullptr;
+        }
     }
 }
 
