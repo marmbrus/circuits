@@ -9,6 +9,7 @@
 #include "esp_log.h"
 #include "esp_mac.h"
 #include <string.h>
+#include <strings.h>
 
 namespace config {
 
@@ -100,18 +101,50 @@ static esp_err_t nvs_load_module(const char* ns_name, ConfigurationModule* modul
                     err = nvs_get_str(handle, desc.name, buf.data(), &len);
                     if (err == ESP_OK) {
                         module->apply_update(desc.name, buf.c_str());
-                        ESP_LOGD(TAG, "Loaded persisted config: %s.%s", ns_name, desc.name);
+                        ESP_LOGD(TAG, "Loaded persisted config (str): %s.%s", ns_name, desc.name);
                     }
                 }
                 break;
             }
-            case ConfigValueType::Bool:
-            case ConfigValueType::I32:
-            case ConfigValueType::U32:
-            case ConfigValueType::I64:
+            case ConfigValueType::Bool: {
+                uint8_t v = 0; err = nvs_get_u8(handle, desc.name, &v);
+                if (err == ESP_OK) {
+                    const char* s = v ? "1" : "0";
+                    module->apply_update(desc.name, s);
+                    ESP_LOGD(TAG, "Loaded persisted config (bool): %s.%s=%u", ns_name, desc.name, (unsigned)v);
+                }
+                break;
+            }
+            case ConfigValueType::I32: {
+                int32_t v = 0; err = nvs_get_i32(handle, desc.name, &v);
+                if (err == ESP_OK) {
+                    std::string s = std::to_string(v);
+                    module->apply_update(desc.name, s.c_str());
+                    ESP_LOGD(TAG, "Loaded persisted config (i32): %s.%s=%ld", ns_name, desc.name, (long)v);
+                }
+                break;
+            }
+            case ConfigValueType::U32: {
+                uint32_t v = 0; err = nvs_get_u32(handle, desc.name, &v);
+                if (err == ESP_OK) {
+                    std::string s = std::to_string(v);
+                    module->apply_update(desc.name, s.c_str());
+                    ESP_LOGD(TAG, "Loaded persisted config (u32): %s.%s=%lu", ns_name, desc.name, (unsigned long)v);
+                }
+                break;
+            }
+            case ConfigValueType::I64: {
+                int64_t v = 0; err = nvs_get_i64(handle, desc.name, &v);
+                if (err == ESP_OK) {
+                    std::string s = std::to_string((long long)v);
+                    module->apply_update(desc.name, s.c_str());
+                    ESP_LOGD(TAG, "Loaded persisted config (i64): %s.%s", ns_name, desc.name);
+                }
+                break;
+            }
             case ConfigValueType::F32:
             case ConfigValueType::Blob:
-                // Not used yet; extend as modules require
+                // Not supported for generic load in this project
                 break;
         }
     }
@@ -189,6 +222,29 @@ esp_err_t ConfigurationManager::handle_update(const char* module_name, const cha
 
     ESP_LOGI(TAG, "Config update applied: %s.%s", module_name, key);
 
+    // Special handling: Only one strip may claim the DMA RMT channel at a time.
+    // If dma=true is set on one LED module, clear it (unset) on all other LED modules.
+    if (key && strcmp(key, "dma") == 0 && value_str) {
+        bool requested_true = (strcasecmp(value_str, "1") == 0 || strcasecmp(value_str, "true") == 0 ||
+                               strcasecmp(value_str, "on") == 0 || strcasecmp(value_str, "yes") == 0);
+        if (requested_true) {
+            // Determine which LED module was updated by comparing names
+            LEDConfig* updated_led = nullptr;
+            if (led1_module_ && strcmp(module_name, led1_module_->name()) == 0) updated_led = led1_module_.get();
+            else if (led2_module_ && strcmp(module_name, led2_module_->name()) == 0) updated_led = led2_module_.get();
+            else if (led3_module_ && strcmp(module_name, led3_module_->name()) == 0) updated_led = led3_module_.get();
+            else if (led4_module_ && strcmp(module_name, led4_module_->name()) == 0) updated_led = led4_module_.get();
+
+            if (updated_led) {
+                const char* clear_value = nullptr; // nullptr => unset/auto-assign
+                if (led1_module_ && led1_module_.get() != updated_led) led1_module_->apply_update("dma", clear_value);
+                if (led2_module_ && led2_module_.get() != updated_led) led2_module_->apply_update("dma", clear_value);
+                if (led3_module_ && led3_module_.get() != updated_led) led3_module_->apply_update("dma", clear_value);
+                if (led4_module_ && led4_module_.get() != updated_led) led4_module_->apply_update("dma", clear_value);
+            }
+        }
+    }
+
     if (persist_if_supported) {
         // Check descriptor for persistence
         for (const auto& desc : mod->descriptors()) {
@@ -196,8 +252,53 @@ esp_err_t ConfigurationManager::handle_update(const char* module_name, const cha
                 nvs_handle_t handle;
                 err = nvs_open(module_name, NVS_READWRITE, &handle);
                 if (err == ESP_OK) {
-                    if (desc.type == ConfigValueType::String) {
-                        err = nvs_set_str(handle, key, value_str ? value_str : "");
+                    // Persist according to declared type
+                    switch (desc.type) {
+                        case ConfigValueType::String:
+                            err = nvs_set_str(handle, key, value_str ? value_str : "");
+                            break;
+                        case ConfigValueType::Bool: {
+                            if (value_str == nullptr || value_str[0] == '\0') {
+                                err = nvs_erase_key(handle, key);
+                            } else {
+                                bool v = (strcasecmp(value_str, "1") == 0 || strcasecmp(value_str, "true") == 0 ||
+                                          strcasecmp(value_str, "on") == 0 || strcasecmp(value_str, "yes") == 0);
+                                err = nvs_set_u8(handle, key, v ? 1 : 0);
+                            }
+                            break;
+                        }
+                        case ConfigValueType::I32: {
+                            if (value_str == nullptr || value_str[0] == '\0') {
+                                err = nvs_erase_key(handle, key);
+                            } else {
+                                int32_t v = atoi(value_str);
+                                err = nvs_set_i32(handle, key, v);
+                            }
+                            break;
+                        }
+                        case ConfigValueType::U32: {
+                            if (value_str == nullptr || value_str[0] == '\0') {
+                                err = nvs_erase_key(handle, key);
+                            } else {
+                                uint32_t v = (uint32_t)strtoul(value_str, nullptr, 10);
+                                err = nvs_set_u32(handle, key, v);
+                            }
+                            break;
+                        }
+                        case ConfigValueType::I64: {
+                            if (value_str == nullptr || value_str[0] == '\0') {
+                                err = nvs_erase_key(handle, key);
+                            } else {
+                                int64_t v = (int64_t)strtoll(value_str, nullptr, 10);
+                                err = nvs_set_i64(handle, key, v);
+                            }
+                            break;
+                        }
+                        case ConfigValueType::F32:
+                        case ConfigValueType::Blob:
+                            // Not supported for generic persist in this project
+                            err = ESP_OK; // do nothing
+                            break;
                     }
                     if (err == ESP_OK) {
                         esp_err_t cmt = nvs_commit(handle);

@@ -14,7 +14,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
 
     // Non-persisted runtime values (still declared so they can be updated and optionally loaded once)
     // NOTE: The following keys are intentionally NOT persisted to avoid flash wear from frequent updates:
-    //   - pattern, speed, brightness, R, G, B, W
+    //   - pattern, speed, brightness, R, G, B, W, dma
     // ConfigurationManager will still read any pre-provisioned string values from NVS (e.g., pattern)
     // regardless of the 'persisted' flag, allowing device-specific defaults without ongoing writes.
     descriptors_.push_back({"pattern", ConfigValueType::String, nullptr, false});
@@ -24,6 +24,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     descriptors_.push_back({"W", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"brightness", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"speed", ConfigValueType::I32, nullptr, false});
+    descriptors_.push_back({"dma", ConfigValueType::Bool, nullptr, false});
 }
 
 const char* LEDConfig::name() const {
@@ -34,9 +35,19 @@ const std::vector<ConfigurationValueDescriptor>& LEDConfig::descriptors() const 
     return descriptors_;
 }
 
-bool LEDConfig::is_valid_chip(const char* value) const {
-    if (!value) return false;
-    return strcmp(value, "WS2812") == 0 || strcmp(value, "SK6812") == 0;
+LEDConfig::Chip LEDConfig::parse_chip(const char* value) {
+    if (!value) return Chip::INVALID;
+    if (strcmp(value, "WS2812") == 0) return Chip::WS2812;
+    if (strcmp(value, "SK6812") == 0) return Chip::SK6812;
+    return Chip::INVALID;
+}
+
+const char* LEDConfig::chip_to_string(LEDConfig::Chip c) {
+    switch (c) {
+        case Chip::WS2812: return "WS2812";
+        case Chip::SK6812: return "SK6812";
+        case Chip::INVALID: default: return "WS2812";
+    }
 }
 
 LEDConfig::Pattern LEDConfig::parse_pattern(const char* value) {
@@ -75,8 +86,10 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         return ESP_OK;
     }
     if (strcmp(key, "chip") == 0) {
-        if (value_str && is_valid_chip(value_str)) {
-            chip_ = value_str;
+        Chip parsed = parse_chip(value_str);
+        if (parsed != Chip::INVALID) {
+            chip_enum_ = parsed;
+            chip_ = chip_to_string(parsed);
             return ESP_OK;
         }
         return ESP_ERR_INVALID_ARG;
@@ -121,6 +134,26 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         speed_set_ = (value_str != nullptr);
         return ESP_OK;
     }
+    if (strcmp(key, "dma") == 0) {
+        // Tri-state: if value_str is null, clear; otherwise parse truthy/falsy
+        if (value_str == nullptr || value_str[0] == '\0') {
+            dma_set_ = false; // unset -> auto-assign
+            dma_ = false;
+            return ESP_OK;
+        }
+        // Accept common boolean strings
+        if (strcasecmp(value_str, "1") == 0 || strcasecmp(value_str, "true") == 0 || strcasecmp(value_str, "on") == 0 || strcasecmp(value_str, "yes") == 0) {
+            dma_set_ = true;
+            dma_ = true;
+            return ESP_OK;
+        }
+        if (strcasecmp(value_str, "0") == 0 || strcasecmp(value_str, "false") == 0 || strcasecmp(value_str, "off") == 0 || strcasecmp(value_str, "no") == 0) {
+            dma_set_ = true;
+            dma_ = false;
+            return ESP_OK;
+        }
+        return ESP_ERR_INVALID_ARG;
+    }
 
     return ESP_ERR_NOT_FOUND;
 }
@@ -144,6 +177,7 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     if (w_set_) cJSON_AddNumberToObject(obj, "W", w_);
     if (brightness_set_) cJSON_AddNumberToObject(obj, "brightness", brightness_);
     if (speed_set_) cJSON_AddNumberToObject(obj, "speed", speed_);
+    if (dma_set_) cJSON_AddBoolToObject(obj, "dma", dma_);
 
     // If dataGPIO is not set, omit this module from the config entirely
     if (!data_gpio_set_) {

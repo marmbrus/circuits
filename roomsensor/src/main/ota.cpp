@@ -15,7 +15,6 @@
 #include "freertos/event_groups.h"
 #include "config.h"
 #include "system_state.h"
-#include "led_control.h"
 #include "communication.h"
 
 /*
@@ -361,9 +360,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 ESP_LOGI(TAG, "OTA update available for factory build - will upgrade to: %s", remote_hash);
             }
 
-            // Set system state to OTA_UPDATING to show white pulse animation
-            ESP_LOGI(TAG, "Setting LED state to OTA_UPDATING for upgrade animation");
-            led_control_set_state(OTA_UPDATING);
+            // LED animation during OTA will be handled by LEDManager patterns
 
             // Report OTA status as UPGRADING before starting the update
             report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
@@ -396,8 +393,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 return true;
             } else {
                 ESP_LOGE(TAG, "OTA update failed with error: %s", esp_err_to_name(ret));
-                // Reset system state after failed update
-                led_control_set_state(FULLY_CONNECTED);
+                // LED state handled by LEDManager patterns
                 mark_app_valid();
                 cJSON_Delete(root);
                 return false;

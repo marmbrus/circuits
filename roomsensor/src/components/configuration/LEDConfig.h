@@ -24,12 +24,20 @@ public:
         RAINBOW
     };
 
+    // Supported LED chips for internal use
+    enum class Chip {
+        INVALID = -1,
+        WS2812 = 0,
+        SK6812,
+    };
+
     // Accessors
     bool has_data_gpio() const { return data_gpio_set_; }
     int data_gpio() const { return data_gpio_; }
     bool has_enabled_gpio() const { return enabled_gpio_set_; }
     int enabled_gpio() const { return enabled_gpio_; }
     const std::string& chip() const { return chip_; }
+    Chip chip_enum() const { return chip_enum_; }
     int num_columns() const { return num_columns_; }
     int num_rows() const { return num_rows_; }
 
@@ -48,12 +56,15 @@ public:
     int brightness() const { return brightness_; }
     bool has_speed() const { return speed_set_; }
     int speed() const { return speed_; }
+    bool has_dma() const { return dma_set_; }
+    bool dma() const { return dma_; }
 
 private:
-    bool is_valid_chip(const char* value) const;
     // Parse from external string representation to internal enum. Returns INVALID on failure.
     static Pattern parse_pattern(const char* value);
     static const char* pattern_to_string(Pattern p);
+    static Chip parse_chip(const char* value);
+    static const char* chip_to_string(Chip c);
 
     std::string name_;
 
@@ -62,7 +73,8 @@ private:
     int data_gpio_ = -1;
     bool enabled_gpio_set_ = false;
     int enabled_gpio_ = -1;
-    std::string chip_ = "WS2812"; // WS2812 or SK6812
+    std::string chip_ = "WS2812"; // external/string representation
+    Chip chip_enum_ = Chip::WS2812; // internal representation
     int num_columns_ = 1;
     int num_rows_ = 1;
 
@@ -76,6 +88,7 @@ private:
     bool w_set_ = false; int w_ = 0;
     bool brightness_set_ = false; int brightness_ = 100;
     bool speed_set_ = false; int speed_ = 100;
+    bool dma_set_ = false; bool dma_ = false;
 
     std::vector<ConfigurationValueDescriptor> descriptors_;
 };

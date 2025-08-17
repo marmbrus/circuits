@@ -6,7 +6,7 @@
 #include "driver/gpio.h"
 #include "wifi.h"
 #include "config.h"
-#include "led_control.h"
+#include "LEDManager.h"
 #include "cJSON.h"
 #include "communication.h"
 #include "i2c.h"
@@ -34,8 +34,11 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "ConfigurationManager initialization failed: %s", esp_err_to_name(cfg_err));
     }
     
-    // Initialize LED control
-    led_control_init();
+    // Initialize LEDs manager (replaces legacy lights component)
+    static leds::LEDManager led_manager;
+    if (led_manager.init(cfg) != ESP_OK) {
+        ESP_LOGE(TAG, "LEDManager initialization failed");
+    }
 
     // Initialize WiFi and MQTT
     wifi_mqtt_init();

@@ -4,7 +4,7 @@
 #include "esp_event.h"
 #include "nvs_flash.h"
 #include "config.h"
-#include "led_control.h"
+#include "system_state.h"
 #include "esp_sntp.h"
 #include "time.h"
 #include "esp_system.h"
@@ -114,7 +114,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 break;
             case WIFI_EVENT_STA_DISCONNECTED:
                 system_state = WIFI_CONNECTING;
-                led_control_set_state(WIFI_CONNECTING);
                 mqtt_error_count = 0; // Reset error count on disconnect
                 esp_wifi_connect();
                 break;
@@ -124,7 +123,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         mqtt_error_count = 0;
         system_state = WIFI_CONNECTED_MQTT_CONNECTING;
-        led_control_set_state(WIFI_CONNECTED_MQTT_CONNECTING);
 
         // Start MQTT client only if it hasn't been started yet
         if (!mqtt_started) {
@@ -156,7 +154,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "MQTT Connected");
             mqtt_error_count = 0;
             system_state = FULLY_CONNECTED;
-            led_control_set_state(FULLY_CONNECTED);
 
             // Publish telemetry (boot + location/connected)
             telemetry_report_connected();
@@ -191,11 +188,9 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 // Update the state to be consistent
                 ESP_LOGI(TAG, "WiFi appears to be disconnected, updating state");
                 system_state = WIFI_CONNECTING;
-                led_control_set_state(WIFI_CONNECTING);
             } else if (system_state == FULLY_CONNECTED) {
                 // Normal MQTT disconnection while WiFi is still connected
                 system_state = WIFI_CONNECTED_MQTT_CONNECTING;
-                led_control_set_state(WIFI_CONNECTED_MQTT_CONNECTING);
             }
 
             mqtt_error_count = 0; // Reset error count on disconnect
@@ -218,7 +213,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 if (mqtt_error_count >= 3) {
                     system_state = MQTT_ERROR_STATE;
                     mqtt_error_count = 0;
-                    led_control_set_state(MQTT_ERROR_STATE);
+                    // LED state handled by LEDManager patterns
                 }
             }
         }
