@@ -13,8 +13,10 @@
 #include "esp_mac.h"
 #include "esp_netif_ip_addr.h"
 #include "esp_flash.h"
-#include "cJSON.h"
 #include "ota.h"
+#include "telemetry.h"
+#include "ConfigurationManager.h"
+#include "WifiConfig.h"
 
 #include "communication.h"
 
@@ -28,13 +30,7 @@ static bool sntp_initialized = false;
 static void wifi_init_sta(void);
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
-// Function to check if device tags are properly configured
-static bool are_device_tags_configured(const char* area, const char* room, const char* id) {
-    // Check if any of the critical tags are set to "unknown"
-    return (strcmp(area, "unknown") != 0 && 
-            strcmp(room, "unknown") != 0 && 
-            strcmp(id, "unknown") != 0);
-}
+// No tag handling helpers here; telemetry is delegated to telemetry.cpp
 
 void wifi_mqtt_init(void)
 {
@@ -44,73 +40,35 @@ void wifi_mqtt_init(void)
     // Initialize WiFi as station
     wifi_init_sta();
 
-    // Initialize tag system BEFORE MQTT to ensure we have proper configuration
-    // Call initialize_tag_system if not already done elsewhere in the application
-    extern esp_err_t initialize_tag_system(void);
-    esp_err_t tag_err = initialize_tag_system();
-    if (tag_err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize tag system: %s", esp_err_to_name(tag_err));
-    }
-
     // Configure MQTT with LWT (Last Will and Testament)
     esp_mqtt_client_config_t mqtt_cfg = {};  // Zero initialize
-    mqtt_cfg.broker.address.uri = MQTT_BROKER_URL;
+    // Pull broker from configuration; if missing, skip MQTT init entirely
+    bool have_broker = false;
+    {
+        using namespace config;
+        auto& cfg = GetConfigurationManager();
+        if (cfg.wifi().has_mqtt_broker()) {
+            mqtt_cfg.broker.address.uri = cfg.wifi().mqtt_broker().c_str();
+            have_broker = true;
+        }
+    }
     mqtt_cfg.network.reconnect_timeout_ms = MQTT_RECONNECT_TIMEOUT_MS;
     mqtt_cfg.network.timeout_ms = MQTT_OPERATION_TIMEOUT_MS;
     
-    // Set up LWT (Last Will and Testament) only if we have proper configuration
-    extern TagCollection* create_tag_collection(void);
-    TagCollection* tags = create_tag_collection();
+    // Configure LWT via telemetry helper (reads TagsConfig directly)
+    telemetry_configure_lwt(&mqtt_cfg);
     
-    if (tags) {
-        // Extract area, room, id from tags - limit to 20 chars each to prevent buffer overflow
-        char area[21] = "unknown";
-        char room[21] = "unknown";
-        char id[21] = "unknown";
-        
-        for (int i = 0; i < tags->count; i++) {
-            if (strcmp(tags->tags[i].key, "area") == 0) {
-                strncpy(area, tags->tags[i].value, 20);
-                area[20] = '\0'; // Ensure null termination
-            } else if (strcmp(tags->tags[i].key, "room") == 0) {
-                strncpy(room, tags->tags[i].value, 20);
-                room[20] = '\0'; // Ensure null termination
-            } else if (strcmp(tags->tags[i].key, "id") == 0) {
-                strncpy(id, tags->tags[i].value, 20);
-                id[20] = '\0'; // Ensure null termination
-            }
-        }
-        
-        // Only set up LWT if we have proper configuration
-        if (are_device_tags_configured(area, room, id)) {
-            // LWT topic - location/{area}/{room}/{id}/connected
-            char lwt_topic[128];
-            snprintf(lwt_topic, sizeof(lwt_topic), "location/%s/%s/%s/connected", area, room, id);
-            
-            // Create a compact LWT message - {"connected":false} without any whitespace
-            const char* lwt_message = "{\"connected\":false}";
-            
-            // Configure LWT
-            mqtt_cfg.session.last_will.topic = strdup(lwt_topic);
-            mqtt_cfg.session.last_will.msg = (const char*)strdup(lwt_message);
-            mqtt_cfg.session.last_will.msg_len = strlen(lwt_message);
-            mqtt_cfg.session.last_will.qos = 1;
-            mqtt_cfg.session.last_will.retain = 1;
-            
-            ESP_LOGI(TAG, "LWT configured for topic: %s", lwt_topic);
+    if (have_broker) {
+        mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
+        if (mqtt_client) {
+            esp_mqtt_client_register_event(mqtt_client, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, event_handler, NULL);
         } else {
-            ESP_LOGW(TAG, "Device tags not properly configured. LWT will not be set up.");
+            ESP_LOGE(TAG, "Failed to init MQTT client");
         }
-        
-        // Free tag collection
-        extern void free_tag_collection(TagCollection* collection);
-        free_tag_collection(tags);
     } else {
-        ESP_LOGE(TAG, "Failed to get device tags for LWT setup");
+        mqtt_client = NULL;
+        ESP_LOGW(TAG, "MQTT broker not set; skipping MQTT init");
     }
-    
-    mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_register_event(mqtt_client, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, event_handler, NULL);
 }
 
 static void time_sync_notification_cb(struct timeval *tv) {
@@ -137,173 +95,10 @@ static void initialize_sntp(void) {
     sntp_initialized = true;
 }
 
-static void publish_device_info(esp_ip4_addr_t ip) {
-    cJSON *device_json = cJSON_CreateObject();
-
-    // MAC Address
-    char mac_str[18];
-    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
-             device_mac[0], device_mac[1], device_mac[2],
-             device_mac[3], device_mac[4], device_mac[5]);
-    cJSON_AddStringToObject(device_json, "mac", mac_str);
-
-    // IP Address
-    char ip_str[16];
-    snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&ip));
-    cJSON_AddStringToObject(device_json, "ip", ip_str);
-
-    // Chip Info
-    esp_chip_info_t chip_info;
-    esp_chip_info(&chip_info);
-    const char* chip_model;
-    switch (chip_info.model) {
-        case CHIP_ESP32:   chip_model = "ESP32"; break;
-        case CHIP_ESP32S2: chip_model = "ESP32-S2"; break;
-        case CHIP_ESP32S3: chip_model = "ESP32-S3"; break;
-        case CHIP_ESP32C3: chip_model = "ESP32-C3"; break;
-        default:           chip_model = "Unknown"; break;
-    }
-    cJSON_AddStringToObject(device_json, "chip_model", chip_model);
-    cJSON_AddNumberToObject(device_json, "chip_revision", chip_info.revision);
-    cJSON_AddNumberToObject(device_json, "cpu_cores", chip_info.cores);
-    cJSON_AddBoolToObject(device_json, "features_wifi", (chip_info.features & CHIP_FEATURE_WIFI_BGN) != 0);
-    cJSON_AddBoolToObject(device_json, "features_bt", (chip_info.features & CHIP_FEATURE_BT) != 0);
-    cJSON_AddBoolToObject(device_json, "features_ble", (chip_info.features & CHIP_FEATURE_BLE) != 0);
-
-    // Boot Info
-    esp_reset_reason_t reset_reason = esp_reset_reason();
-    const char* reset_reasons[] = {
-        "UNKNOWN",
-        "POWERON",
-        "EXT",
-        "SW",
-        "PANIC",
-        "INT_WDT",
-        "TASK_WDT",
-        "WDT",
-        "DEEPSLEEP",
-        "BROWNOUT",
-        "SDIO"
-    };
-    cJSON_AddStringToObject(device_json, "reset_reason",
-        reset_reason < sizeof(reset_reasons)/sizeof(reset_reasons[0])
-            ? reset_reasons[reset_reason]
-            : "UNKNOWN");
-
-    // App Info
-    const esp_app_desc_t* app_desc = esp_app_get_description();
-    cJSON_AddStringToObject(device_json, "app_version", app_desc->version);
-    cJSON_AddStringToObject(device_json, "app_name", app_desc->project_name);
-    cJSON_AddStringToObject(device_json, "compile_time", app_desc->time);
-    cJSON_AddStringToObject(device_json, "compile_date", app_desc->date);
-    cJSON_AddStringToObject(device_json, "idf_version", app_desc->idf_ver);
-
-    // System Info
-    uint32_t heap_size = esp_get_free_heap_size();
-    uint32_t min_heap = esp_get_minimum_free_heap_size();
-    cJSON_AddNumberToObject(device_json, "free_heap", heap_size);
-    cJSON_AddNumberToObject(device_json, "min_free_heap", min_heap);
-
-    // Flash Size
-    uint32_t flash_size;
-    esp_flash_get_size(NULL, &flash_size);
-    cJSON_AddNumberToObject(device_json, "flash_size", flash_size);
-
-    // Convert to string and publish
-    char *device_string = cJSON_Print(device_json);
-    publish_to_topic("device", device_string);
-
-    // Cleanup
-    cJSON_free(device_string);
-    cJSON_Delete(device_json);
-}
+// Publishing helpers moved to telemetry.cpp
 
 // Function to publish location information
-static void publish_location_info(esp_ip4_addr_t ip) {
-    // This function requires area, room, and id from tag system
-    
-    // Use ESP IDF API to get device tags from NVS or other storage
-    extern TagCollection* create_tag_collection(void); // Declare external function
-    TagCollection* tags = create_tag_collection();
-    
-    if (!tags) {
-        ESP_LOGE(TAG, "Failed to get device tags, can't publish location info");
-        return;
-    }
-    
-    // Extract area, room, id from tags - limit to 20 chars each to prevent buffer overflow
-    char area[21] = "unknown";
-    char room[21] = "unknown";
-    char id[21] = "unknown";
-    
-    for (int i = 0; i < tags->count; i++) {
-        if (strcmp(tags->tags[i].key, "area") == 0) {
-            strncpy(area, tags->tags[i].value, 20);
-            area[20] = '\0'; // Ensure null termination
-        } else if (strcmp(tags->tags[i].key, "room") == 0) {
-            strncpy(room, tags->tags[i].value, 20);
-            room[20] = '\0'; // Ensure null termination
-        } else if (strcmp(tags->tags[i].key, "id") == 0) {
-            strncpy(id, tags->tags[i].value, 20);
-            id[20] = '\0'; // Ensure null termination
-        }
-    }
-    
-    // Check if we have proper configuration before publishing
-    if (!are_device_tags_configured(area, room, id)) {
-        ESP_LOGW(TAG, "Device tags not properly configured. Not publishing location info.");
-        free_tag_collection(tags);
-        return;
-    }
-    
-    // Create JSON for device info
-    cJSON *device_json = cJSON_CreateObject();
-    
-    // MAC Address
-    char mac_str[18];
-    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
-             device_mac[0], device_mac[1], device_mac[2],
-             device_mac[3], device_mac[4], device_mac[5]);
-    cJSON_AddStringToObject(device_json, "mac", mac_str);
-    
-    // IP Address
-    char ip_str[16];
-    snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&ip));
-    cJSON_AddStringToObject(device_json, "ip", ip_str);
-    
-    char *device_string = cJSON_Print(device_json);
-    
-    // Build the topic: location/$area/$room/$id/device
-    char topic[128];
-    snprintf(topic, sizeof(topic), "location/%s/%s/%s/device", area, room, id);
-    
-    // Publish with retain flag set to 1 (retained message)
-    publish_to_topic(topic, device_string, 1, 1);
-    
-    // Now publish the connected status as a retained message with LWT
-    cJSON *connected_json = cJSON_CreateObject();
-    cJSON_AddBoolToObject(connected_json, "connected", true);
-    
-    // Use PrintUnformatted to generate a compact single-line JSON without indentation
-    char *connected_string = cJSON_PrintUnformatted(connected_json);
-    
-    // Build connected topic: location/$area/$room/$id/connected
-    char connected_topic[128];
-    snprintf(connected_topic, sizeof(connected_topic), "location/%s/%s/%s/connected", area, room, id);
-    
-    // Publish with retain flag set to 1
-    publish_to_topic(connected_topic, connected_string, 1, 1);
-    
-    // Cleanup
-    cJSON_free(device_string);
-    cJSON_Delete(device_json);
-    cJSON_free(connected_string);
-    cJSON_Delete(connected_json);
-    
-    // Free tag collection
-    extern void free_tag_collection(TagCollection* collection); // Declare external function
-    free_tag_collection(tags);
-}
+// Publishing helpers moved to telemetry.cpp
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                          int32_t event_id, void* event_data)
@@ -363,21 +158,30 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             system_state = FULLY_CONNECTED;
             led_control_set_state(FULLY_CONNECTED);
 
-            // Get IP info for publishing
-            ip_event_got_ip_t ip_event;
-            esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
-            
-            // Publish device boot info when MQTT is connected
-            publish_device_info(ip_event.ip_info.ip);
-            
-            // Publish location info with retained flag
-            publish_location_info(ip_event.ip_info.ip);
+            // Publish telemetry (boot + location/connected)
+            telemetry_report_connected();
             
             // Report OTA status when MQTT connects
             ota_report_status();
             
             // Notify OTA again when MQTT is connected (fully network ready)
             ota_notify_network_connected();
+
+            // Subscribe to configuration updates for this device
+            {
+                using namespace config;
+                auto& mgr = GetConfigurationManager();
+                std::string topic = mgr.get_mqtt_subscription_topic();
+                int msg_id = esp_mqtt_client_subscribe(mqtt_client, topic.c_str(), 1);
+                ESP_LOGI(TAG, "Subscribed to config topic %s (msg_id=%d)", topic.c_str(), msg_id);
+            }
+
+            // Publish current configuration now that we're connected
+            {
+                using namespace config;
+                auto& mgr = GetConfigurationManager();
+                mgr.publish_full_configuration();
+            }
         }
         else if (mqtt_event == MQTT_EVENT_DISCONNECTED) {
             ESP_LOGI(TAG, "MQTT Disconnected");
@@ -418,6 +222,15 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 }
             }
         }
+        else if (mqtt_event == MQTT_EVENT_DATA) {
+            // Forward potential config updates to ConfigurationManager
+            using namespace config;
+            auto& mgr = GetConfigurationManager();
+            // Event provides topic and data not null-terminated
+            std::string topic(event->topic, event->topic_len);
+            std::string payload(event->data, event->data_len);
+            mgr.handle_mqtt_message(topic.c_str(), payload.c_str());
+        }
         // Other MQTT events are not used in this application
     }
 }
@@ -457,8 +270,18 @@ static void wifi_init_sta(void)
     wifi_config_t wifi_config = {};
     memset(&wifi_config, 0, sizeof(wifi_config_t));
 
-    strlcpy((char*)wifi_config.sta.ssid, WIFI_SSID, sizeof(wifi_config.sta.ssid));
-    strlcpy((char*)wifi_config.sta.password, WIFI_PASS, sizeof(wifi_config.sta.password));
+    // Pull creds from configuration; if missing, log and skip WiFi start
+    {
+        using namespace config;
+        auto& mgr = GetConfigurationManager();
+        auto& w = mgr.wifi();
+        if (!(w.has_ssid() && w.has_password())) {
+            ESP_LOGW(TAG, "WiFi credentials not set; skipping WiFi start");
+            return;
+        }
+        strlcpy((char*)wifi_config.sta.ssid, w.ssid().c_str(), sizeof(wifi_config.sta.ssid));
+        strlcpy((char*)wifi_config.sta.password, w.password().c_str(), sizeof(wifi_config.sta.password));
+    }
     wifi_config.sta.scan_method = WIFI_FAST_SCAN;
     wifi_config.sta.bssid_set = false;
     wifi_config.sta.channel = 0;

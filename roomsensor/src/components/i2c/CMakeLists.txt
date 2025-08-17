@@ -8,6 +8,8 @@ idf_component_register(
         "bme280_sensor.cpp"
         "sen55_sensor.cpp"
         "scd4x_sensor.cpp"
+        "ads1115_sensor.cpp"
+        "metrics_tags.cpp"
     INCLUDE_DIRS "." "../common"
-    PRIV_REQUIRES driver mqtt json
+    PRIV_REQUIRES driver mqtt json configuration
 )

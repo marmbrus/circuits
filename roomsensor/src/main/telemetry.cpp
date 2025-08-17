@@ -1,0 +1,153 @@
+#include "telemetry.h"
+#include "ConfigurationManager.h"
+#include "TagsConfig.h"
+#include "wifi.h"
+#include "communication.h"
+#include "cJSON.h"
+#include "esp_log.h"
+#include "esp_chip_info.h"
+#include "esp_app_desc.h"
+#include "esp_flash.h"
+#include "esp_netif_ip_addr.h"
+
+static const char* TAG = "telemetry";
+
+static void publish_device_info(void) {
+    cJSON *device_json = cJSON_CreateObject();
+
+    // MAC Address
+    const uint8_t* device_mac = get_device_mac();
+    char mac_str[18];
+    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
+             device_mac[0], device_mac[1], device_mac[2],
+             device_mac[3], device_mac[4], device_mac[5]);
+    cJSON_AddStringToObject(device_json, "mac", mac_str);
+
+    // IP Address
+    ip_event_got_ip_t ip_event;
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
+    char ip_str[16];
+    snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&ip_event.ip_info.ip));
+    cJSON_AddStringToObject(device_json, "ip", ip_str);
+
+    // Chip Info
+    esp_chip_info_t chip_info;
+    esp_chip_info(&chip_info);
+    const char* chip_model;
+    switch (chip_info.model) {
+        case CHIP_ESP32:   chip_model = "ESP32"; break;
+        case CHIP_ESP32S2: chip_model = "ESP32-S2"; break;
+        case CHIP_ESP32S3: chip_model = "ESP32-S3"; break;
+        case CHIP_ESP32C3: chip_model = "ESP32-C3"; break;
+        default:           chip_model = "Unknown"; break;
+    }
+    cJSON_AddStringToObject(device_json, "chip_model", chip_model);
+    cJSON_AddNumberToObject(device_json, "chip_revision", chip_info.revision);
+    cJSON_AddNumberToObject(device_json, "cpu_cores", chip_info.cores);
+    cJSON_AddBoolToObject(device_json, "features_wifi", (chip_info.features & CHIP_FEATURE_WIFI_BGN) != 0);
+    cJSON_AddBoolToObject(device_json, "features_bt", (chip_info.features & CHIP_FEATURE_BT) != 0);
+    cJSON_AddBoolToObject(device_json, "features_ble", (chip_info.features & CHIP_FEATURE_BLE) != 0);
+
+    // App Info
+    const esp_app_desc_t* app_desc = esp_app_get_description();
+    cJSON_AddStringToObject(device_json, "app_version", app_desc->version);
+    cJSON_AddStringToObject(device_json, "app_name", app_desc->project_name);
+    cJSON_AddStringToObject(device_json, "compile_time", app_desc->time);
+    cJSON_AddStringToObject(device_json, "compile_date", app_desc->date);
+    cJSON_AddStringToObject(device_json, "idf_version", app_desc->idf_ver);
+
+    // System Info
+    uint32_t heap_size = esp_get_free_heap_size();
+    uint32_t min_heap = esp_get_minimum_free_heap_size();
+    cJSON_AddNumberToObject(device_json, "free_heap", heap_size);
+    cJSON_AddNumberToObject(device_json, "min_free_heap", min_heap);
+
+    // Flash Size
+    uint32_t flash_size;
+    esp_flash_get_size(NULL, &flash_size);
+    cJSON_AddNumberToObject(device_json, "flash_size", flash_size);
+
+    // Convert to string and publish
+    char *device_string = cJSON_Print(device_json);
+    publish_to_topic("device", device_string);
+
+    // Cleanup
+    cJSON_free(device_string);
+    cJSON_Delete(device_json);
+}
+
+static void publish_location_info(void) {
+    using namespace config;
+    auto& tags = GetConfigurationManager().tags();
+
+    const char* area = tags.area().c_str();
+    const char* room = tags.room().c_str();
+    const char* id = tags.id().c_str();
+
+    // Create JSON for device info
+    cJSON *device_json = cJSON_CreateObject();
+
+    // MAC Address
+    const uint8_t* device_mac = get_device_mac();
+    char mac_str[18];
+    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
+             device_mac[0], device_mac[1], device_mac[2],
+             device_mac[3], device_mac[4], device_mac[5]);
+    cJSON_AddStringToObject(device_json, "mac", mac_str);
+
+    // IP Address
+    ip_event_got_ip_t ip_event;
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
+    char ip_str[16];
+    snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&ip_event.ip_info.ip));
+    cJSON_AddStringToObject(device_json, "ip", ip_str);
+
+    char *device_string = cJSON_Print(device_json);
+
+    // Build the topic: location/$area/$room/$id/device
+    char topic[128];
+    snprintf(topic, sizeof(topic), "location/%s/%s/%s/device", area, room, id);
+    publish_to_topic(topic, device_string, 1, 1);
+
+    // Now publish the connected status as a retained message with LWT
+    cJSON *connected_json = cJSON_CreateObject();
+    cJSON_AddBoolToObject(connected_json, "connected", true);
+    char *connected_string = cJSON_PrintUnformatted(connected_json);
+
+    char connected_topic[128];
+    snprintf(connected_topic, sizeof(connected_topic), "location/%s/%s/%s/connected", area, room, id);
+    publish_to_topic(connected_topic, connected_string, 1, 1);
+
+    // Cleanup
+    cJSON_free(device_string);
+    cJSON_Delete(device_json);
+    cJSON_free(connected_string);
+    cJSON_Delete(connected_json);
+}
+
+esp_err_t telemetry_configure_lwt(esp_mqtt_client_config_t* mqtt_cfg) {
+    if (!mqtt_cfg) return ESP_ERR_INVALID_ARG;
+    using namespace config;
+    auto& tags = GetConfigurationManager().tags();
+
+    char lwt_topic[128];
+    snprintf(lwt_topic, sizeof(lwt_topic), "location/%s/%s/%s/connected",
+             tags.area().c_str(), tags.room().c_str(), tags.id().c_str());
+
+    const char* lwt_message = "{\"connected\":false}";
+    mqtt_cfg->session.last_will.topic = strdup(lwt_topic);
+    mqtt_cfg->session.last_will.msg = (const char*)strdup(lwt_message);
+    mqtt_cfg->session.last_will.msg_len = strlen(lwt_message);
+    mqtt_cfg->session.last_will.qos = 1;
+    mqtt_cfg->session.last_will.retain = 1;
+
+    ESP_LOGI(TAG, "LWT configured for topic: %s", lwt_topic);
+    return ESP_OK;
+}
+
+void telemetry_report_connected(void) {
+    publish_device_info();
+    publish_location_info();
+}
+
+

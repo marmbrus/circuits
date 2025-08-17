@@ -1,6 +1,5 @@
 #pragma once
 
-#include "credentials.h"
 #include <stdint.h>
 // Use explicit GPIO types for clarity in strip configuration
 #include "driver/gpio.h"
@@ -43,7 +42,7 @@
 
 // LED Configuration
 // Brightness is applied as a percentage [0-100]
-#define LED_STRIP_NUM_BRIGHTNESS    5
+#define LED_STRIP_NUM_BRIGHTNESS   1
 #define LED_UPDATE_TASK_STACK_SIZE  4096
 #define LED_UPDATE_INTERVAL_MS      53
 

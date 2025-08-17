@@ -55,15 +55,10 @@ typedef struct {
     int capacity;
 } StoredMetricCollection;
 
-// Initialize tag system with basic device info (call once at startup)
-esp_err_t initialize_tag_system(void);
-
-// Set test device tags (area, room, id) - updates both memory and NVS storage
-esp_err_t set_device_tags_for_testing(void);
-
 // Tag collection functions for sensor use
 TagCollection* create_tag_collection(void);
 esp_err_t add_tag_to_collection(TagCollection* collection, const char* key, const char* value);
+esp_err_t remove_tag_from_collection(TagCollection* collection, const char* key);
 void free_tag_collection(TagCollection* collection);
 
 // Metrics reporting system - initializes and starts the metrics background task

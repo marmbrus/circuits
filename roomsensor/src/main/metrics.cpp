@@ -119,27 +119,7 @@ static char* create_json_message(const MetricReport* report) {
     return json_str;
 }
 
-// Check if the required device tags are properly configured 
-static bool are_device_tags_properly_configured(const TagCollection* tags) {
-    bool has_area = false;
-    bool has_room = false;
-    bool has_id = false;
-    
-    // Check if all required tags are present and not "unknown"
-    for (int i = 0; i < tags->count; i++) {
-        const DeviceTag* tag = &tags->tags[i];
-        
-        if (strcmp(tag->key, "area") == 0) {
-            has_area = (strcmp(tag->value, "unknown") != 0);
-        } else if (strcmp(tag->key, "room") == 0) {
-            has_room = (strcmp(tag->value, "unknown") != 0);
-        } else if (strcmp(tag->key, "id") == 0) {
-            has_id = (strcmp(tag->value, "unknown") != 0);
-        }
-    }
-    
-    return has_area && has_room && has_id;
-}
+// Tags may use default values; they are still valid for publishing
 
 // Generate a hash key for a metric based on name and tags
 static uint32_t hash_metric(const char* metric_name, const TagCollection* tags) {
@@ -334,13 +314,7 @@ static void metrics_reporting_task(void* pvParameters) {
                 ESP_LOGI(TAG, "System now connected, proceeding with publishing metric %s", report.metric_name);
             }
 
-            // Check if device tags are properly configured
-            if (!are_device_tags_properly_configured(report.tags)) {
-                ESP_LOGW(TAG, "Device tags not properly configured, storing metric %s but not publishing", report.metric_name);
-                // Still store the metric locally but don't publish
-                store_latest_metric(report.metric_name, report.value, report.tags);
-                continue;
-            }
+            // Always publish using current tags (defaults are acceptable)
 
             // Build the topic string
             char* topic = build_metric_topic(report.metric_name, report.tags);
