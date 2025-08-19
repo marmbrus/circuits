@@ -90,6 +90,8 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
         p.gpio = c->data_gpio();
         p.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
         p.length = static_cast<size_t>(c->num_columns() * c->num_rows());
+        p.rows = static_cast<size_t>(c->num_rows());
+        p.cols = static_cast<size_t>(c->num_columns());
         p.chip = ToLEDChip(c->chip_enum());
         p.use_dma = use_dma;
         // For DMA, use larger buffer to minimize underflows
@@ -133,6 +135,8 @@ std::unique_ptr<LEDStrip> LEDManager::create_strip_from_config(const config::LED
     p.gpio = cfg.data_gpio();
     p.enable_gpio = cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1;
     p.length = static_cast<size_t>(cfg.num_columns() * cfg.num_rows());
+    p.rows = static_cast<size_t>(cfg.num_rows());
+    p.cols = static_cast<size_t>(cfg.num_columns());
     p.chip = ToLEDChip(cfg.chip_enum());
     p.use_dma = cfg.has_dma() ? cfg.dma() : false; // manager may override in assign_dma_channels
     auto s = LEDStripRmt::Create(p);

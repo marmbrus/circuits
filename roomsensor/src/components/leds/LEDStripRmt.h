@@ -14,7 +14,9 @@ public:
     struct CreateParams {
         int gpio;
         int enable_gpio = -1; // optional power enable pin
-        size_t length;
+        size_t length; // total number of LEDs = rows * cols
+        size_t rows = 1; // logical rows (>=1)
+        size_t cols = 0; // logical columns; if 0, inferred from length/rows
         LEDChip chip;
         bool use_dma;
         uint32_t rmt_resolution_hz = 10 * 1000 * 1000; // 10 MHz default per component doc
@@ -28,6 +30,16 @@ public:
     int pin() const override { return gpio_; }
     size_t length() const override { return length_; }
     LEDChip chip() const override { return chip_; }
+    size_t rows() const override { return rows_; }
+    size_t cols() const override { return cols_; }
+    size_t index_for_row_col(size_t row, size_t col) const override {
+        if (rows_ == 0 || cols_ == 0) return 0;
+        if (row >= rows_) row = rows_ - 1;
+        if (col >= cols_) col = cols_ - 1;
+        size_t idx = col * rows_ + row; // column-major
+        if (idx >= length_) idx = length_ - 1;
+        return idx;
+    }
 
     bool set_pixel(size_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) override;
     bool get_pixel(size_t index, uint8_t& r, uint8_t& g, uint8_t& b, uint8_t& w) const override;
@@ -51,6 +63,8 @@ private:
     int gpio_ = -1;
     int enable_gpio_ = -1;
     size_t length_ = 0;
+    size_t rows_ = 1;
+    size_t cols_ = 0;
     LEDChip chip_ = LEDChip::WS2812;
     bool with_dma_ = false;
     uint32_t rmt_resolution_hz_ = 10 * 1000 * 1000;

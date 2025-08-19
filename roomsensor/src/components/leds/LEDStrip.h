@@ -25,6 +25,12 @@ public:
     virtual int pin() const = 0;
     virtual size_t length() const = 0; // number of addressable LEDs
     virtual LEDChip chip() const = 0;
+    // 2D grid geometry. Patterns can treat the strip as a rows x cols grid.
+    // LEDs are laid out in column-major order (index = col * rows + row).
+    virtual size_t rows() const = 0; // number of rows in the logical grid (>= 1)
+    virtual size_t cols() const = 0; // number of columns in the logical grid (>= 1)
+    // Translate (row, col) -> linear index respecting column-major collection order.
+    virtual size_t index_for_row_col(size_t row, size_t col) const = 0;
 
     // Pixel accessors: values are logical 8-bit channels; implementation handles chip-specific ordering.
     // Returns true if the stored pixel value changed (i.e., would mark strip dirty), false otherwise.

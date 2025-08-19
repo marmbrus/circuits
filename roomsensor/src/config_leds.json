@@ -1,0 +1,35 @@
+{
+  "wifi": {},
+  "led1": {
+    "dataGPIO": 11,
+    "enabledGPIO": 15,
+    "chip": "SK6812",
+    "num_rows": 1,
+    "num_columns": 8,
+    "brightness": 1,
+  },
+  "led2": {
+    "dataGPIO": 12,
+    "enabledGPIO": 16,
+    "chip": "SK6812",
+    "num_rows": 1,
+    "num_columns": 8,
+    "brightness": 1,
+  },
+  "led3": {
+    "dataGPIO": 13,
+    "enabledGPIO": 17,
+    "chip": "SK6812",
+    "num_rows": 1,
+    "num_columns": 8,
+    "brightness": 1,
+  },
+  "led4": {
+    "dataGPIO": 14,
+    "enabledGPIO": 18,
+    "chip": "SK6812",
+    "num_rows": 1,
+    "num_columns": 8,
+    "brightness": 1,
+  }
+}

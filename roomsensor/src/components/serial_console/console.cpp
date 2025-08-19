@@ -66,7 +66,7 @@ void initialize_console(void)
         int return_code = 0;
         esp_err_t err = esp_console_run(line, &return_code);
         if (err == ESP_ERR_NOT_FOUND) {
-            printf("Unrecognized command\n");
+            printf("Unrecognized command: \"%s\"\n", line);
         } else if (err == ESP_ERR_INVALID_ARG) {
             // Empty command
         } else if (err == ESP_OK && return_code != ESP_OK) {

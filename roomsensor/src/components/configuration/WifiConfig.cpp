@@ -25,13 +25,46 @@ esp_err_t WifiConfig::apply_update(const char* key, const char* value_str) {
     if (key == nullptr) return ESP_ERR_INVALID_ARG;
 
     if (strcmp(key, "ssid") == 0) {
-        ssid_.assign(value_str ? value_str : "");
-        ssid_set_ = (value_str != nullptr);
+        // Allow unset (nullptr) to clear
+        if (value_str == nullptr) {
+            ssid_.clear();
+            ssid_set_ = true;
+            return ESP_OK;
+        }
+        size_t len = strlen(value_str);
+        if (len == 0 || len > 32) {
+            ESP_LOGE(TAG, "Invalid SSID length: %u (must be 1..32)", (unsigned)len);
+            return ESP_ERR_INVALID_ARG;
+        }
+        ssid_.assign(value_str);
+        ssid_set_ = true;
         return ESP_OK;
     }
     if (strcmp(key, "password") == 0) {
-        password_.assign(value_str ? value_str : "");
-        password_set_ = (value_str != nullptr);
+        // Allow unset (nullptr) to clear
+        if (value_str == nullptr) {
+            password_.clear();
+            password_set_ = true;
+            return ESP_OK;
+        }
+        size_t len = strlen(value_str);
+        bool is_hex64 = false;
+        if (len == 64) {
+            is_hex64 = true;
+            for (const char* p = value_str; *p; ++p) {
+                char c = *p;
+                if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+                    is_hex64 = false;
+                    break;
+                }
+            }
+        }
+        if (!is_hex64 && (len < 8 || len > 63)) {
+            ESP_LOGE(TAG, "Invalid WiFi password length: %u (must be 8..63, or 64 hex)", (unsigned)len);
+            return ESP_ERR_INVALID_ARG;
+        }
+        password_.assign(value_str);
+        password_set_ = true;
         return ESP_OK;
     }
     if (strcmp(key, "mqtt_broker") == 0) {

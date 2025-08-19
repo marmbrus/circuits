@@ -40,4 +40,4 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-main/credentials.h
+credentials.json

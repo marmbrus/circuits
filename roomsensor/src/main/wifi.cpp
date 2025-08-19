@@ -17,6 +17,7 @@
 #include "telemetry.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
+#include "esp_timer.h"
 
 #include "communication.h"
 
@@ -26,9 +27,45 @@ static volatile SystemState system_state = WIFI_CONNECTING;
 static esp_mqtt_client_handle_t mqtt_client;
 static uint8_t device_mac[6] = {0};
 static bool sntp_initialized = false;
+static esp_timer_handle_t s_wifi_retry_timer = nullptr;
+static int s_retry_delay_ms = 1000; // start at 1s
+static const int s_retry_delay_max_ms = 30000; // cap at 30s
 
 static void wifi_init_sta(void);
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+static void wifi_retry_cb(void* arg) {
+    (void)arg;
+    ESP_LOGI(TAG, "Retrying WiFi connect (delay=%dms)", s_retry_delay_ms);
+    esp_err_t e = esp_wifi_connect();
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "esp_wifi_connect failed in retry: %s", esp_err_to_name(e));
+    }
+}
+
+static void schedule_wifi_retry(int delay_ms) {
+    if (delay_ms <= 0) delay_ms = 1;
+    if (!s_wifi_retry_timer) {
+        const esp_timer_create_args_t targs = {
+            .callback = &wifi_retry_cb,
+            .arg = nullptr,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "wifi_retry",
+            .skip_unhandled_events = true
+        };
+        esp_err_t c = esp_timer_create(&targs, &s_wifi_retry_timer);
+        if (c != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to create retry timer: %s", esp_err_to_name(c));
+            return;
+        }
+    }
+    if (esp_timer_is_active(s_wifi_retry_timer)) {
+        esp_timer_stop(s_wifi_retry_timer);
+    }
+    esp_err_t s = esp_timer_start_once(s_wifi_retry_timer, (uint64_t)delay_ms * 1000ULL);
+    if (s != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start retry timer: %s", esp_err_to_name(s));
+    }
+}
 
 // No tag handling helpers here; telemetry is delegated to telemetry.cpp
 
@@ -109,20 +146,107 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     // Handle WiFi events
     if (event_base == WIFI_EVENT) {
         switch (event_id) {
-            case WIFI_EVENT_STA_START:
-                esp_wifi_connect();
+            case WIFI_EVENT_STA_START: {
+                // Apply STA config and initiate connection now that WiFi driver and supplicant are up
+                using namespace config;
+                auto& mgr = GetConfigurationManager();
+                auto& w = mgr.wifi();
+                if (!(w.has_ssid() && w.has_password())) {
+                    ESP_LOGW(TAG, "WiFi credentials not set on START; entering error state");
+                    system_state = MQTT_ERROR_STATE;
+                    break;
+                }
+
+                // Validate SSID/password again (defensive)
+                if (w.ssid().empty() || w.ssid().size() > 32) {
+                    ESP_LOGE(TAG, "Invalid SSID length on START: %u", (unsigned)w.ssid().size());
+                    system_state = MQTT_ERROR_STATE;
+                    break;
+                }
+                size_t pwd_len = w.password().size();
+                bool is_hex64 = (pwd_len == 64);
+                if (is_hex64) {
+                    for (char c : w.password()) {
+                        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) { is_hex64 = false; break; }
+                    }
+                }
+                if (!is_hex64 && (pwd_len < 8 || pwd_len > 63)) {
+                    ESP_LOGE(TAG, "Invalid password length on START: %u", (unsigned)pwd_len);
+                    system_state = MQTT_ERROR_STATE;
+                    break;
+                }
+
+                wifi_config_t cfg = {};
+                memset(&cfg, 0, sizeof(cfg));
+                strlcpy((char*)cfg.sta.ssid, w.ssid().c_str(), sizeof(cfg.sta.ssid));
+                strlcpy((char*)cfg.sta.password, w.password().c_str(), sizeof(cfg.sta.password));
+                cfg.sta.scan_method = WIFI_FAST_SCAN;
+                cfg.sta.bssid_set = false;
+                cfg.sta.channel = 0;
+                cfg.sta.listen_interval = 0;
+                cfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+
+                esp_err_t e1 = esp_wifi_set_mode(WIFI_MODE_STA);
+                if (e1 != ESP_OK) { ESP_LOGE(TAG, "esp_wifi_set_mode failed: %s", esp_err_to_name(e1)); break; }
+                esp_err_t e2 = esp_wifi_set_config(WIFI_IF_STA, &cfg);
+                if (e2 != ESP_OK) { ESP_LOGE(TAG, "esp_wifi_set_config failed: %s", esp_err_to_name(e2)); break; }
+                esp_err_t e3 = esp_wifi_connect();
+                if (e3 != ESP_OK) { ESP_LOGE(TAG, "esp_wifi_connect failed: %s", esp_err_to_name(e3)); }
                 break;
-            case WIFI_EVENT_STA_DISCONNECTED:
-                system_state = WIFI_CONNECTING;
+            }
+            case WIFI_EVENT_STA_DISCONNECTED: {
+                wifi_event_sta_disconnected_t* dis = (wifi_event_sta_disconnected_t*)event_data;
+                int reason = dis ? dis->reason : -1;
+                ESP_LOGW(TAG, "WiFi disconnected (reason=%d)", reason);
                 mqtt_error_count = 0; // Reset error count on disconnect
-                esp_wifi_connect();
+
+                // Treat authentication/handshake related reasons as fatal until credentials are fixed
+                bool auth_or_handshake_fail =
+                    (reason == WIFI_REASON_AUTH_EXPIRE) ||
+                    (reason == WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT) ||
+                    (reason == WIFI_REASON_HANDSHAKE_TIMEOUT) ||
+                    (reason == WIFI_REASON_INVALID_PMKID) ||
+                    (reason == WIFI_REASON_MIC_FAILURE) ||
+                    (reason == WIFI_REASON_ASSOC_FAIL) ||
+                    (reason == WIFI_REASON_IE_IN_4WAY_DIFFERS) ||
+                    (reason == WIFI_REASON_GROUP_CIPHER_INVALID) ||
+                    (reason == WIFI_REASON_PAIRWISE_CIPHER_INVALID) ||
+                    (reason == WIFI_REASON_AKMP_INVALID) ||
+                    (reason == WIFI_REASON_UNSUPP_RSN_IE_VERSION) ||
+                    (reason == WIFI_REASON_INVALID_RSN_IE_CAP) ||
+                    (reason == WIFI_REASON_802_1X_AUTH_FAILED) ||
+                    (reason == WIFI_REASON_BAD_CIPHER_OR_AKM) ||
+                    (reason == WIFI_REASON_AUTH_FAIL);
+
+                if (auth_or_handshake_fail) {
+                    ESP_LOGE(TAG, "Authentication/handshake failed (reason=%d). Will retry with backoff.", reason);
+                    system_state = MQTT_ERROR_STATE;
+                    // Remain in error state but keep retrying in background
+                    esp_wifi_disconnect();
+                    schedule_wifi_retry(s_retry_delay_ms);
+                    if (s_retry_delay_ms < s_retry_delay_max_ms) {
+                        int next = s_retry_delay_ms * 2;
+                        s_retry_delay_ms = (next > s_retry_delay_max_ms) ? s_retry_delay_max_ms : next;
+                    }
+                    break;
+                }
+
+                system_state = WIFI_CONNECTING;
+                // Schedule a short retry to avoid tight loops for transient reasons
+                schedule_wifi_retry(1000);
                 break;
+            }
         }
     }
     // Handle IP events
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         mqtt_error_count = 0;
         system_state = WIFI_CONNECTED_MQTT_CONNECTING;
+        // Reset WiFi retry backoff on successful IP acquisition
+        s_retry_delay_ms = 1000;
+        if (s_wifi_retry_timer && esp_timer_is_active(s_wifi_retry_timer)) {
+            esp_timer_stop(s_wifi_retry_timer);
+        }
 
         // Start MQTT client only if it hasn't been started yet
         if (!mqtt_started) {
@@ -272,6 +396,30 @@ static void wifi_init_sta(void)
         auto& w = mgr.wifi();
         if (!(w.has_ssid() && w.has_password())) {
             ESP_LOGW(TAG, "WiFi credentials not set; skipping WiFi start");
+            system_state = MQTT_ERROR_STATE;
+            return;
+        }
+        // Validate SSID length (1..32)
+        if (w.ssid().size() == 0 || w.ssid().size() > 32) {
+            ESP_LOGE(TAG, "Invalid WiFi SSID length: %u (must be 1..32)", (unsigned)w.ssid().size());
+            system_state = MQTT_ERROR_STATE;
+            return;
+        }
+        // Validate password: 8..63 ASCII or 64 hex digits PSK
+        const size_t pwd_len = w.password().size();
+        bool is_hex64 = false;
+        if (pwd_len == 64) {
+            is_hex64 = true;
+            for (char c : w.password()) {
+                if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+                    is_hex64 = false;
+                    break;
+                }
+            }
+        }
+        if (!is_hex64 && (pwd_len < 8 || pwd_len > 63)) {
+            ESP_LOGE(TAG, "Invalid WiFi password length: %u (must be 8..63, or 64 hex)", (unsigned)pwd_len);
+            system_state = MQTT_ERROR_STATE;
             return;
         }
         strlcpy((char*)wifi_config.sta.ssid, w.ssid().c_str(), sizeof(wifi_config.sta.ssid));
@@ -281,9 +429,11 @@ static void wifi_init_sta(void)
     wifi_config.sta.bssid_set = false;
     wifi_config.sta.channel = 0;
     wifi_config.sta.listen_interval = 0;
+    // Explicitly require WPA2 (or better) to avoid internal threshold flips
+    wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    // Start WiFi; configuration will be applied on WIFI_EVENT_STA_START
     ESP_ERROR_CHECK(esp_wifi_start());
 }
 

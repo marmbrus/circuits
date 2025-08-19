@@ -16,8 +16,16 @@ std::unique_ptr<LEDStripRmt> LEDStripRmt::Create(const CreateParams& params) {
 }
 
 LEDStripRmt::LEDStripRmt(const CreateParams& params)
-    : gpio_(params.gpio), enable_gpio_(params.enable_gpio), length_(params.length), chip_(params.chip), with_dma_(params.use_dma),
+    : gpio_(params.gpio), enable_gpio_(params.enable_gpio), length_(params.length), rows_(params.rows),
+      cols_(params.cols), chip_(params.chip), with_dma_(params.use_dma),
       rmt_resolution_hz_(params.rmt_resolution_hz), mem_block_symbols_(params.mem_block_symbols) {
+    if (rows_ == 0) rows_ = 1;
+    if (cols_ == 0) {
+        // infer from length and rows
+        cols_ = (rows_ == 0) ? params.length : (params.length + rows_ - 1) / rows_;
+    }
+    // Normalize length to rows * cols to ensure consistency
+    length_ = rows_ * cols_;
     has_white_ = (chip_ == LEDChip::SK6812);
     size_t bytes_per = has_white_ ? 4 : 3;
     pixels_.assign(length_ * bytes_per, 0);
@@ -61,8 +69,8 @@ bool LEDStripRmt::init_handle() {
         handle_ = nullptr;
         return false;
     }
-    ESP_LOGI(TAG, "Created RMT strip: gpio=%d enable_gpio=%d len=%zu dma=%s mem=%zu res=%luHz", gpio_, enable_gpio_, length_,
-             with_dma_ ? "true" : "false", mem_block_symbols_, (unsigned long)rmt_resolution_hz_);
+    ESP_LOGI(TAG, "Created RMT strip: gpio=%d enable_gpio=%d len=%zu rows=%zu cols=%zu dma=%s mem=%zu res=%luHz",
+             gpio_, enable_gpio_, length_, rows_, cols_, with_dma_ ? "true" : "false", mem_block_symbols_, (unsigned long)rmt_resolution_hz_);
     return true;
 }
 
