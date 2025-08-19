@@ -5,6 +5,7 @@
 #include "scd4x_sensor.h"
 #include "ads1115_sensor.h"
 #include "i2c_master_ext.h"
+#include "opt3001_sensor.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -18,6 +19,7 @@ static I2CSensor* s_sensors[] = {
     new BME280Sensor(),
     new SEN55Sensor(),
     new SCD4xSensor(),
+    new OPT3001Sensor(), // OPT3001 at default 0x44
     // ADS1115 ADCs at all four possible addresses
     new ADS1115Sensor(0x48),
     new ADS1115Sensor(0x49),
