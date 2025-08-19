@@ -11,6 +11,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_timer.h"
+#include <vector>
 
 static const char* TAG = "I2C";
 
@@ -50,15 +51,13 @@ static SemaphoreHandle_t s_sensorInterruptSemaphore = nullptr;
 // Sensor polling task function
 static void sensor_polling_task(void* pvParameters) {
     const TickType_t polling_interval = pdMS_TO_TICKS(100); // Poll every 100ms
-    const uint32_t full_report_interval_ms = 10000; // Full report every 10 seconds
     const uint32_t interrupt_follow_up_ms = 1000; // Follow-up poll 1 second after interrupt
 
-    uint32_t last_full_report_time = 0;
     uint32_t interrupt_follow_up_time = 0;
     bool follow_up_scheduled = false;
 
-    // Get initial time
-    last_full_report_time = esp_timer_get_time() / 1000;
+    // Track last poll time per sensor (ms)
+    std::vector<uint32_t> last_polled_ms(s_sensor_count, 0);
 
     while (true) {
         // Block until signaled or the short polling interval expires
@@ -66,9 +65,6 @@ static void sensor_polling_task(void* pvParameters) {
         
         // Get current time
         uint32_t current_time = esp_timer_get_time() / 1000;
-        
-        // Check if it's time for a full report (only execute this path if we're not handling an interrupt)
-        bool do_full_report = (current_time - last_full_report_time >= full_report_interval_ms);
         
         // Check if we have a scheduled follow-up poll
         bool do_follow_up = false;
@@ -104,21 +100,17 @@ static void sensor_polling_task(void* pvParameters) {
                     s_sensors[i]->clearInterruptFlag();
                 }
             }
-        } else if (do_full_report) {
-            // This is a regular full report at 10-second intervals
-            ESP_LOGD(TAG, "Full reporting interval reached, polling all sensors...");
-            
-            // Poll all initialized sensors
-            for (int i = 0; i < s_sensor_count; i++) {
-                if (s_sensors[i]->isInitialized()) {
-                    ESP_LOGD(TAG, "Polling sensor: %s", s_sensors[i]->name().c_str());
-                    s_sensors[i]->poll();
-                    s_sensors[i]->clearInterruptFlag();
-                }
+        }
+
+        // Per-sensor periodic polling based on each sensor's desired interval
+        for (int i = 0; i < s_sensor_count; i++) {
+            if (!s_sensors[i]->isInitialized()) continue;
+            uint32_t interval_ms = s_sensors[i]->poll_interval_ms();
+            if (interval_ms == 0) continue;
+            if (current_time - last_polled_ms[i] >= interval_ms) {
+                s_sensors[i]->poll();
+                last_polled_ms[i] = current_time;
             }
-            
-            // Update the last report time AFTER we've done the polling
-            last_full_report_time = current_time;
         }
     }
 }

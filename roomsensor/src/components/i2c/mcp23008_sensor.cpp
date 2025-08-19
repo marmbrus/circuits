@@ -1,6 +1,8 @@
 #include "mcp23008_sensor.h"
 #include "i2c_master_ext.h"
 #include "esp_log.h"
+#include "ConfigurationManager.h"
+#include "IOConfig.h"
 
 static const char *TAG = "MCP23008Sensor";
 
@@ -74,9 +76,20 @@ bool MCP23008Sensor::init(i2c_master_bus_handle_t bus_handle) {
         return false;
     }
 
-    // Basic configuration: ensure BANK=0, SEQOP=0 in IOCON (use defaults)
-    // Configure GPIO0 as input with pull-up
-    configureGpio0AsInput();
+    // Determine io index and config reference
+    _io_index = addrToIndex(_i2c_addr);
+    if (_io_index >= 1 && _io_index <= 8) {
+        config::ConfigurationManager &mgr = config::GetConfigurationManager();
+        switch (_io_index) {
+            case 1: _config_ptr = &mgr.io1(); break; case 2: _config_ptr = &mgr.io2(); break;
+            case 3: _config_ptr = &mgr.io3(); break; case 4: _config_ptr = &mgr.io4(); break;
+            case 5: _config_ptr = &mgr.io5(); break; case 6: _config_ptr = &mgr.io6(); break;
+            case 7: _config_ptr = &mgr.io7(); break; case 8: _config_ptr = &mgr.io8(); break;
+        }
+    }
+
+    // Configure device registers from configuration
+    configureFromConfig();
 
     _tag_collection = create_tag_collection();
     if (_tag_collection == nullptr) {
@@ -86,15 +99,57 @@ bool MCP23008Sensor::init(i2c_master_bus_handle_t bus_handle) {
     add_tag_to_collection(_tag_collection, "type", "mcp23008");
     char addr_buf[8]; snprintf(addr_buf, sizeof(addr_buf), "0x%02X", _i2c_addr);
     add_tag_to_collection(_tag_collection, "addr", addr_buf);
-    add_tag_to_collection(_tag_collection, "name", "gpio0");
 
     _initialized = true;
     poll();
     return true;
 }
 
+int MCP23008Sensor::addrToIndex(uint8_t addr) const {
+    if (addr < 0x20 || addr > 0x27) return -1;
+    return (addr - 0x20) + 1; // 0x20->1, ... 0x27->8
+}
+
+void MCP23008Sensor::configureFromConfig() {
+    // Start from reset defaults
+    uint8_t iodir = 0xFF; // all inputs
+    uint8_t gppu  = 0x00; // pull-ups disabled
+    uint8_t olat  = _olat_cached; // preserve last outputs if not overridden
+
+    // Build direction/pullups/outputs based on IOConfig
+    if (_config_ptr) {
+        for (int i = 0; i < 8; ++i) {
+            auto mode = _config_ptr->pin_mode(i + 1);
+            if (mode == config::IOConfig::PinMode::SWITCH) {
+                // Output
+                iodir &= (uint8_t)~(1u << i); // bit=0 => output
+                // pull-up irrelevant for output
+                bool desired = _config_ptr->switch_state(i + 1);
+                if (_config_ptr->is_switch_state_set(i + 1)) {
+                    if (desired) olat |= (uint8_t)(1u << i); else olat &= (uint8_t)~(1u << i);
+                }
+            } else if (mode == config::IOConfig::PinMode::SENSOR) {
+                // Input with pull-up
+                iodir |= (uint8_t)(1u << i); // bit=1 => input
+                gppu  |= (uint8_t)(1u << i); // enable pull-up
+            }
+        }
+    } else {
+        // Default to all inputs with pull-ups for safety
+        gppu = 0xFF;
+    }
+
+    // Only write registers if changes detected
+    if (iodir != _iodir_cached) { writeRegister(REG_IODIR, iodir); _iodir_cached = iodir; }
+    if (gppu  != _gppu_cached)  { writeRegister(REG_GPPU,  gppu);  _gppu_cached  = gppu; }
+    if (olat  != _olat_cached)  { writeRegister(REG_OLAT,  olat);  _olat_cached  = olat; }
+}
+
 void MCP23008Sensor::poll() {
     if (!_initialized) return;
+
+    // Re-apply configuration in case of runtime changes
+    configureFromConfig();
 
     uint8_t gpio = 0;
     esp_err_t ret = readRegister(REG_GPIO, gpio);
@@ -102,10 +157,27 @@ void MCP23008Sensor::poll() {
         ESP_LOGW(TAG, "Failed to read GPIO: %s", esp_err_to_name(ret));
         return;
     }
+    // Compare with last state and report changes for SENSOR pins only
+    uint8_t changed = gpio ^ _gpio_cached_last;
+    for (int i = 0; i < 8; ++i) {
+        if (((changed >> i) & 0x01) == 0) continue; // no change on this pin
+        // If mode is SENSOR, emit metric and log
+        config::IOConfig::PinMode mode = config::IOConfig::PinMode::INVALID;
+        if (_config_ptr) {
+            mode = _config_ptr->pin_mode(i + 1);
+        }
+        if (mode == config::IOConfig::PinMode::SENSOR) {
+            bool is_high = ((gpio >> i) & 0x01) != 0;
+            // Update tag with pin index (1..8)
+            char index_buf[4]; snprintf(index_buf, sizeof(index_buf), "%d", i + 1);
+            add_tag_to_collection(_tag_collection, "index", index_buf);
+            ESP_LOGI(TAG, "io%d pin%d contact %s", _io_index, i + 1, is_high ? "HIGH" : "LOW");
+            report_metric("contact", is_high ? 1.0f : 0.0f, _tag_collection);
+        }
+    }
+    _gpio_cached_last = gpio;
+    // Maintain _level for backward compatibility with existing callers
     _level = (gpio & 0x01) ? 1.0f : 0.0f;
-
-    ESP_LOGI(TAG, "addr=0x%02X GPIO0=%s", _i2c_addr, (_level > 0.5f ? "HIGH" : "LOW"));
-    report_metric("level", _level, _tag_collection);
 }
 
 float MCP23008Sensor::getLevel() const {

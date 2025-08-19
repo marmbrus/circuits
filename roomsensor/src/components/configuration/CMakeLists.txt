@@ -5,6 +5,7 @@ idf_component_register(
         "TagsConfig.cpp"
         "LEDConfig.cpp"
         "A2DConfig.cpp"
+        "IOConfig.cpp"
     INCLUDE_DIRS "." "../common"
     REQUIRES nvs_flash json
 )

@@ -5,6 +5,8 @@
 #include "communication.h"
 #include <string>
 
+namespace config { class IOConfig; }
+
 /**
  * MCP23008 8-bit I2C GPIO expander (Microchip)
  * Simple driver that reports the state of GPIO0 as an input.
@@ -21,6 +23,7 @@ public:
     bool init(i2c_master_bus_handle_t bus_handle) override;
     void poll() override;
     bool isInitialized() const override;
+    uint32_t poll_interval_ms() const override { return 100; }
 
     bool hasInterruptTriggered() override { return false; }
     void clearInterruptFlag() override {}
@@ -46,11 +49,22 @@ private:
     esp_err_t readRegister(uint8_t reg, uint8_t &value);
 
     void configureGpio0AsInput();
+    void configureFromConfig();
+    int addrToIndex(uint8_t addr) const;
 
     uint8_t _i2c_addr;
     bool _initialized;
     float _level; // 0.0 or 1.0 based on GPIO0
     TagCollection* _tag_collection;
+
+    // Cached register values
+    uint8_t _iodir_cached = 0xFF; // reset default: all inputs
+    uint8_t _gppu_cached = 0x00;
+    uint8_t _olat_cached = 0x00;
+    uint8_t _gpio_cached_last = 0x00;
+
+    int _io_index = -1; // 1..8 mapping from address
+    config::IOConfig* _config_ptr = nullptr; // non-owning
 };
 
 

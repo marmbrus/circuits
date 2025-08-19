@@ -3,6 +3,7 @@
 #include "TagsConfig.h"
 #include "LEDConfig.h"
 #include "A2DConfig.h"
+#include "IOConfig.h"
 #include "cJSON.h"
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -43,6 +44,16 @@ void ConfigurationManager::register_modules() {
     modules_.push_back(a2d3_module_.get());
     a2d4_module_.reset(new A2DConfig("a2d4"));
     modules_.push_back(a2d4_module_.get());
+
+    // IO expander modules mapped to MCP23008 addresses 0x20..0x27 => io1..io8
+    io1_module_.reset(new IOConfig("io1")); modules_.push_back(io1_module_.get());
+    io2_module_.reset(new IOConfig("io2")); modules_.push_back(io2_module_.get());
+    io3_module_.reset(new IOConfig("io3")); modules_.push_back(io3_module_.get());
+    io4_module_.reset(new IOConfig("io4")); modules_.push_back(io4_module_.get());
+    io5_module_.reset(new IOConfig("io5")); modules_.push_back(io5_module_.get());
+    io6_module_.reset(new IOConfig("io6")); modules_.push_back(io6_module_.get());
+    io7_module_.reset(new IOConfig("io7")); modules_.push_back(io7_module_.get());
+    io8_module_.reset(new IOConfig("io8")); modules_.push_back(io8_module_.get());
 }
 
 ConfigurationModule* ConfigurationManager::find_module(const char* module_name) {
@@ -70,6 +81,15 @@ A2DConfig& ConfigurationManager::a2d1() { return *a2d1_module_; }
 A2DConfig& ConfigurationManager::a2d2() { return *a2d2_module_; }
 A2DConfig& ConfigurationManager::a2d3() { return *a2d3_module_; }
 A2DConfig& ConfigurationManager::a2d4() { return *a2d4_module_; }
+
+IOConfig& ConfigurationManager::io1() { return *io1_module_; }
+IOConfig& ConfigurationManager::io2() { return *io2_module_; }
+IOConfig& ConfigurationManager::io3() { return *io3_module_; }
+IOConfig& ConfigurationManager::io4() { return *io4_module_; }
+IOConfig& ConfigurationManager::io5() { return *io5_module_; }
+IOConfig& ConfigurationManager::io6() { return *io6_module_; }
+IOConfig& ConfigurationManager::io7() { return *io7_module_; }
+IOConfig& ConfigurationManager::io8() { return *io8_module_; }
 
 std::vector<LEDConfig*> ConfigurationManager::active_leds() const {
     std::vector<LEDConfig*> result;

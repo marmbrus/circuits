@@ -34,7 +34,7 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "ConfigurationManager initialization failed: %s", esp_err_to_name(cfg_err));
     }
     
-    // Initialize LEDs manager (replaces legacy lights component)
+    // Initialize LEDs manager
     static leds::LEDManager led_manager;
     if (led_manager.init(cfg) != ESP_OK) {
         ESP_LOGE(TAG, "LEDManager initialization failed");

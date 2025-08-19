@@ -16,6 +16,7 @@ class WifiConfig;
 class TagsConfig;
 class LEDConfig;
 class A2DConfig;
+class IOConfig;
 
 class ConfigurationManager {
 public:
@@ -42,6 +43,15 @@ public:
     A2DConfig& a2d2();
     A2DConfig& a2d3();
     A2DConfig& a2d4();
+    // IO expanders
+    IOConfig& io1();
+    IOConfig& io2();
+    IOConfig& io3();
+    IOConfig& io4();
+    IOConfig& io5();
+    IOConfig& io6();
+    IOConfig& io7();
+    IOConfig& io8();
 
     // Returns all LED configs that are active (dataGPIO is set)
     std::vector<LEDConfig*> active_leds() const;
@@ -71,6 +81,14 @@ private:
     std::unique_ptr<A2DConfig> a2d2_module_;
     std::unique_ptr<A2DConfig> a2d3_module_;
     std::unique_ptr<A2DConfig> a2d4_module_;
+    std::unique_ptr<IOConfig> io1_module_;
+    std::unique_ptr<IOConfig> io2_module_;
+    std::unique_ptr<IOConfig> io3_module_;
+    std::unique_ptr<IOConfig> io4_module_;
+    std::unique_ptr<IOConfig> io5_module_;
+    std::unique_ptr<IOConfig> io6_module_;
+    std::unique_ptr<IOConfig> io7_module_;
+    std::unique_ptr<IOConfig> io8_module_;
     std::vector<ConfigurationModule*> modules_;
 };
 

@@ -72,6 +72,15 @@ public:
     virtual bool isInitialized() const = 0;
 
     /**
+     * @brief Desired periodic polling interval in milliseconds.
+     *
+     * Default is 10 seconds for most sensors. Sensors that need
+     * higher-frequency sampling (e.g., IO expanders used for contact
+     * detection) should override to return a smaller interval.
+     */
+    virtual uint32_t poll_interval_ms() const { return 10000; }
+
+    /**
      * @brief Check if the sensor has an interrupt that needs polling
      * 
      * This method should be implemented by sensors that support interrupts
