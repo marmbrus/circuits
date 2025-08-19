@@ -6,6 +6,7 @@
 #include "ads1115_sensor.h"
 #include "i2c_master_ext.h"
 #include "opt3001_sensor.h"
+#include "mcp23008_sensor.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -25,6 +26,15 @@ static I2CSensor* s_sensors[] = {
     new ADS1115Sensor(0x49),
     new ADS1115Sensor(0x4A),
     new ADS1115Sensor(0x4B),
+    // MCP23008 GPIO expanders at all valid addresses (0x20-0x27)
+    new MCP23008Sensor(0x20),
+    new MCP23008Sensor(0x21),
+    new MCP23008Sensor(0x22),
+    new MCP23008Sensor(0x23),
+    new MCP23008Sensor(0x24),
+    new MCP23008Sensor(0x25),
+    new MCP23008Sensor(0x26),
+    new MCP23008Sensor(0x27),
     // Add more sensors here as they are implemented
 };
 

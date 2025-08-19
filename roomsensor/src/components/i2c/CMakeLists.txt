@@ -10,6 +10,7 @@ idf_component_register(
         "scd4x_sensor.cpp"
         "ads1115_sensor.cpp"
         "opt3001_sensor.cpp"
+        "mcp23008_sensor.cpp"
         "metrics_tags.cpp"
     INCLUDE_DIRS "." "../common"
     PRIV_REQUIRES driver mqtt json configuration
