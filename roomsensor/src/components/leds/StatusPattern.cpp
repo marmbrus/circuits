@@ -49,8 +49,9 @@ void StatusPattern::update(LEDStrip& strip, uint64_t now_us) {
             // Choose speeds: mostly horizontal motion; slow vertical drift
             float max_col = cols > 0 ? static_cast<float>(cols - 1) : 0.0f;
             float max_row = rows > 0 ? static_cast<float>(rows - 1) : 0.0f;
-            float vx = fmaxf(0.5f, max_col / 1.2f); // traverse width in ~1.2s
-            float vy = fmaxf(0.2f, max_row / 6.0f); // traverse height in ~6s
+            float speed_scale = 2.5f; // 2-3x faster
+            float vx = fmaxf(0.5f, (max_col / 1.2f) * speed_scale); // traverse width ~1.2s -> ~0.5s
+            float vy = fmaxf(0.2f, (max_row / 6.0f) * speed_scale); // traverse height ~6s -> ~2.4s
 
             // Tail samples (head at i=0)
             const int tail_count = 5;
