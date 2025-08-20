@@ -4,6 +4,7 @@
 #include "LEDConfig.h"
 #include "A2DConfig.h"
 #include "IOConfig.h"
+#include "MotionConfig.h"
 #include "cJSON.h"
 #include "nvs.h"
 #include "nvs_flash.h"
@@ -44,6 +45,10 @@ void ConfigurationManager::register_modules() {
     modules_.push_back(a2d3_module_.get());
     a2d4_module_.reset(new A2DConfig("a2d4"));
     modules_.push_back(a2d4_module_.get());
+
+    // Motion module (nullable gpio configuration)
+    motion_module_.reset(new MotionConfig());
+    modules_.push_back(motion_module_.get());
 
     // IO expander modules mapped to MCP23008 addresses 0x20..0x27 => io1..io8
     io1_module_.reset(new IOConfig("io1")); modules_.push_back(io1_module_.get());
@@ -90,6 +95,8 @@ IOConfig& ConfigurationManager::io5() { return *io5_module_; }
 IOConfig& ConfigurationManager::io6() { return *io6_module_; }
 IOConfig& ConfigurationManager::io7() { return *io7_module_; }
 IOConfig& ConfigurationManager::io8() { return *io8_module_; }
+
+MotionConfig& ConfigurationManager::motion() { return *motion_module_; }
 
 std::vector<LEDConfig*> ConfigurationManager::active_leds() const {
     std::vector<LEDConfig*> result;

@@ -17,6 +17,7 @@ class TagsConfig;
 class LEDConfig;
 class A2DConfig;
 class IOConfig;
+class MotionConfig;
 
 class ConfigurationManager {
 public:
@@ -43,6 +44,8 @@ public:
     A2DConfig& a2d2();
     A2DConfig& a2d3();
     A2DConfig& a2d4();
+    // Motion sensor
+    MotionConfig& motion();
     // IO expanders
     IOConfig& io1();
     IOConfig& io2();
@@ -81,6 +84,7 @@ private:
     std::unique_ptr<A2DConfig> a2d2_module_;
     std::unique_ptr<A2DConfig> a2d3_module_;
     std::unique_ptr<A2DConfig> a2d4_module_;
+    std::unique_ptr<MotionConfig> motion_module_;
     std::unique_ptr<IOConfig> io1_module_;
     std::unique_ptr<IOConfig> io2_module_;
     std::unique_ptr<IOConfig> io3_module_;

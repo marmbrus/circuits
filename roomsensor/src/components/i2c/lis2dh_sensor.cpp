@@ -249,12 +249,7 @@ bool LIS2DHSensor::init(i2c_master_bus_handle_t bus_handle) {
         return false;
     }
 
-    // Install GPIO ISR service if not already installed
-    ret = gpio_install_isr_service(0);
-    if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {  // ESP_ERR_INVALID_STATE means already installed
-        ESP_LOGE(TAG, "Failed to install GPIO ISR service: %s", esp_err_to_name(ret));
-        return false;
-    }
+    // ISR service is installed centrally in main
 
     // Add handler for GPIO interrupt - pass 'this' pointer to access member variables
     ret = gpio_isr_handler_add((gpio_num_t)13, lis2dh_isr_handler, this);

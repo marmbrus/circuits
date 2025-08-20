@@ -314,8 +314,6 @@ static void metrics_reporting_task(void* pvParameters) {
                 ESP_LOGI(TAG, "System now connected, proceeding with publishing metric %s", report.metric_name);
             }
 
-            // Always publish using current tags (defaults are acceptable)
-
             // Build the topic string
             char* topic = build_metric_topic(report.metric_name, report.tags);
             if (topic == NULL) {
@@ -426,17 +424,14 @@ esp_err_t report_metric(const char* metric_name, float value, TagCollection* tag
     report.value = value;
     report.tags = tags;
 
-    // Get queue information for debugging
-    UBaseType_t queue_spaces = uxQueueSpacesAvailable(metrics_queue);
-    UBaseType_t queue_messages = uxQueueMessagesWaiting(metrics_queue);
-    UBaseType_t queue_size = METRICS_QUEUE_SIZE;
-
     // Send the report to the queue
     if (xPortInIsrContext()) {
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         if (xQueueSendFromISR(metrics_queue, &report, &xHigherPriorityTaskWoken) != pdTRUE) {
-            ESP_LOGE(TAG, "Failed to send metric report to queue from ISR - metric: %s, value: %.3f, queue full: %d/%d",
-                    metric_name, value, queue_messages, queue_size);
+            // Avoid logging from ISR context; just drop silently
+            if (xHigherPriorityTaskWoken == pdTRUE) {
+                portYIELD_FROM_ISR();
+            }
             return ESP_FAIL;
         }
 
@@ -444,6 +439,10 @@ esp_err_t report_metric(const char* metric_name, float value, TagCollection* tag
             portYIELD_FROM_ISR();
         }
     } else {
+        // Get queue information for debugging (task context only)
+        UBaseType_t queue_spaces = uxQueueSpacesAvailable(metrics_queue);
+        UBaseType_t queue_messages = uxQueueMessagesWaiting(metrics_queue);
+        UBaseType_t queue_size = METRICS_QUEUE_SIZE;
         if (xQueueSend(metrics_queue, &report, 0) != pdTRUE) {
             ESP_LOGE(TAG, "Failed to send metric report to queue - metric: %s, value: %.3f, queue spaces: %d/%d",
                     metric_name, value, queue_spaces, queue_size);

@@ -6,6 +6,7 @@ idf_component_register(
         "http.cpp"
         "ota.cpp"
         "telemetry.cpp"
+        "gpio.cpp"
     INCLUDE_DIRS "."
     REQUIRES i2c leds driver nvs_flash mqtt json esp_wifi esp_app_format esp_http_server esp_http_client esp_https_ota app_update console vfs serial_console configuration
 )

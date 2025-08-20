@@ -6,5 +6,8 @@
     "num_columns": 6,
     "brightness": 1,
     "pattern": "STATUS"
+  },
+  "motion": {
+    "gpio": 14
   }
 }

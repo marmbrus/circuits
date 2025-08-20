@@ -14,6 +14,7 @@
 #include "ota.h"
 #include "console.h"
 #include "ConfigurationManager.h"
+#include "gpio.h"
 
 static const char* TAG = "main";
 
@@ -48,6 +49,19 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "Failed to initialize metrics system");
     } else {
         ESP_LOGI(TAG, "Metrics reporting system started successfully");
+    }
+
+    // Install GPIO ISR service once, before any modules add handlers
+    {
+        esp_err_t isr_err = gpio_install_isr_service(0);
+        if (isr_err != ESP_OK && isr_err != ESP_ERR_INVALID_STATE) {
+            ESP_LOGE(TAG, "Failed to install GPIO ISR service: %s", esp_err_to_name(isr_err));
+        }
+    }
+
+    // Initialize GPIO features (e.g., motion sensor) after metrics system
+    if (init_gpio() != ESP_OK) {
+        ESP_LOGE(TAG, "GPIO initialization failed");
     }
 
     // Initialize I2C subsystem
