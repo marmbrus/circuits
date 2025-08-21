@@ -6,7 +6,7 @@
     "chip": "SK6812",
     "num_rows": 1,
     "num_columns": 8,
-    "brightness": 1,
+    "brightness": 1
   },
   "led2": {
     "dataGPIO": 12,
@@ -14,7 +14,7 @@
     "chip": "SK6812",
     "num_rows": 1,
     "num_columns": 8,
-    "brightness": 1,
+    "brightness": 1
   },
   "led3": {
     "dataGPIO": 13,
@@ -22,7 +22,7 @@
     "chip": "SK6812",
     "num_rows": 1,
     "num_columns": 8,
-    "brightness": 1,
+    "brightness": 1
   },
   "led4": {
     "dataGPIO": 14,
@@ -30,6 +30,6 @@
     "chip": "SK6812",
     "num_rows": 1,
     "num_columns": 8,
-    "brightness": 1,
+    "brightness": 1
   }
 }

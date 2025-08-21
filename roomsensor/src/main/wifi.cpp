@@ -28,11 +28,17 @@ static esp_mqtt_client_handle_t mqtt_client;
 static uint8_t device_mac[6] = {0};
 static bool sntp_initialized = false;
 static esp_timer_handle_t s_wifi_retry_timer = nullptr;
+static esp_timer_handle_t s_wifi_initial_connect_timer = nullptr;
 static int s_retry_delay_ms = 1000; // start at 1s
 static const int s_retry_delay_max_ms = 30000; // cap at 30s
 
 static void wifi_init_sta(void);
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+static const char* wifi_reason_to_name(int reason);
+static const char* wifi_event_to_name(int32_t event_id);
+static const char* ip_event_to_name(int32_t event_id);
+static const char* mqtt_event_to_name(int32_t event_id);
+static void schedule_initial_connect(int delay_ms);
 static void wifi_retry_cb(void* arg) {
     (void)arg;
     ESP_LOGI(TAG, "Retrying WiFi connect (delay=%dms)", s_retry_delay_ms);
@@ -64,6 +70,38 @@ static void schedule_wifi_retry(int delay_ms) {
     esp_err_t s = esp_timer_start_once(s_wifi_retry_timer, (uint64_t)delay_ms * 1000ULL);
     if (s != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start retry timer: %s", esp_err_to_name(s));
+    }
+}
+static void initial_connect_cb(void* arg) {
+    (void)arg;
+    esp_err_t e = esp_wifi_connect();
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "esp_wifi_connect (initial) failed: %s", esp_err_to_name(e));
+    }
+}
+
+static void schedule_initial_connect(int delay_ms) {
+    if (delay_ms <= 0) delay_ms = 1;
+    if (!s_wifi_initial_connect_timer) {
+        const esp_timer_create_args_t targs = {
+            .callback = &initial_connect_cb,
+            .arg = nullptr,
+            .dispatch_method = ESP_TIMER_TASK,
+            .name = "wifi_initial_connect",
+            .skip_unhandled_events = true
+        };
+        esp_err_t c = esp_timer_create(&targs, &s_wifi_initial_connect_timer);
+        if (c != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to create initial connect timer: %s", esp_err_to_name(c));
+            return;
+        }
+    }
+    if (esp_timer_is_active(s_wifi_initial_connect_timer)) {
+        esp_timer_stop(s_wifi_initial_connect_timer);
+    }
+    esp_err_t s = esp_timer_start_once(s_wifi_initial_connect_timer, (uint64_t)delay_ms * 1000ULL);
+    if (s != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start initial connect timer: %s", esp_err_to_name(s));
     }
 }
 
@@ -145,6 +183,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 
     // Handle WiFi events
     if (event_base == WIFI_EVENT) {
+        ESP_LOGD(TAG, "WiFi event: %s (%ld)", wifi_event_to_name(event_id), (long)event_id);
         switch (event_id) {
             case WIFI_EVENT_STA_START: {
                 // Apply STA config and initiate connection now that WiFi driver and supplicant are up
@@ -176,28 +215,26 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                     break;
                 }
 
-                wifi_config_t cfg = {};
-                memset(&cfg, 0, sizeof(cfg));
-                strlcpy((char*)cfg.sta.ssid, w.ssid().c_str(), sizeof(cfg.sta.ssid));
-                strlcpy((char*)cfg.sta.password, w.password().c_str(), sizeof(cfg.sta.password));
-                cfg.sta.scan_method = WIFI_FAST_SCAN;
-                cfg.sta.bssid_set = false;
-                cfg.sta.channel = 0;
-                cfg.sta.listen_interval = 0;
-                cfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-
-                esp_err_t e1 = esp_wifi_set_mode(WIFI_MODE_STA);
-                if (e1 != ESP_OK) { ESP_LOGE(TAG, "esp_wifi_set_mode failed: %s", esp_err_to_name(e1)); break; }
-                esp_err_t e2 = esp_wifi_set_config(WIFI_IF_STA, &cfg);
-                if (e2 != ESP_OK) { ESP_LOGE(TAG, "esp_wifi_set_config failed: %s", esp_err_to_name(e2)); break; }
-                esp_err_t e3 = esp_wifi_connect();
-                if (e3 != ESP_OK) { ESP_LOGE(TAG, "esp_wifi_connect failed: %s", esp_err_to_name(e3)); }
+                // Configuration was already applied before esp_wifi_start().
+                // Delay connect slightly to avoid race with internal start-up and scanning.
+                schedule_initial_connect(300);
                 break;
             }
             case WIFI_EVENT_STA_DISCONNECTED: {
                 wifi_event_sta_disconnected_t* dis = (wifi_event_sta_disconnected_t*)event_data;
                 int reason = dis ? dis->reason : -1;
-                ESP_LOGW(TAG, "WiFi disconnected (reason=%d)", reason);
+                if (dis) {
+                    char ssid_buf[33];
+                    int len = (dis->ssid_len < 32) ? dis->ssid_len : 32;
+                    memcpy(ssid_buf, dis->ssid, len);
+                    ssid_buf[len] = '\0';
+                    ESP_LOGW(TAG, "WiFi disconnected: reason=%d:%s ssid='%s' bssid=%02x:%02x:%02x:%02x:%02x:%02x",
+                             reason, wifi_reason_to_name(reason), ssid_buf,
+                             dis->bssid[0], dis->bssid[1], dis->bssid[2],
+                             dis->bssid[3], dis->bssid[4], dis->bssid[5]);
+                } else {
+                    ESP_LOGW(TAG, "WiFi disconnected: reason=%d:%s (no detail)", reason, wifi_reason_to_name(reason));
+                }
                 mqtt_error_count = 0; // Reset error count on disconnect
 
                 // Treat authentication/handshake related reasons as fatal until credentials are fixed
@@ -219,10 +256,9 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                     (reason == WIFI_REASON_AUTH_FAIL);
 
                 if (auth_or_handshake_fail) {
-                    ESP_LOGE(TAG, "Authentication/handshake failed (reason=%d). Will retry with backoff.", reason);
+                    ESP_LOGE(TAG, "Authentication/handshake failed (reason=%d: %s). Will retry with backoff.", reason, wifi_reason_to_name(reason));
                     system_state = MQTT_ERROR_STATE;
                     // Remain in error state but keep retrying in background
-                    esp_wifi_disconnect();
                     schedule_wifi_retry(s_retry_delay_ms);
                     if (s_retry_delay_ms < s_retry_delay_max_ms) {
                         int next = s_retry_delay_ms * 2;
@@ -240,6 +276,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
     // Handle IP events
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ESP_LOGI(TAG, "IP event: %s (%ld)", ip_event_to_name(event_id), (long)event_id);
         mqtt_error_count = 0;
         system_state = WIFI_CONNECTED_MQTT_CONNECTING;
         // Reset WiFi retry backoff on successful IP acquisition
@@ -254,17 +291,35 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             mqtt_started = true;
         }
 
+        // Log AP details
+        wifi_ap_record_t ap_info;
+        if (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK) {
+            ESP_LOGI(TAG, "Connected to SSID='%s' BSSID=%02x:%02x:%02x:%02x:%02x:%02x authmode=%d rssi=%d",
+                     (const char*)ap_info.ssid,
+                     ap_info.bssid[0], ap_info.bssid[1], ap_info.bssid[2],
+                     ap_info.bssid[3], ap_info.bssid[4], ap_info.bssid[5],
+                     (int)ap_info.authmode, (int)ap_info.rssi);
+        }
+
         // Initialize SNTP to set time
         initialize_sntp();
         
         // Notify OTA system that network is connected
         ota_notify_network_connected();
     }
-    // Handle MQTT events
+    // Handle other IP events of interest
+    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_LOST_IP) {
+        ESP_LOGW(TAG, "IP event: %s (%ld)", ip_event_to_name(event_id), (long)event_id);
+        if (system_state == FULLY_CONNECTED) {
+            system_state = WIFI_CONNECTED_MQTT_CONNECTING;
+        }
+    }
+    // Handle MQTT events (this handler is also registered with esp-mqtt)
     else {
         // This section handles all MQTT events
         esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
         esp_mqtt_event_id_t mqtt_event = (esp_mqtt_event_id_t)event->event_id;
+        ESP_LOGD(TAG, "MQTT event: %s (%d)", mqtt_event_to_name(mqtt_event), (int)mqtt_event);
 
         // First check WiFi state - don't process MQTT errors if WiFi is disconnected
         bool wifi_connected = false;
@@ -320,7 +375,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             mqtt_error_count = 0; // Reset error count on disconnect
         }
         else if (mqtt_event == MQTT_EVENT_ERROR) {
-            ESP_LOGI(TAG, "MQTT Error");
+            ESP_LOGW(TAG, "MQTT Error");
 
             // Only count MQTT errors when we're actually connected to WiFi
             // Ignore MQTT errors when WiFi is disconnected - they're expected
@@ -425,16 +480,35 @@ static void wifi_init_sta(void)
         strlcpy((char*)wifi_config.sta.ssid, w.ssid().c_str(), sizeof(wifi_config.sta.ssid));
         strlcpy((char*)wifi_config.sta.password, w.password().c_str(), sizeof(wifi_config.sta.password));
     }
-    wifi_config.sta.scan_method = WIFI_FAST_SCAN;
+    // Use all-channel scan to avoid missing AP on first attempt on some firmwares/APs
+    wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     wifi_config.sta.bssid_set = false;
     wifi_config.sta.channel = 0;
     wifi_config.sta.listen_interval = 0;
     // Explicitly require WPA2 (or better) to avoid internal threshold flips
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+    // Explicit PMF configuration to avoid APs that require PMF causing assoc failures
+    wifi_config.sta.pmf_cfg.capable = true;
+    wifi_config.sta.pmf_cfg.required = false;
 
+    // Ensure we don't auto-connect using stale NVS config; use RAM storage and set config before start
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    // Start WiFi; configuration will be applied on WIFI_EVENT_STA_START
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    const char* scan_name = (wifi_config.sta.scan_method == WIFI_ALL_CHANNEL_SCAN) ? "ALL" : "FAST";
+    ESP_LOGI(TAG, "WiFi config applied: SSID='%s' scan=%s bssid_set=%d ch=%d auth>=%d pmf{cap=%d,req=%d}",
+             (const char*)wifi_config.sta.ssid,
+             scan_name,
+             (int)wifi_config.sta.bssid_set,
+             (int)wifi_config.sta.channel,
+             (int)wifi_config.sta.threshold.authmode,
+             (int)wifi_config.sta.pmf_cfg.capable,
+             (int)wifi_config.sta.pmf_cfg.required);
+    // Start WiFi; we'll connect on WIFI_EVENT_STA_START
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    // Prefer no power save until connected to improve initial association reliability
+    esp_wifi_set_ps(WIFI_PS_NONE);
 }
 
 SystemState get_system_state(void)
@@ -538,3 +612,79 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
     return ESP_OK;
 }
 
+
+// ------------------------------
+// Human-readable event helpers
+// ------------------------------
+static const char* wifi_event_to_name(int32_t event_id) {
+    switch (event_id) {
+        case WIFI_EVENT_WIFI_READY: return "WIFI_EVENT_WIFI_READY";
+        case WIFI_EVENT_SCAN_DONE: return "WIFI_EVENT_SCAN_DONE";
+        case WIFI_EVENT_STA_START: return "WIFI_EVENT_STA_START";
+        case WIFI_EVENT_STA_STOP: return "WIFI_EVENT_STA_STOP";
+        case WIFI_EVENT_STA_CONNECTED: return "WIFI_EVENT_STA_CONNECTED";
+        case WIFI_EVENT_STA_DISCONNECTED: return "WIFI_EVENT_STA_DISCONNECTED";
+        case WIFI_EVENT_STA_AUTHMODE_CHANGE: return "WIFI_EVENT_STA_AUTHMODE_CHANGE";
+        default: return "WIFI_EVENT_UNKNOWN";
+    }
+}
+
+static const char* ip_event_to_name(int32_t event_id) {
+    switch (event_id) {
+        case IP_EVENT_STA_GOT_IP: return "IP_EVENT_STA_GOT_IP";
+        case IP_EVENT_STA_LOST_IP: return "IP_EVENT_STA_LOST_IP";
+        default: return "IP_EVENT_UNKNOWN";
+    }
+}
+
+static const char* mqtt_event_to_name(int32_t event_id) {
+    switch (event_id) {
+        case MQTT_EVENT_CONNECTED: return "MQTT_EVENT_CONNECTED";
+        case MQTT_EVENT_DISCONNECTED: return "MQTT_EVENT_DISCONNECTED";
+        case MQTT_EVENT_SUBSCRIBED: return "MQTT_EVENT_SUBSCRIBED";
+        case MQTT_EVENT_UNSUBSCRIBED: return "MQTT_EVENT_UNSUBSCRIBED";
+        case MQTT_EVENT_PUBLISHED: return "MQTT_EVENT_PUBLISHED";
+        case MQTT_EVENT_DATA: return "MQTT_EVENT_DATA";
+        case MQTT_EVENT_ERROR: return "MQTT_EVENT_ERROR";
+        default: return "MQTT_EVENT_UNKNOWN";
+    }
+}
+
+static const char* wifi_reason_to_name(int reason) {
+    switch (reason) {
+        case WIFI_REASON_UNSPECIFIED: return "UNSPECIFIED";
+        case WIFI_REASON_AUTH_EXPIRE: return "AUTH_EXPIRE";
+        case WIFI_REASON_AUTH_LEAVE: return "AUTH_LEAVE";
+        case WIFI_REASON_ASSOC_EXPIRE: return "ASSOC_EXPIRE";
+        case WIFI_REASON_ASSOC_TOOMANY: return "ASSOC_TOOMANY";
+        case WIFI_REASON_NOT_AUTHED: return "NOT_AUTHED";
+        case WIFI_REASON_NOT_ASSOCED: return "NOT_ASSOCED";
+        case WIFI_REASON_ASSOC_LEAVE: return "ASSOC_LEAVE";
+        case WIFI_REASON_ASSOC_NOT_AUTHED: return "ASSOC_NOT_AUTHED";
+        case WIFI_REASON_DISASSOC_PWRCAP_BAD: return "DISASSOC_PWRCAP_BAD";
+        case WIFI_REASON_DISASSOC_SUPCHAN_BAD: return "DISASSOC_SUPCHAN_BAD";
+        case WIFI_REASON_IE_INVALID: return "IE_INVALID";
+        case WIFI_REASON_MIC_FAILURE: return "MIC_FAILURE";
+        case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT: return "4WAY_HANDSHAKE_TIMEOUT";
+        case WIFI_REASON_GROUP_KEY_UPDATE_TIMEOUT: return "GROUP_KEY_UPDATE_TIMEOUT";
+        case WIFI_REASON_IE_IN_4WAY_DIFFERS: return "IE_IN_4WAY_DIFFERS";
+        case WIFI_REASON_GROUP_CIPHER_INVALID: return "GROUP_CIPHER_INVALID";
+        case WIFI_REASON_PAIRWISE_CIPHER_INVALID: return "PAIRWISE_CIPHER_INVALID";
+        case WIFI_REASON_AKMP_INVALID: return "AKMP_INVALID";
+        case WIFI_REASON_UNSUPP_RSN_IE_VERSION: return "UNSUPP_RSN_IE_VERSION";
+        case WIFI_REASON_INVALID_RSN_IE_CAP: return "INVALID_RSN_IE_CAP";
+        case WIFI_REASON_802_1X_AUTH_FAILED: return "802_1X_AUTH_FAILED";
+        case WIFI_REASON_CIPHER_SUITE_REJECTED: return "CIPHER_SUITE_REJECTED";
+        case WIFI_REASON_INVALID_PMKID: return "INVALID_PMKID";
+        case WIFI_REASON_BEACON_TIMEOUT: return "BEACON_TIMEOUT";              // 200
+        case WIFI_REASON_NO_AP_FOUND: return "NO_AP_FOUND";                    // 201
+        case WIFI_REASON_AUTH_FAIL: return "AUTH_FAIL";                        // 202
+        case WIFI_REASON_ASSOC_FAIL: return "ASSOC_FAIL";                      // 203
+        case WIFI_REASON_HANDSHAKE_TIMEOUT: return "HANDSHAKE_TIMEOUT";        // 204
+        case WIFI_REASON_CONNECTION_FAIL: return "CONNECTION_FAIL";            // 205
+        case WIFI_REASON_AP_TSF_RESET: return "AP_TSF_RESET";                  // 206
+        case WIFI_REASON_ROAMING: return "ROAMING";                            // 207
+        case WIFI_REASON_ASSOC_COMEBACK_TIME_TOO_LONG: return "ASSOC_COMEBACK_TIME_TOO_LONG"; // 208
+        default: return "UNKNOWN_REASON";
+    }
+}
