@@ -13,7 +13,6 @@
 #include "esp_mac.h"
 #include "esp_netif_ip_addr.h"
 #include "esp_flash.h"
-#include "ota.h"
 #include "telemetry.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
@@ -304,8 +303,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         // Initialize SNTP to set time
         initialize_sntp();
         
-        // Notify OTA system that network is connected
-        ota_notify_network_connected();
+        // OTA will poll system readiness; no direct OTA calls here
     }
     // Handle other IP events of interest
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_LOST_IP) {
@@ -337,11 +335,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             // Publish telemetry (boot + location/connected)
             telemetry_report_connected();
             
-            // Report OTA status when MQTT connects
-            ota_report_status();
-            
-            // Notify OTA again when MQTT is connected (fully network ready)
-            ota_notify_network_connected();
+            // OTA will poll system readiness; no direct OTA calls here
 
             // Subscribe to configuration updates for this device
             {

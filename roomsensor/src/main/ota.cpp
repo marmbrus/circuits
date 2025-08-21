@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include "esp_http_client.h"
 #include "esp_https_ota.h"
+#include "esp_crt_bundle.h"
 #include "esp_ota_ops.h"
 #include "cJSON.h"
 #include "nvs_flash.h"
@@ -53,7 +54,7 @@
 #endif
 
 static const char *TAG = "ota";
-static const char *MANIFEST_URL = "http://gaia.home:3000/manifest.json";
+static const char *MANIFEST_URL = "https://updates.gaia.bio/manifest.json";
 static char current_version[33] = {0}; // Store current firmware version (git hash)
 static char extracted_hash[33] = {0};  // Store extracted Git hash
 static TaskHandle_t ota_task_handle = NULL;
@@ -85,6 +86,13 @@ static time_t remote_timestamp = 0;
 
 // Forward declarations
 static void report_ota_status(ota_status_t status, const char* remote_hash);
+
+// Determine whether system time has been synchronized (via SNTP)
+static bool is_time_synchronized(void) {
+    // Consider time valid if after 2021-01-01 (1609459200)
+    time_t now = time(NULL);
+    return (now >= 1609459200);
+}
 
 // Set the network connected bit when network is up
 void ota_notify_network_connected(void) {
@@ -339,13 +347,18 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
                 (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
 
-        // Check for unrealistic timestamp values (e.g., more than 10 years in the future)
-        time_t current_time = time(NULL);
-        if (remote_timestamp > current_time + 315360000) { // 10 years in seconds
-            ESP_LOGW(TAG, "Remote timestamp is unrealistically far in the future, may be corrupted");
-        }
-        if (FIRMWARE_BUILD_TIME > current_time + 315360000) {
-            ESP_LOGW(TAG, "Local build timestamp is unrealistically far in the future, may be corrupted");
+        // Only run sanity checks if system time is known
+        if (is_time_synchronized()) {
+            // Check for unrealistic timestamp values (e.g., more than 10 years in the future)
+            time_t current_time = time(NULL);
+            if (remote_timestamp > current_time + 315360000) { // 10 years in seconds
+                ESP_LOGW(TAG, "Remote timestamp is unrealistically far in the future, may be corrupted");
+            }
+            if (FIRMWARE_BUILD_TIME > current_time + 315360000) {
+                ESP_LOGW(TAG, "Local build timestamp is unrealistically far in the future, may be corrupted");
+            }
+        } else {
+            ESP_LOGD(TAG, "Skipping timestamp sanity checks until SNTP time is set");
         }
 
         // Directly compare the timestamps
@@ -370,9 +383,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
             esp_http_client_config_t config = {};
             config.url = firmware_url;
-            config.cert_pem = NULL;
-            config.skip_cert_common_name_check = true;
-            config.transport_type = HTTP_TRANSPORT_OVER_TCP;
+            config.crt_bundle_attach = esp_crt_bundle_attach;
+            config.skip_cert_common_name_check = false;
             config.buffer_size = 1024;
             config.timeout_ms = 30000; // 30 second timeout for firmware download
 
@@ -563,22 +575,15 @@ static void ota_update_task(void *pvParameter) {
 
     // Main OTA loop - runs forever
     while (1) {
-        // Check for network connectivity
+        // Check for system readiness
         bool is_connected = false;
 
-        // Use system state to determine connectivity
+        // Use system state to determine readiness
         extern SystemState get_system_state(void);
         SystemState current_state = get_system_state();
 
-        // Consider connected if WiFi+MQTT is connected or at least WiFi is connected
-        if (current_state == FULLY_CONNECTED ||
-            current_state == WIFI_CONNECTED_MQTT_CONNECTING) {
-            is_connected = true;
-        }
-
-        // Also check event bits as a secondary indicator
-        EventBits_t current_bits = xEventGroupGetBits(network_event_group);
-        if (current_bits & NETWORK_CONNECTED_BIT) {
+        // Only treat as connected when the whole system is up (WiFi + MQTT)
+        if (current_state == FULLY_CONNECTED) {
             is_connected = true;
         }
 
@@ -591,8 +596,14 @@ static void ota_update_task(void *pvParameter) {
             was_connected = false;
         }
 
-        // Only proceed with OTA check if network is connected
+        // Only proceed with OTA check if system is fully connected
         if (is_connected) {
+            // Ensure SNTP has set the time before performing HTTPS requests and comparing timestamps
+            if (!is_time_synchronized()) {
+                ESP_LOGI(TAG, "Waiting for time synchronization (SNTP) before OTA checks");
+                vTaskDelay(pdMS_TO_TICKS(5000));
+                continue;
+            }
             // Check for updates
             check_count++;
             ESP_LOGI(TAG, "OTA check #%lu: Checking for updates from %s", check_count, MANIFEST_URL);
@@ -604,9 +615,8 @@ static void ota_update_task(void *pvParameter) {
             esp_http_client_config_t config = {};
             config.url = MANIFEST_URL;
             config.event_handler = http_event_handler;
-            config.cert_pem = NULL;
-            config.skip_cert_common_name_check = true;
-            config.transport_type = HTTP_TRANSPORT_OVER_TCP;
+            config.crt_bundle_attach = esp_crt_bundle_attach;
+            config.skip_cert_common_name_check = false;
             config.timeout_ms = 10000; // Add 10s timeout to avoid hanging
 
             client = esp_http_client_init(&config);
@@ -633,13 +643,9 @@ static void ota_update_task(void *pvParameter) {
             // Sleep for the normal interval before checking again when connected
             vTaskDelay(pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS));
         } else {
-            // Not connected - wait efficiently for network connection event
-            ESP_LOGW(TAG, "Waiting for network connection before OTA check...");
-
-            // Wait for the network connection bit to be set, with a timeout
-            // This is more efficient than just sleeping, as it will wake up immediately when connected
-            xEventGroupWaitBits(network_event_group, NETWORK_CONNECTED_BIT,
-                                pdFALSE, pdTRUE, pdMS_TO_TICKS(60000)); // 60 sec timeout for logging purposes
+            // Not fully connected - back off before checking again
+            ESP_LOGW(TAG, "Waiting for FULLY_CONNECTED state before OTA check...");
+            vTaskDelay(pdMS_TO_TICKS(60000));
 
             // No explicit else branch needed - we'll just loop back to the connectivity check
         }
@@ -720,9 +726,8 @@ esp_err_t check_for_ota_update(void) {
     esp_http_client_config_t config = {};
     config.url = MANIFEST_URL;
     config.event_handler = http_event_handler;
-    config.cert_pem = NULL;
-    config.skip_cert_common_name_check = true;
-    config.transport_type = HTTP_TRANSPORT_OVER_TCP;
+    config.crt_bundle_attach = esp_crt_bundle_attach;
+    config.skip_cert_common_name_check = false;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);
