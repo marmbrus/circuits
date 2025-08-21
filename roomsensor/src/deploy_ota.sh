@@ -3,8 +3,8 @@ set -e
 
 # Configuration
 SERVER="gaia"
-REMOTE_DIR="/home/marmbrus/gaia/webapp/public"
-BASE_URL="http://gaia.home:3000"
+REMOTE_DIR="/mnt/containers/data/updates"
+BASE_URL="https://updates.gaia.bio"
 BIN_FILE="build/surprise.bin"
 
 # Check if we're in a git repository
