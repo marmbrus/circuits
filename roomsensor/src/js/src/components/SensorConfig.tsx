@@ -53,7 +53,7 @@ export default function SensorConfigView({ mac, config, publishConfig }: Props) 
                       {'enabledGPIO' in led && <Chip label={`Enable: ${led.enabledGPIO}`} size="small" onClick={() => openEditor(k, 'enabledGPIO', led.enabledGPIO)} />}
                       {'num_columns' in led && <Chip label={`Cols: ${led.num_columns}`} size="small" onClick={() => openEditor(k, 'num_columns', led.num_columns)} />}
                       {'num_rows' in led && <Chip label={`Rows: ${led.num_rows}`} size="small" onClick={() => openEditor(k, 'num_rows', led.num_rows)} />}
-                      {'brightness' in led && <Chip label={`Bright: ${led.brightness}`} size="small" onClick={() => openEditor(k, 'brightness', led.brightness)} />}
+                      <Chip label={`Brightness: ${('brightness' in led && led.brightness !== undefined) ? led.brightness : '(unset)'}`} size="small" onClick={() => openEditor(k, 'brightness', ('brightness' in led && led.brightness !== undefined) ? led.brightness : 0)} />
                     </Stack>
                   </Box>
                 </MuiBox>
