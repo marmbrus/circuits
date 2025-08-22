@@ -823,8 +823,8 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
     char *ota_string = cJSON_Print(ota_json);
     if (ota_string) {
         ESP_LOGI(TAG, "Publishing OTA status: %s", ota_string);
-        // Publish to ota subtopic - the publish_to_topic function will add the MAC address
-        publish_to_topic("ota", ota_string);
+        // Publish retained to device/ota under sensor/<mac>/device/ota
+        publish_to_topic("device/ota", ota_string, 1, 1);
         free(ota_string);
     } else {
         ESP_LOGE(TAG, "Failed to convert OTA status to string");
