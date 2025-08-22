@@ -19,6 +19,13 @@ export default function SensorGrid({ sensors }: Props) {
     byRoom.get(room)!.push(s)
   }
 
+  const isOnline = (s: any) => {
+    const ts = s.deviceStatusTs || 0
+    if (!ts) return false
+    const age = Date.now() - ts
+    return age <= 10000
+  }
+
   return (
     <Stack spacing={2}>
       {Array.from(grouped.entries()).map(([area, rooms]) => (
@@ -26,7 +33,18 @@ export default function SensorGrid({ sensors }: Props) {
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="h6">{area}</Typography>
-              <Chip size="small" label={`${Array.from(rooms.values()).reduce((n, arr) => n + arr.length, 0)} sensors`} />
+              {(() => {
+                const lists = Array.from(rooms.values())
+                const total = lists.reduce((n, arr) => n + arr.length, 0)
+                const online = lists.reduce((n, arr) => n + arr.filter(isOnline).length, 0)
+                const offline = total - online
+                return (
+                  <Stack direction="row" spacing={1}>
+                    {online > 0 && <Chip size="small" color="success" label={`${online}`} />}
+                    {offline > 0 && <Chip size="small" color="warning" label={`${offline}`} />}
+                  </Stack>
+                )
+              })()}
             </Stack>
           </AccordionSummary>
           <AccordionDetails>
@@ -36,7 +54,16 @@ export default function SensorGrid({ sensors }: Props) {
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Typography variant="subtitle1">{room}</Typography>
-                      <Chip size="small" label={`${list.length} sensors`} />
+                      {(() => {
+                        const online = list.filter(isOnline).length
+                        const offline = list.length - online
+                        return (
+                          <Stack direction="row" spacing={1}>
+                            {online > 0 && <Chip size="small" color="success" label={`${online}`} />}
+                            {offline > 0 && <Chip size="small" color="warning" label={`${offline}`} />}
+                          </Stack>
+                        )
+                      })()}
                     </Stack>
                   </AccordionSummary>
                   <AccordionDetails>

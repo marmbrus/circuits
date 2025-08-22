@@ -17,6 +17,7 @@ export default function Sensor({ sensor }: Props) {
 	const ip = sensor.ip
 	const [copied, setCopied] = useState(false)
 	const [statusOpen, setStatusOpen] = useState(false)
+	const [otaOpen, setOtaOpen] = useState(false)
 
 	const [nowMs, setNowMs] = useState<number>(Date.now())
 	useEffect(() => {
@@ -95,6 +96,7 @@ export default function Sensor({ sensor }: Props) {
 								label={`ota: ${String((sensor.otaStatus as any).status || 'unknown')}`}
 								size="small"
 								variant="outlined"
+								onClick={() => setOtaOpen(true)}
 							/>
 						</Stack>
 					)}
@@ -112,6 +114,12 @@ export default function Sensor({ sensor }: Props) {
 				<DialogTitle>Device status</DialogTitle>
 				<DialogContent>
 					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(sensor.deviceStatus ?? {}, null, 2)}</pre>
+				</DialogContent>
+			</Dialog>
+			<Dialog open={otaOpen} onClose={() => setOtaOpen(false)} fullWidth maxWidth="sm">
+				<DialogTitle>OTA status</DialogTitle>
+				<DialogContent>
+					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(sensor.otaStatus ?? {}, null, 2)}</pre>
 				</DialogContent>
 			</Dialog>
 		</Card>
