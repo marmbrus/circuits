@@ -89,6 +89,15 @@ export default function Sensor({ sensor }: Props) {
 							onClick={() => setStatusOpen(true)}
 						/>
 					</Stack>
+					{sensor.otaStatus && (
+						<Stack direction="row" spacing={1} alignItems="center">
+							<Chip
+								label={`ota: ${String((sensor.otaStatus as any).status || 'unknown')}`}
+								size="small"
+								variant="outlined"
+							/>
+						</Stack>
+					)}
 					{cfg && <SensorConfigView mac={sensor.mac} config={cfg} publishConfig={publishConfig} />}
 					<Divider />
 					<Typography variant="subtitle2">Latest metrics</Typography>

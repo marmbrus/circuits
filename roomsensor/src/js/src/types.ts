@@ -66,6 +66,8 @@ export type SensorState = {
   pendingConfig?: boolean
   deviceStatus?: Record<string, unknown>
   deviceStatusTs?: number
+  otaStatus?: Record<string, unknown>
+  otaStatusTs?: number
 }
 
 export type SensorsMap = Map<string, SensorState>
