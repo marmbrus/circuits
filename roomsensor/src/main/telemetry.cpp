@@ -9,8 +9,64 @@
 #include "esp_app_desc.h"
 #include "esp_flash.h"
 #include "esp_netif_ip_addr.h"
+#include "esp_timer.h"
+#include <time.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char* TAG = "telemetry";
+
+// Format MAC as lowercase hex without separators (e.g., 28372f8115f8)
+static void format_mac_nosep_lower(char* out, size_t out_len) {
+    const uint8_t* device_mac = get_device_mac();
+    snprintf(out, out_len, "%02x%02x%02x%02x%02x%02x",
+             device_mac[0], device_mac[1], device_mac[2],
+             device_mac[3], device_mac[4], device_mac[5]);
+}
+
+static TaskHandle_t s_status_task = nullptr;
+
+static void publish_device_status_once(void) {
+    // Gather cheap stats
+    uint64_t uptime_ms = esp_timer_get_time() / 1000ULL;
+    uint32_t free_heap = esp_get_free_heap_size();
+    uint32_t min_free_heap = esp_get_minimum_free_heap_size();
+    UBaseType_t num_tasks = uxTaskGetNumberOfTasks();
+
+    cJSON* root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "uptime_ms", (double)uptime_ms);
+    cJSON_AddNumberToObject(root, "free_heap", (double)free_heap);
+    cJSON_AddNumberToObject(root, "min_free_heap", (double)min_free_heap);
+    cJSON_AddNumberToObject(root, "num_tasks", (double)num_tasks);
+
+    // Absolute UTC timestamp in ISO 8601 format
+    time_t now_secs = time(nullptr);
+    struct tm tm_utc;
+    gmtime_r(&now_secs, &tm_utc);
+    char iso_ts[32];
+    strftime(iso_ts, sizeof(iso_ts), "%Y-%m-%dT%H:%M:%SZ", &tm_utc);
+    cJSON_AddStringToObject(root, "heartbeat_ts", iso_ts);
+
+    char mac_nosep[13] = {0};
+    format_mac_nosep_lower(mac_nosep, sizeof(mac_nosep));
+
+    char topic[64];
+    snprintf(topic, sizeof(topic), "sensor/%s/device/status", mac_nosep);
+
+    char* json = cJSON_PrintUnformatted(root);
+    publish_to_topic(topic, json, 0, 0);
+    cJSON_free(json);
+    cJSON_Delete(root);
+}
+
+static void status_task_entry(void* arg) {
+    ESP_LOGI(TAG, "Starting periodic device status publisher");
+    const TickType_t period_ticks = pdMS_TO_TICKS(10000);
+    while (true) {
+        publish_device_status_once();
+        vTaskDelay(period_ticks);
+    }
+}
 
 static void publish_device_info(void) {
     cJSON *device_json = cJSON_CreateObject();
@@ -148,6 +204,14 @@ esp_err_t telemetry_configure_lwt(esp_mqtt_client_config_t* mqtt_cfg) {
 void telemetry_report_connected(void) {
     publish_device_info();
     publish_location_info();
+    // Start status task once
+    if (s_status_task == nullptr) {
+        BaseType_t ok = xTaskCreatePinnedToCore(&status_task_entry, "status-pub", 4096, nullptr, tskIDLE_PRIORITY + 1, &s_status_task, tskNO_AFFINITY);
+        if (ok != pdPASS) {
+            ESP_LOGE(TAG, "Failed to create status task");
+            s_status_task = nullptr;
+        }
+    }
 }
 
 

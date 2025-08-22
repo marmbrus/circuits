@@ -64,6 +64,8 @@ export type SensorState = {
   metrics: Record<string, MetricEntry>
   ip?: string
   pendingConfig?: boolean
+  deviceStatus?: Record<string, unknown>
+  deviceStatusTs?: number
 }
 
 export type SensorsMap = Map<string, SensorState>

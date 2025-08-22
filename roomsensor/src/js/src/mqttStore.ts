@@ -89,6 +89,7 @@ export function useSensors(): UseSensorsResult {
       // sensor/<mac>/config/current
       // sensor/<mac>/metrics/<metric>
       // sensor/<mac>/ip
+      // sensor/<mac>/device/status
       const parts = topic.split('/')
       if (parts.length < 3 || parts[0] !== 'sensor') return
       const mac = parts[1].toLowerCase()
@@ -130,6 +131,20 @@ export function useSensors(): UseSensorsResult {
           setVersion((v) => v + 1)
         } catch (e) {
           setLastError(`ip parse error: ${(e as Error).message}`)
+        }
+        return
+      }
+
+      if (category === 'device' && parts[3] === 'status') {
+        try {
+          const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
+          const obj = JSON.parse(text) as Record<string, unknown>
+          const s = ensureSensor(map, mac)
+          s.deviceStatus = obj
+          s.deviceStatusTs = Date.now()
+          setVersion((v) => v + 1)
+        } catch (e) {
+          setLastError(`status parse error: ${(e as Error).message}`)
         }
         return
       }

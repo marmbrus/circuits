@@ -10,7 +10,7 @@ function App() {
     <Box sx={{ bgcolor: 'background.default', color: 'text.primary', minHeight: '100vh' }}>
       <AppBar position="sticky" color="default" elevation={1}>
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>Room Sensor Dashboard</Typography>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>Sensors</Typography>
           <Typography variant="body2" color="text.secondary">
             {connectionStatus}
           </Typography>
