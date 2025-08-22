@@ -48,12 +48,13 @@ export default function SensorConfigView({ mac, config, publishConfig }: Props) 
                     <Typography variant="body2" fontWeight={600}>{k}</Typography>
                     <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                       {'chip' in led && <Chip label={`Chip: ${led.chip}`} size="small" onClick={() => openEditor(k, 'chip', led.chip)} />}
-                      <Chip label={`Pattern: ${'pattern' in led ? led.pattern : 'OFF'}`} size="small" color="primary" onClick={() => openEditor(k, 'pattern', ('pattern' in led ? led.pattern : 'OFF'))} />
+                      <Chip label={`Pattern: ${'pattern' in led ? led.pattern : 'OFF'}`} size="small" onClick={() => openEditor(k, 'pattern', ('pattern' in led ? led.pattern : 'OFF'))} />
                       {'dataGPIO' in led && <Chip label={`Data: ${led.dataGPIO}`} size="small" onClick={() => openEditor(k, 'dataGPIO', led.dataGPIO)} />}
                       {'enabledGPIO' in led && <Chip label={`Enable: ${led.enabledGPIO}`} size="small" onClick={() => openEditor(k, 'enabledGPIO', led.enabledGPIO)} />}
                       {'num_columns' in led && <Chip label={`Cols: ${led.num_columns}`} size="small" onClick={() => openEditor(k, 'num_columns', led.num_columns)} />}
                       {'num_rows' in led && <Chip label={`Rows: ${led.num_rows}`} size="small" onClick={() => openEditor(k, 'num_rows', led.num_rows)} />}
                       <Chip label={`Brightness: ${('brightness' in led && led.brightness !== undefined) ? led.brightness : '(unset)'}`} size="small" onClick={() => openEditor(k, 'brightness', ('brightness' in led && led.brightness !== undefined) ? led.brightness : 0)} />
+                      <Chip label={`Speed: ${('speed' in led && led.speed !== undefined) ? led.speed : '(unset)'}`} size="small" onClick={() => openEditor(k, 'speed', ('speed' in led && led.speed !== undefined) ? led.speed : 0)} />
                     </Stack>
                   </Box>
                 </MuiBox>
