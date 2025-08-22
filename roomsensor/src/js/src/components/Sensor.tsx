@@ -23,6 +23,7 @@ export default function Sensor({ sensor }: Props) {
 	const [otaOpen, setOtaOpen] = useState(false)
 	const [i2cOpen, setI2cOpen] = useState<{ open: boolean; device?: any } >({ open: false })
 	const [metricOpen, setMetricOpen] = useState<{ open: boolean; data?: any }>({ open: false })
+	const [bootOpen, setBootOpen] = useState(false)
 
 	const [nowMs, setNowMs] = useState<number>(Date.now())
 	useEffect(() => {
@@ -108,6 +109,14 @@ export default function Sensor({ sensor }: Props) {
 							variant="outlined"
 							onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setOtaOpen(true) }}
 						/>
+						{sensor.deviceBoot && (
+							<Chip
+								label={`boot: ${sensor.deviceBootTs ? formatDuration(now - (sensor.deviceBootTs || 0)) : 'unknown'}`}
+								size="small"
+								variant="outlined"
+								onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setBootOpen(true) }}
+							/>
+						)}
 					</Stack>
 					{cfg && (
 						<SensorConfigView
@@ -175,6 +184,12 @@ export default function Sensor({ sensor }: Props) {
 						<p style={{ marginTop: 0 }}>Last updated: <FriendlyDuration fromMs={sensor.otaStatusTs} /></p>
 					) : null}
 					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(sensor.otaStatus ?? {}, null, 2)}</pre>
+				</DialogContent>
+			</Dialog>
+			<Dialog open={bootOpen} onClose={() => setBootOpen(false)} fullWidth maxWidth="sm">
+				<DialogTitle>Boot info</DialogTitle>
+				<DialogContent>
+					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(sensor.deviceBoot ?? {}, null, 2)}</pre>
 				</DialogContent>
 			</Dialog>
 			<Dialog open={metricOpen.open} onClose={() => setMetricOpen({ open: false })} fullWidth maxWidth="sm">

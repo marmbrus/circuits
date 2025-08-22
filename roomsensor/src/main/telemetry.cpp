@@ -125,7 +125,8 @@ static void publish_device_info(void) {
 
     // Convert to string and publish
     char *device_string = cJSON_Print(device_json);
-    publish_to_topic("device", device_string);
+    // Retained boot info
+    publish_to_topic("device", device_string, 1, 1);
 
     // Cleanup
     cJSON_free(device_string);

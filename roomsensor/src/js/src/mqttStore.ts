@@ -265,8 +265,24 @@ class MqttManager {
         this.notify()
         this.dlog('I2C inventory updated for', mac)
       } catch (e) {
-        this.setError(`i2c parse error: ${(e as Error).message}`)
+        this.setError(`i2c parse error: ${(e as Error).message})`)
         this.dlog('I2C parse error', (e as Error).message)
+      }
+      return
+    }
+
+    if (category === 'device' && parts[3] === 'boot') {
+      try {
+        const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
+        const obj = JSON.parse(text) as Record<string, unknown>
+        const s = this.ensureSensor(mac)
+        s.deviceBoot = obj
+        s.deviceBootTs = Date.now()
+        this.notify()
+        this.dlog('Boot info updated for', mac)
+      } catch (e) {
+        this.setError(`boot parse error: ${(e as Error).message}`)
+        this.dlog('Boot parse error', (e as Error).message)
       }
       return
     }

@@ -68,6 +68,8 @@ export type SensorState = {
   deviceStatusTs?: number
   otaStatus?: Record<string, unknown>
   otaStatusTs?: number
+  deviceBoot?: Record<string, unknown>
+  deviceBootTs?: number
   i2c?: {
     ts?: string
     devices: Array<{
