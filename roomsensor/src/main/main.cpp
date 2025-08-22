@@ -15,6 +15,7 @@
 #include "console.h"
 #include "ConfigurationManager.h"
 #include "gpio.h"
+#include "filesystem.h"
 
 static const char* TAG = "main";
 
@@ -69,6 +70,11 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "Failed to initialize I2C subsystem");
     } else {
         ESP_LOGI(TAG, "I2C subsystem initialized successfully");
+    }
+
+    // Mount LittleFS (reusing 'storage' partition label)
+    if (webfs::init("storage", false) != ESP_OK) {
+        ESP_LOGW(TAG, "LittleFS mount failed; web UI may not be available");
     }
 
     // Start HTTP webserver

@@ -1,4 +1,7 @@
 We are building an embeded sensory platform for IOT / Home automation, using the ESP32S3.
 Be sure the reference the documentation specific version of the ESP-IDF when you are using new APIs.
 
-Build Command: . ~/esp/v5.3/esp-idf/export.sh && idf.py build
+Shell setup command (run this once when you create a new terminal): . ~/esp/v5.3/esp-idf/export.sh
+Build command: idf.py build
+
+Always build to make sure you don't have any errors.

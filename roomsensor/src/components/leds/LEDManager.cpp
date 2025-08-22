@@ -6,6 +6,8 @@
 #include "FadePattern.h"
 #include "RainbowPattern.h"
 #include "StatusPattern.h"
+#include "GameOfLifePattern.h"
+#include "ChasePattern.h"
 #include "ConfigurationManager.h"
 #include "LEDConfig.h"
 #include "esp_timer.h"
@@ -37,6 +39,8 @@ static const char* pattern_name_for_config(config::LEDConfig::Pattern p) {
         case P::FADE: return "FADE";
         case P::STATUS: return "STATUS";
         case P::RAINBOW: return "RAINBOW";
+        case P::CHASE: return "CHASE";
+        case P::LIFE: return "LIFE";
         case P::INVALID: default: return "OFF";
     }
 }
@@ -75,17 +79,25 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
                  c->has_pattern() ? c->pattern().c_str() : "<unset>");
     }
 
-    // Determine DMA strip (longest by default, or explicit) and build in optimal order.
-    // First, pick index of DMA candidate in 'active'
-    size_t dma_idx = 0;
-    size_t longest_len = 0;
+    // Determine which strip should use DMA without reordering strips.
+    // Priority: explicit config (first with dma=true), otherwise the longest strip.
+    size_t selected_dma_idx = static_cast<size_t>(-1);
     for (size_t i = 0; i < active.size(); ++i) {
-        size_t len = static_cast<size_t>(active[i]->num_columns() * active[i]->num_rows());
-        if (len > longest_len) { longest_len = len; dma_idx = i; }
+        if (active[i]->has_dma() && active[i]->dma()) { selected_dma_idx = i; break; }
+    }
+    if (selected_dma_idx == static_cast<size_t>(-1)) {
+        size_t longest_len = 0;
+        for (size_t i = 0; i < active.size(); ++i) {
+            size_t len = static_cast<size_t>(active[i]->num_columns() * active[i]->num_rows());
+            if (len > longest_len) { longest_len = len; selected_dma_idx = i; }
+        }
     }
 
-    // Create DMA strip first with larger buffer; then create others
-    auto create_one = [&](LEDConfig* c, bool use_dma) {
+    // Build strips in the same order as provided by the configuration
+    std::vector<LEDConfig*> built_cfgs;
+    for (size_t i = 0; i < active.size(); ++i) {
+        LEDConfig* c = active[i];
+        bool use_dma = (i == selected_dma_idx);
         LEDStripRmt::CreateParams p;
         p.gpio = c->data_gpio();
         p.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
@@ -94,33 +106,15 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
         p.cols = static_cast<size_t>(c->num_columns());
         p.chip = ToLEDChip(c->chip_enum());
         p.use_dma = use_dma;
-        // For DMA, use larger buffer to minimize underflows
         p.mem_block_symbols = use_dma ? 256 : 48;
         auto s = LEDStripRmt::Create(p);
         if (!s) {
             ESP_LOGE(TAG, "Failed to create strip on GPIO %d (dma=%d)", p.gpio, (int)use_dma);
+            continue;
         }
-        return s;
-    };
-
-    // Clear previous (already cleared above); build in optimal order
-    std::vector<LEDConfig*> built_cfgs;
-    if (!active.empty()) {
-        // DMA first
-        if (auto s = create_one(active[dma_idx], true)) {
-            strips_.push_back(std::move(s));
-            patterns_.push_back(create_pattern_from_config(*active[dma_idx]));
-            built_cfgs.push_back(active[dma_idx]);
-        }
-        // Others
-        for (size_t i = 0; i < active.size(); ++i) {
-            if (i == dma_idx) continue;
-            if (auto s = create_one(active[i], false)) {
-                strips_.push_back(std::move(s));
-                patterns_.push_back(create_pattern_from_config(*active[i]));
-                built_cfgs.push_back(active[i]);
-            }
-        }
+        strips_.push_back(std::move(s));
+        patterns_.push_back(create_pattern_from_config(*c));
+        built_cfgs.push_back(c);
     }
 
     // Initial pattern application
@@ -155,6 +149,8 @@ std::unique_ptr<LEDPattern> LEDManager::create_pattern_from_config(const config:
         case P::FADE: p.reset(new FadePattern()); break;
         case P::STATUS: p.reset(new StatusPattern()); break;
         case P::RAINBOW: p.reset(new RainbowPattern()); break;
+        case P::CHASE: p.reset(new ChasePattern()); break;
+        case P::LIFE: p.reset(new GameOfLifePattern()); break;
         case P::INVALID: default: p.reset(new OffPattern()); break;
     }
     return p;
@@ -239,6 +235,7 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
                                  cfg.has_b() ? cfg.b() : 0,
                                  cfg.has_w() ? cfg.w() : 0);
             if (cfg.has_brightness()) pat->set_brightness_percent(cfg.brightness());
+            if (cfg.has_start()) pat->set_start_string(cfg.start().c_str());
             pat->reset(*strip, now_us);
             // Render first frame with correct parameters
             pat->update(*strip, now_us);
@@ -252,6 +249,7 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
                              cfg.has_b() ? cfg.b() : 0,
                              cfg.has_w() ? cfg.w() : 0);
         if (cfg.has_brightness()) pat->set_brightness_percent(cfg.brightness());
+        if (cfg.has_start()) pat->set_start_string(cfg.start().c_str());
     }
 }
 

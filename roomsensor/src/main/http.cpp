@@ -3,6 +3,7 @@
 #include "cJSON.h"
 #include "esp_system.h"
 #include "communication.h"
+#include "filesystem.h"
 #include <time.h>
 #include <sys/time.h>
 
@@ -57,6 +58,30 @@ static esp_err_t ping_get_handler(httpd_req_t *req)
     free(json_response);
     
     return ESP_OK;
+}
+
+// Serve / (index) from LittleFS, prefer gz when available
+static esp_err_t index_get_handler(httpd_req_t *req)
+{
+    // Prefer gzipped index.html if present
+    const char* gz_path = "/storage/index.html.gz";
+    const char* plain_path = "/storage/index.html";
+
+    std::vector<uint8_t> body;
+    if (webfs::exists(gz_path) && webfs::read_file(gz_path, body) == ESP_OK) {
+        httpd_resp_set_type(req, "text/html");
+        httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+        return httpd_resp_send(req, (const char*)body.data(), body.size());
+    }
+
+    if (webfs::read_file(plain_path, body) == ESP_OK) {
+        httpd_resp_set_type(req, "text/html");
+        return httpd_resp_send(req, (const char*)body.data(), body.size());
+    }
+
+    httpd_resp_set_status(req, "404 Not Found");
+    httpd_resp_set_type(req, "text/plain");
+    return httpd_resp_sendstr(req, "index.html not found");
 }
 
 // Handler for /metrics GET request
@@ -156,12 +181,21 @@ static const httpd_uri_t metrics = {
     .user_ctx  = NULL
 };
 
+static const httpd_uri_t index_page = {
+    .uri       = "/*",
+    .method    = HTTP_GET,
+    .handler   = index_get_handler,
+    .user_ctx  = NULL
+};
+
 // Function to start the webserver
 esp_err_t start_webserver(void)
 {
     // Default configuration
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.stack_size = 8192;
+    // Enable wildcard URI matching so we can serve SPA fallback for any path
+    config.uri_match_fn = httpd_uri_match_wildcard;
     
     // Start the httpd server
     ESP_LOGI(TAG, "Starting server on port: %d", config.server_port);
@@ -170,6 +204,7 @@ esp_err_t start_webserver(void)
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &ping);
         httpd_register_uri_handler(server, &metrics);
+        httpd_register_uri_handler(server, &index_page);
         return ESP_OK;
     }
 

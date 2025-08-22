@@ -24,6 +24,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     descriptors_.push_back({"W", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"brightness", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"speed", ConfigValueType::I32, nullptr, false});
+    descriptors_.push_back({"start", ConfigValueType::String, nullptr, false});
     descriptors_.push_back({"dma", ConfigValueType::Bool, nullptr, false});
 }
 
@@ -57,6 +58,8 @@ LEDConfig::Pattern LEDConfig::parse_pattern(const char* value) {
     if (strcmp(value, "STATUS") == 0) return Pattern::STATUS;
     if (strcmp(value, "SOLID") == 0) return Pattern::SOLID;
     if (strcmp(value, "RAINBOW") == 0) return Pattern::RAINBOW;
+    if (strcmp(value, "LIFE") == 0) return Pattern::LIFE;
+    if (strcmp(value, "CHASE") == 0) return Pattern::CHASE;
     return Pattern::INVALID;
 }
 
@@ -68,6 +71,8 @@ const char* LEDConfig::pattern_to_string(LEDConfig::Pattern p) {
         case Pattern::STATUS: return "STATUS";
         case Pattern::SOLID: return "SOLID";
         case Pattern::RAINBOW: return "RAINBOW";
+        case Pattern::LIFE: return "LIFE";
+        case Pattern::CHASE: return "CHASE";
     }
     return "OFF";
 }
@@ -134,6 +139,11 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         speed_set_ = (value_str != nullptr);
         return ESP_OK;
     }
+    if (strcmp(key, "start") == 0) {
+        start_set_ = (value_str != nullptr);
+        start_ = value_str ? value_str : "";
+        return ESP_OK;
+    }
     if (strcmp(key, "dma") == 0) {
         // Tri-state: if value_str is null, clear; otherwise parse truthy/falsy
         if (value_str == nullptr || value_str[0] == '\0') {
@@ -177,6 +187,7 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     if (w_set_) cJSON_AddNumberToObject(obj, "W", w_);
     if (brightness_set_) cJSON_AddNumberToObject(obj, "brightness", brightness_);
     if (speed_set_) cJSON_AddNumberToObject(obj, "speed", speed_);
+    if (start_set_) cJSON_AddStringToObject(obj, "start", start_.c_str());
     if (dma_set_) cJSON_AddBoolToObject(obj, "dma", dma_);
 
     // If dataGPIO is not set, omit this module from the config entirely

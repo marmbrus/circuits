@@ -4,3 +4,11 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(surprise)
+
+# Create LittleFS image for the 'storage' partition from directory 'fsdata'.
+include($ENV{IDF_PATH}/components/partition_table/littlefs.cmake OPTIONAL)
+if (COMMAND littlefs_create_partition_image)
+    littlefs_create_partition_image(storage fsdata FLASH_IN_PROJECT)
+else()
+    message(STATUS "littlefs_create_partition_image not available; relying on update_js.sh")
+endif()

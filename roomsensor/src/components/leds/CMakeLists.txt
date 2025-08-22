@@ -7,6 +7,8 @@ idf_component_register(
         "FadePattern.cpp"
         "RainbowPattern.cpp"
         "StatusPattern.cpp"
+        "GameOfLifePattern.cpp"
+        "ChasePattern.cpp"
     INCLUDE_DIRS "."
     REQUIRES json freertos configuration espressif__led_strip esp_timer
     PRIV_REQUIRES esp_driver_gpio

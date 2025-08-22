@@ -34,6 +34,7 @@ public:
     // by subsampling LEDs and/or scaling color channels as appropriate for the effect.
     virtual void set_brightness_percent(int brightness_percent) {}
     virtual void set_solid_color(uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) {}
+    virtual void set_start_string(const char* start) {}
 };
 
 } // namespace leds

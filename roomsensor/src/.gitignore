@@ -41,3 +41,18 @@ Thumbs.db
 
 # Project specific
 credentials.json
+fsdata/
+fsbuild/
+
+# JS UI (Vite/React)
+js/node_modules/
+js/dist/
+js/.vite/
+js/.eslintcache
+js/npm-debug.log*
+js/yarn-debug.log*
+js/yarn-error.log*
+js/pnpm-debug.log*
+js/.env
+js/.env.*
+js/.vercel/
