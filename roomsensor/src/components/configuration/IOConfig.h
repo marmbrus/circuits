@@ -33,6 +33,10 @@ public:
     bool switch_state(int pin_index /*1..8*/) const;
     bool is_switch_state_set(int pin_index /*1..8*/) const;
 
+    // Optional human-friendly pin name
+    const char* pin_name(int pin_index /*1..8*/) const;
+    bool is_pin_name_set(int pin_index /*1..8*/) const;
+
     static PinMode parse_pin_mode(const char* value);
     static const char* pin_mode_to_string(PinMode mode);
 
@@ -46,6 +50,10 @@ private:
 
     bool switch_states_[8] = {false, false, false, false, false, false, false, false};
     bool switch_state_set_[8] = {false, false, false, false, false, false, false, false};
+
+    // Persisted pin names (pin1name..pin8name)
+    std::string pin_names_[8] = {"", "", "", "", "", "", "", ""};
+    bool pin_name_set_[8] = {false, false, false, false, false, false, false, false};
 };
 
 } // namespace config

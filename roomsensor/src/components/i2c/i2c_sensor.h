@@ -100,6 +100,19 @@ public:
      */
     virtual void clearInterruptFlag() {}
 
+    /**
+     * @brief Optional logical index for sensors that can appear multiple times
+     *        (e.g., ADS1115 a2d1..a2d4, MCP23008 io1..io8). Returns -1 if not applicable.
+     */
+    virtual int index() const { return -1; }
+
+    /**
+     * @brief Optional configuration module name associated with this sensor instance
+     *        (e.g., "a2d1" or "io1"). Returns empty string if not applicable.
+     */
+    virtual std::string config_module_name() const { return std::string(); }
+
+
 protected:
     i2c_master_bus_handle_t _bus_handle; ///< Handle to the I2C master bus
     i2c_master_dev_handle_t _dev_handle; ///< Handle to the I2C device

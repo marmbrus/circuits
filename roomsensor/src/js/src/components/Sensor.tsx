@@ -1,10 +1,12 @@
-import { Card, CardContent, CardHeader, Chip, CircularProgress, Dialog, DialogContent, DialogTitle, Divider, IconButton, Link, Stack, Tooltip, Typography } from '@mui/material'
+import { Card, CardContent, CardHeader, Chip, CircularProgress, Dialog, DialogContent, DialogTitle, IconButton, Link, Stack, Tooltip, Typography, Accordion, AccordionSummary, AccordionDetails, Box } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { SensorState } from '../types'
 import { useSensors } from '../mqttStore'
 import SensorConfigView from './SensorConfig'
 import FriendlyDuration, { formatDuration } from './FriendlyDuration'
+
 
 type Props = {
 	sensor: SensorState
@@ -19,12 +21,30 @@ export default function Sensor({ sensor }: Props) {
 	const [copied, setCopied] = useState(false)
 	const [statusOpen, setStatusOpen] = useState(false)
 	const [otaOpen, setOtaOpen] = useState(false)
+	const [i2cOpen, setI2cOpen] = useState<{ open: boolean; device?: any } >({ open: false })
+	const [metricOpen, setMetricOpen] = useState<{ open: boolean; data?: any }>({ open: false })
 
 	const [nowMs, setNowMs] = useState<number>(Date.now())
 	useEffect(() => {
 		const t = setInterval(() => setNowMs(Date.now()), 1000)
 		return () => clearInterval(t)
 	}, [])
+
+	const presentA2D = useMemo(() => (sensor.i2c?.devices || []).filter((x) => (x.module || '').startsWith('a2d')).map((x) => String(x.module)), [sensor.i2c])
+	const presentIO = useMemo(() => {
+		const ios: string[] = []
+		for (const d of sensor.i2c?.devices || []) {
+			if (!d.addr) continue
+			const addrStr = String(d.addr)
+			const hex = addrStr.startsWith('0x') ? parseInt(addrStr, 16) : Number(addrStr)
+			if (!Number.isFinite(hex)) continue
+			if (hex >= 0x20 && hex <= 0x27) {
+				const index = hex - 0x20 + 1
+				ios.push(`io${index}`)
+			}
+		}
+		return Array.from(new Set(ios))
+	}, [sensor.i2c])
 
 	const now = nowMs
 	const lastTs = sensor.deviceStatusTs ?? 0
@@ -47,36 +67,33 @@ export default function Sensor({ sensor }: Props) {
 	return (
 		<Card variant="outlined">
 			<CardHeader
+				sx={{ pb: 0.5 }}
 				title={
-					<Stack direction="row" spacing={1} alignItems="baseline">
+					<Stack direction="row" spacing={1} alignItems="baseline" sx={{ minHeight: 28 }}>
 						<Typography variant="h6">{id}</Typography>
-						<Tooltip title={sensor.mac} placement="top">
-							<Typography variant="caption" color="text.secondary">{macShort}</Typography>
-						</Tooltip>
+						<Stack direction="row" alignItems="center" spacing={0.5}>
+							<Tooltip title={sensor.mac} placement="top">
+								<Typography variant="caption" color="text.secondary">{macShort}</Typography>
+							</Tooltip>
+							<Tooltip title={copied ? 'Copied' : 'Copy MAC'}>
+								<IconButton size="small" onClick={handleCopy} aria-label="copy mac">
+									<ContentCopyIcon fontSize="inherit" />
+								</IconButton>
+							</Tooltip>
+						</Stack>
 						{ip && (
 							<Link variant="caption" href={`https://${ip}`} target="_blank" rel="noreferrer">{ip}</Link>
 						)}
 					</Stack>
 				}
-				subheader={
-					<Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
-						{sensor.pendingConfig && (
-							<Stack direction="row" spacing={1} alignItems="center">
-								<CircularProgress size={14} />
-								<Typography variant="caption" color="text.secondary">applying…</Typography>
-							</Stack>
-						)}
-					</Stack>
-				}
+				subheader={null}
 				action={
-					<Tooltip title={copied ? 'Copied' : 'Copy MAC'}>
-						<IconButton size="small" onClick={handleCopy} aria-label="copy mac">
-							<ContentCopyIcon fontSize="small" />
-						</IconButton>
-					</Tooltip>
+					<Box sx={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+						<CircularProgress size={16} sx={{ visibility: sensor.pendingConfig ? 'visible' : 'hidden' }} />
+					</Box>
 				}
 			/>
-			<CardContent>
+			<CardContent sx={{ pt: 0.5 }}>
 				<Stack spacing={1} sx={{ mt: 0 }}>
 					<Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
 						<Chip
@@ -85,23 +102,64 @@ export default function Sensor({ sensor }: Props) {
 							size="small"
 							onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setStatusOpen(true) }}
 						/>
-						{sensor.otaStatus && (
-							<Chip
-								label={`ota: ${String((sensor.otaStatus as any).status || 'unknown')}`}
-								size="small"
-								variant="outlined"
-								onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setOtaOpen(true) }}
-							/>
-						)}
+						<Chip
+							label={`ota: ${String((sensor.otaStatus as any)?.status || 'unknown')}`}
+							size="small"
+							variant="outlined"
+							onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setOtaOpen(true) }}
+						/>
 					</Stack>
-					{cfg && <SensorConfigView mac={sensor.mac} config={cfg} publishConfig={publishConfig} />}
-					<Divider />
-					<Typography variant="subtitle2">Latest metrics</Typography>
-					<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-						{Object.entries(sensor.metrics).map(([key, m]) => (
-							<Chip key={key} label={`${m.tags.type ?? m.tags.name ?? 'metric'}:${key.split('|')[0]}=${m.value.toFixed(3)}`} size="small" />
-						))}
-					</Stack>
+					{cfg && (
+						<SensorConfigView
+								mac={sensor.mac}
+								config={cfg}
+								publishConfig={publishConfig}
+								presentA2DModules={presentA2D}
+								presentIOModules={presentIO}
+						/>
+					)}
+					{sensor.i2c && sensor.i2c.devices?.length ? (
+						<Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
+							<AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+								<Stack direction="row" spacing={1} alignItems="center">
+									<Typography variant="subtitle2">I2C devices</Typography>
+									<Chip label={String(sensor.i2c.devices.length)} size="small" />
+								</Stack>
+							</AccordionSummary>
+							<AccordionDetails>
+								<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+									{sensor.i2c.devices.map((d, idx) => (
+										<Chip key={`${d.addr}-${idx}`} size="small" label={`${d.addr}${d.driver ? ` ${d.driver}` : ''}`} onClick={() => setI2cOpen({ open: true, device: d })} />
+									))}
+								</Stack>
+							</AccordionDetails>
+						</Accordion>
+					) : null}
+					<Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
+						<AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+							<Stack direction="row" spacing={1} alignItems="center">
+								<Typography variant="subtitle2">Metrics</Typography>
+								<Chip label={String(Object.keys(sensor.metrics).length)} size="small" />
+							</Stack>
+						</AccordionSummary>
+						<AccordionDetails>
+							<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+								{Object.entries(sensor.metrics).map(([key, m]) => {
+									const metricName = key.split('|')[0]
+									const labelName = m.tags.name ?? m.tags.type ?? 'metric'
+									const data = { metric: metricName, value: m.value, ts: m.ts, tags: m.tags }
+									return (
+										<Chip
+											key={key}
+											label={`${labelName}:${metricName}=${m.value.toFixed(3)}`}
+											size="small"
+											onClick={() => setMetricOpen({ open: true, data })}
+										/>
+									)
+								})}
+							</Stack>
+						</AccordionDetails>
+					</Accordion>
 				</Stack>
 			</CardContent>
 			<Dialog open={statusOpen} onClose={() => setStatusOpen(false)} fullWidth maxWidth="sm">
@@ -117,6 +175,18 @@ export default function Sensor({ sensor }: Props) {
 						<p style={{ marginTop: 0 }}>Last updated: <FriendlyDuration fromMs={sensor.otaStatusTs} /></p>
 					) : null}
 					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(sensor.otaStatus ?? {}, null, 2)}</pre>
+				</DialogContent>
+			</Dialog>
+			<Dialog open={metricOpen.open} onClose={() => setMetricOpen({ open: false })} fullWidth maxWidth="sm">
+				<DialogTitle>Metric</DialogTitle>
+				<DialogContent>
+					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(metricOpen.data ?? {}, null, 2)}</pre>
+				</DialogContent>
+			</Dialog>
+			<Dialog open={i2cOpen.open} onClose={() => setI2cOpen({ open: false })} fullWidth maxWidth="sm">
+				<DialogTitle>I2C device</DialogTitle>
+				<DialogContent>
+					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(i2cOpen.device ?? {}, null, 2)}</pre>
 				</DialogContent>
 			</Dialog>
 		</Card>

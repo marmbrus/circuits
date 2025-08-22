@@ -171,6 +171,11 @@ void MCP23008Sensor::poll() {
             // Update tag with pin index (1..8)
             char index_buf[4]; snprintf(index_buf, sizeof(index_buf), "%d", i + 1);
             add_tag_to_collection(_tag_collection, "index", index_buf);
+            // Add optional pin name if configured
+            const char* pname = _config_ptr ? _config_ptr->pin_name(i + 1) : "";
+            if (pname && pname[0] != '\0') {
+                add_tag_to_collection(_tag_collection, "name", pname);
+            }
             ESP_LOGI(TAG, "io%d pin%d contact %s", _io_index, i + 1, is_high ? "HIGH" : "LOW");
             report_metric("contact", is_high ? 1.0f : 0.0f, _tag_collection);
         }

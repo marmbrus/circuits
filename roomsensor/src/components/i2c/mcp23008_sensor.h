@@ -25,6 +25,14 @@ public:
     bool isInitialized() const override;
     uint32_t poll_interval_ms() const override { return 100; }
 
+    int index() const override { return _io_index; }
+    std::string config_module_name() const override {
+        if (_io_index < 1) return std::string();
+        char buf[16];
+        snprintf(buf, sizeof(buf), "io%d", _io_index);
+        return std::string(buf);
+    }
+
     bool hasInterruptTriggered() override { return false; }
     void clearInterruptFlag() override {}
 

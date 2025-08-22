@@ -68,6 +68,15 @@ export type SensorState = {
   deviceStatusTs?: number
   otaStatus?: Record<string, unknown>
   otaStatusTs?: number
+  i2c?: {
+    ts?: string
+    devices: Array<{
+      addr: string
+      driver?: string
+      index?: number
+      module?: string
+    }>
+  }
 }
 
 export type SensorsMap = Map<string, SensorState>

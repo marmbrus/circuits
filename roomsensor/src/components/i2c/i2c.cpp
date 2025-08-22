@@ -7,6 +7,7 @@
 #include "i2c_master_ext.h"
 #include "opt3001_sensor.h"
 #include "mcp23008_sensor.h"
+#include "i2c_telemetry.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -136,8 +137,15 @@ bool init_i2c() {
     const uint16_t probe_timeout_ms = 50;
     int found_count = 0;
     int initialized_count = 0;
+    // Collect unrecognized device addresses
+    uint8_t unrecognized_addrs[32];
+    int unrecognized_count = 0;
 
     ESP_LOGI(TAG, "Scanning I2C bus for devices...");
+
+    // Track which entries in s_sensors were recognized (address matched on bus)
+    bool recognized_flags[s_sensor_count];
+    for (int i = 0; i < s_sensor_count; ++i) recognized_flags[i] = false;
 
     for (uint8_t addr = 0x08; addr < 0x78; addr++) {
         esp_err_t ret = i2c_master_probe(s_i2c_bus, addr, probe_timeout_ms);
@@ -151,6 +159,7 @@ bool init_i2c() {
             for (int i = 0; i < s_sensor_count; i++) {
                 if (s_sensors[i]->addr() == addr) {
                     recognized = true;
+                    recognized_flags[i] = true;
                     ESP_LOGI(TAG, "Found device at address 0x%02X: %s", addr, s_sensors[i]->name().c_str());
 
                     // Try to initialize the sensor if it's not already initialized
@@ -174,12 +183,22 @@ bool init_i2c() {
 
             if (!recognized) {
                 ESP_LOGW(TAG, "Found unrecognized device at address 0x%02X", addr);
+                if (unrecognized_count < (int)(sizeof(unrecognized_addrs)/sizeof(unrecognized_addrs[0]))) {
+                    unrecognized_addrs[unrecognized_count++] = addr;
+                }
             }
         }
     }
 
     ESP_LOGI(TAG, "I2C scan complete: %d devices found, %d sensors initialized",
              found_count, initialized_count);
+
+    // Publish I2C topology retained message
+    publish_i2c_topology((const I2CSensor* const*)s_sensors,
+                         recognized_flags,
+                         s_sensor_count,
+                         unrecognized_addrs,
+                         unrecognized_count);
 
     // Start the sensor polling task if we have at least one initialized sensor
     if (initialized_count > 0) {

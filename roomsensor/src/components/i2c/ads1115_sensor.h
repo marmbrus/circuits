@@ -21,6 +21,9 @@ public:
 	void poll() override;
 	bool isInitialized() const override;
 
+	int index() const override;
+	std::string config_module_name() const override;
+
 	bool hasInterruptTriggered() override { return false; }
 	void clearInterruptFlag() override {}
 

@@ -35,6 +35,19 @@ std::string ADS1115Sensor::name() const {
 	return std::string(buf);
 }
 
+int ADS1115Sensor::index() const {
+	if (_i2c_addr < 0x48 || _i2c_addr > 0x4B) return -1;
+	return (int)(_i2c_addr - 0x48) + 1; // 0x48->1 .. 0x4B->4
+}
+
+std::string ADS1115Sensor::config_module_name() const {
+	int idx = index();
+	if (idx < 1) return std::string();
+	char buf[16];
+	snprintf(buf, sizeof(buf), "a2d%d", idx);
+	return std::string(buf);
+}
+
 bool ADS1115Sensor::init() {
 	ESP_LOGE(TAG, "Invalid init() without bus handle. Use init(bus_handle).");
 	return false;
