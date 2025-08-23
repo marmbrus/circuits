@@ -16,6 +16,7 @@
 #include "ConfigurationManager.h"
 #include "gpio.h"
 #include "filesystem.h"
+#include "netlog.h"
 
 static const char* TAG = "main";
 
@@ -54,6 +55,11 @@ extern "C" void app_main(void)
         } else {
             ESP_LOGI(TAG, "Boot publish acknowledged; continuing startup");
         }
+    }
+
+    // Initialize netlog once network path is progressing
+    if (netlog_init_early() != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to initialize netlog early");
     }
 
     // Initialize the metrics reporting system (both queue and background task)

@@ -179,6 +179,24 @@ class MqttManager {
     if (parts.length < 3 || parts[0] !== 'sensor') return
     const mac = parts[1].toLowerCase()
     const category = parts[2]
+    // Logs: sensor/$mac/logs/$level -> plain text with ANSI escapes
+    if (category === 'logs' && parts.length >= 4) {
+      try {
+        const level = parts[3]
+        const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
+        const s = this.ensureSensor(mac)
+        if (!s.logs) s.logs = []
+        const ts = Date.now()
+        s.logs.push({ ts, level, message: text })
+        // Enforce FIFO cap
+        const MAX_LOGS = 500
+        if (s.logs.length > MAX_LOGS) s.logs.splice(0, s.logs.length - MAX_LOGS)
+        this.notify()
+        return
+      } catch (e) {
+        this.setError(`log parse error: ${(e as Error).message}`)
+      }
+    }
 
     if (category === 'config' && parts[3] === 'current') {
       try {

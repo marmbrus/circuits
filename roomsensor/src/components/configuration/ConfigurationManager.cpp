@@ -188,6 +188,8 @@ esp_err_t ConfigurationManager::initialize() {
         nvs_load_module(mod->name(), mod);
     }
 
+    // No global log level changes here; UART logging remains controlled by sdkconfig/menuconfig.
+
     // Log full configuration to console (pretty-printed)
     {
         cJSON* root = build_full_config_json();

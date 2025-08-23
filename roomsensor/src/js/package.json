@@ -15,6 +15,7 @@
     "@mui/icons-material": "7.3.1",
     "@mui/material": "7.3.1",
     "mqtt": "^5.10.1",
+    "ansi-to-html": "^0.7.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

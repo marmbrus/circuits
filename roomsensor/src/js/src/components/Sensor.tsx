@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, Chip, CircularProgress, Dialog, DialogContent, DialogTitle, IconButton, Link, Stack, Tooltip, Typography, Accordion, AccordionSummary, AccordionDetails, Box } from '@mui/material'
+import { Card, CardContent, CardHeader, Chip, CircularProgress, Dialog, DialogContent, DialogTitle, IconButton, Link, Stack, Tooltip, Typography, Accordion, AccordionSummary, AccordionDetails, Box, Collapse, FormControl, InputLabel, MenuItem, Select } from '@mui/material'
+import AnsiText from './AnsiText'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import { useEffect, useMemo, useState } from 'react'
@@ -24,6 +25,8 @@ export default function Sensor({ sensor }: Props) {
 	const [i2cOpen, setI2cOpen] = useState<{ open: boolean; device?: any } >({ open: false })
 	const [metricOpen, setMetricOpen] = useState<{ open: boolean; data?: any }>({ open: false })
 	const [bootOpen, setBootOpen] = useState(false)
+	const [expanded, setExpanded] = useState(false)
+  const [logsExpanded, setLogsExpanded] = useState(false)
 
 	const [nowMs, setNowMs] = useState<number>(Date.now())
 	useEffect(() => {
@@ -85,15 +88,34 @@ export default function Sensor({ sensor }: Props) {
 						{ip && (
 							<Link variant="caption" href={`https://${ip}`} target="_blank" rel="noreferrer">{ip}</Link>
 						)}
+						{!expanded && (
+							<Chip
+								label={statusLabel}
+								color={statusColor}
+								size="small"
+								onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setStatusOpen(true) }}
+							/>
+						)}
 					</Stack>
 				}
 				subheader={null}
 				action={
-					<Box sx={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-						<CircularProgress size={16} sx={{ visibility: sensor.pendingConfig ? 'visible' : 'hidden' }} />
-					</Box>
+					<Stack direction="row" spacing={0.5} alignItems="center">
+						<Box sx={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+							<CircularProgress size={16} sx={{ visibility: sensor.pendingConfig ? 'visible' : 'hidden' }} />
+						</Box>
+						<IconButton
+							size="small"
+							onClick={() => setExpanded((v) => !v)}
+							aria-label={expanded ? 'collapse' : 'expand'}
+							sx={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: (theme) => (theme as any).transitions?.create?.('transform') || 'transform 150ms ease' }}
+						>
+							<ExpandMoreIcon fontSize="inherit" />
+						</IconButton>
+					</Stack>
 				}
 			/>
+			<Collapse in={expanded} timeout="auto" unmountOnExit>
 			<CardContent sx={{ pt: 0.5 }}>
 				<Stack spacing={1} sx={{ mt: 0 }}>
 					<Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
@@ -183,8 +205,72 @@ export default function Sensor({ sensor }: Props) {
 							</Stack>
 						</AccordionDetails>
 					</Accordion>
+          <Accordion disableGutters elevation={0} expanded={logsExpanded} onChange={() => setLogsExpanded(v => !v)} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="subtitle2">Logs</Typography>
+                {(() => {
+                  const order = ['error','warn','info','debug','verbose']
+                  const counts: Record<string, number> = {}
+                  for (const e of (sensor.logs || [])) {
+                    const lvl = String(e.level || '').toLowerCase()
+                    counts[lvl] = (counts[lvl] || 0) + 1
+                  }
+                  const colorFor = (lvl: string): 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' => {
+                    switch (lvl) {
+                      case 'error': return 'error'
+                      case 'warn': return 'warning'
+                      case 'info': return 'info'
+                      default: return 'default'
+                    }
+                  }
+                  return order.filter(l => (counts[l] || 0) > 0).map(l => (
+                    <Chip key={l} label={String(counts[l])} size="small" color={colorFor(l)} />
+                  ))
+                })()}
+              </Stack>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                {(() => {
+                  const current = Number(sensor.config?.wifi?.loglevel ?? 2)
+                  const levels = [
+                    { label: 'none', value: 0 },
+                    { label: 'error', value: 1 },
+                    { label: 'warn', value: 2 },
+                    { label: 'info', value: 3 },
+                    { label: 'debug', value: 4 },
+                    { label: 'verbose', value: 5 },
+                  ]
+                  return (
+                    <FormControl size="small" sx={{ minWidth: 140 }}>
+                      <InputLabel id={`loglevel-${sensor.mac}`}>Level</InputLabel>
+                      <Select
+                        labelId={`loglevel-${sensor.mac}`}
+                        label="Level"
+                        value={current}
+                        onChange={(e) => publishConfig(sensor.mac, 'wifi', 'loglevel', Number(e.target.value))}
+                      >
+                        {levels.map((l) => (
+                          <MenuItem key={l.value} value={l.value}>{l.label}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )
+                })()}
+              </Stack>
+              <Box sx={{ maxHeight: 240, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1, p: 1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace', fontSize: 12 }}>
+                {(sensor.logs || []).slice(-500).map((entry, idx) => (
+                  <div key={idx} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    <AnsiText text={entry.message} />
+                  </div>
+                ))}
+              </Box>
+            </AccordionDetails>
+          </Accordion>
 				</Stack>
 			</CardContent>
+			</Collapse>
 			<Dialog open={statusOpen} onClose={() => setStatusOpen(false)} fullWidth maxWidth="sm">
 				<DialogTitle>Device status</DialogTitle>
 				<DialogContent>

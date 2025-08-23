@@ -18,6 +18,7 @@ public:
     const std::string& ssid() const { return ssid_; }
     const std::string& password() const { return password_; }
     const std::string& mqtt_broker() const { return mqtt_broker_; }
+    int loglevel() const { return loglevel_; }
 
     // Presence helpers (true only if loaded from NVS or set via update and non-empty)
     bool has_ssid() const { return ssid_set_ && !ssid_.empty(); }
@@ -31,6 +32,7 @@ private:
     bool ssid_set_ = false;
     bool password_set_ = false;
     bool mqtt_broker_set_ = false;
+    int loglevel_ = 2; // default warn (ESP_LOG_WARN)
     std::vector<ConfigurationValueDescriptor> descriptors_;
 };
 

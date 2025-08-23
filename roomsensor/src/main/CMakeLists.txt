@@ -6,6 +6,7 @@ idf_component_register(
         "http.cpp"
         "ota.cpp"
         "telemetry.cpp"
+        "netlog.cpp"
         "gpio.cpp"
         "filesystem.cpp"
     INCLUDE_DIRS "."

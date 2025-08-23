@@ -11,6 +11,8 @@ WifiConfig::WifiConfig() {
     descriptors_.push_back({"ssid", ConfigValueType::String, nullptr, true});
     descriptors_.push_back({"password", ConfigValueType::String, nullptr, true});
     descriptors_.push_back({"mqtt_broker", ConfigValueType::String, nullptr, true});
+    // Default loglevel warn (2). Persisted to NVS and applied at runtime.
+    descriptors_.push_back({"loglevel", ConfigValueType::I32, "2", true});
 }
 
 const char* WifiConfig::name() const {
@@ -73,6 +75,16 @@ esp_err_t WifiConfig::apply_update(const char* key, const char* value_str) {
         return ESP_OK;
     }
 
+    if (strcmp(key, "loglevel") == 0) {
+        // Accept numeric 0..5 mapping to esp_log_level_t
+        int lvl = value_str ? atoi(value_str) : 2;
+        if (lvl < (int)ESP_LOG_NONE) lvl = (int)ESP_LOG_NONE;
+        if (lvl > (int)ESP_LOG_VERBOSE) lvl = (int)ESP_LOG_VERBOSE;
+        loglevel_ = lvl;
+        return ESP_OK;
+    }
+
+
     ESP_LOGW(TAG, "Unknown key '%s'", key);
     return ESP_ERR_NOT_FOUND;
 }
@@ -94,6 +106,10 @@ esp_err_t WifiConfig::to_json(cJSON* root_object) const {
         cJSON_AddStringToObject(wifi_obj, "mqtt_broker", mqtt_broker_.c_str());
         added++;
     }
+    // Always include loglevel
+    cJSON_AddNumberToObject(wifi_obj, "loglevel", loglevel_);
+    added++;
+    
     if (added > 0) {
         cJSON_AddItemToObject(root_object, name(), wifi_obj);
     } else {

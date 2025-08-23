@@ -15,6 +15,7 @@ export type WifiConfig = {
   ssid: string
   password: string
   mqtt_broker: string
+  loglevel?: number
 }
 
 export type TagsConfig = {
@@ -79,6 +80,7 @@ export type SensorState = {
       module?: string
     }>
   }
+  logs?: Array<{ ts: number; level: string; message: string }>
 }
 
 export type SensorsMap = Map<string, SensorState>
