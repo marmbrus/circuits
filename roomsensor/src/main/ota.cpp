@@ -17,6 +17,7 @@
 #include "config.h"
 #include "system_state.h"
 #include "communication.h"
+#include "filesystem.h"
 
 /*
  * OTA Update State Machine
@@ -84,8 +85,200 @@ typedef enum {
 static char remote_version[33] = {0};
 static time_t remote_timestamp = 0;
 
+// Web app OTA tracking
+typedef enum {
+    WEB_STATUS_UNKNOWN = 0,
+    WEB_STATUS_UPGRADING,
+    WEB_STATUS_UP_TO_DATE,
+    WEB_STATUS_NEWER
+} web_status_t;
+
+static char web_remote_version[33] = {0};
+static time_t web_remote_timestamp = 0;
+static char web_local_version[33] = {0};
+static time_t web_local_timestamp = 0;
+static web_status_t web_status = WEB_STATUS_UNKNOWN;
+static char web_last_error[96] = {0};
+
 // Forward declarations
 static void report_ota_status(ota_status_t status, const char* remote_hash);
+static const char* extract_git_hash(const char* version);
+
+// Helper: read a small JSON file fully into memory
+static char* read_text_file(const char* path) {
+    FILE* f = fopen(path, "rb");
+    if (!f) return NULL;
+    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return NULL; }
+    long sz = ftell(f);
+    if (sz < 0 || sz > 64 * 1024) { fclose(f); return NULL; }
+    if (fseek(f, 0, SEEK_SET) != 0) { fclose(f); return NULL; }
+    char* buf = (char*)malloc((size_t)sz + 1);
+    if (!buf) { fclose(f); return NULL; }
+    size_t n = fread(buf, 1, (size_t)sz, f);
+    fclose(f);
+    if (n != (size_t)sz) { free(buf); return NULL; }
+    buf[n] = 0;
+    return buf;
+}
+
+// Helper: write buffer to a file atomically via temp path then rename
+static bool write_text_file_atomic(const char* path, const char* text) {
+    char tmp[128];
+    snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+    FILE* f = fopen(tmp, "wb");
+    if (!f) return false;
+    size_t len = strlen(text);
+    bool ok = fwrite(text, 1, len, f) == len;
+    fclose(f);
+    if (!ok) { remove(tmp); return false; }
+    if (rename(tmp, path) != 0) { remove(tmp); return false; }
+    return true;
+}
+
+// Helper: copy a file
+static bool copy_file(const char* src, const char* dst) {
+    FILE* in = fopen(src, "rb");
+    if (!in) return false;
+    char tmp[128];
+    snprintf(tmp, sizeof(tmp), "%s.tmp", dst);
+    FILE* out = fopen(tmp, "wb");
+    if (!out) { fclose(in); return false; }
+    uint8_t buf[2048];
+    size_t n;
+    bool ok = true;
+    while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
+        if (fwrite(buf, 1, n, out) != n) { ok = false; break; }
+    }
+    fclose(in);
+    if (fclose(out) != 0) ok = false;
+    if (!ok) { remove(tmp); return false; }
+    if (rename(tmp, dst) != 0) { remove(tmp); return false; }
+    return true;
+}
+
+// Load local web app info from /storage/webapp.json
+static void load_local_web_info(void) {
+    web_local_version[0] = '\0';
+    web_local_timestamp = 0;
+    const char* path = "/storage/webapp.json";
+    char* s = read_text_file(path);
+    if (!s) {
+        ESP_LOGI(TAG, "No local webapp.json found; assuming no local web info");
+        return;
+    }
+    cJSON* root = cJSON_Parse(s);
+    if (!root) { free(s); return; }
+    const cJSON* v = cJSON_GetObjectItem(root, "local_version");
+    const cJSON* t = cJSON_GetObjectItem(root, "local_build_timestamp_epoch");
+    if (cJSON_IsString(v)) {
+        strncpy(web_local_version, v->valuestring, sizeof(web_local_version) - 1);
+    }
+    if (cJSON_IsNumber(t)) {
+        web_local_timestamp = (time_t)t->valuedouble;
+    }
+    cJSON_Delete(root);
+    free(s);
+}
+
+// Persist local web app info to /storage/webapp.json
+static void save_local_web_info(const char* version, time_t ts_epoch) {
+    cJSON* root = cJSON_CreateObject();
+    if (!root) return;
+    cJSON_AddStringToObject(root, "local_version", version ? version : "");
+    // ISO time
+    char iso[64];
+    struct tm tm_time;
+    gmtime_r(&ts_epoch, &tm_time);
+    strftime(iso, sizeof(iso), "%Y-%m-%dT%H:%M:%SZ", &tm_time);
+    cJSON_AddStringToObject(root, "local_build_timestamp", iso);
+    cJSON_AddNumberToObject(root, "local_build_timestamp_epoch", (double)ts_epoch);
+    char* txt = cJSON_PrintUnformatted(root);
+    if (txt) {
+        write_text_file_atomic("/storage/webapp.json", txt);
+        free(txt);
+    }
+    cJSON_Delete(root);
+}
+
+// Download URL to a temp file and then copy to the final targets
+static esp_err_t download_web_asset(const char* url, const char* version_hash) {
+    if (!url || !version_hash || strlen(version_hash) == 0) return ESP_ERR_INVALID_ARG;
+    ESP_LOGI(TAG, "Downloading web asset from %s", url);
+
+    esp_http_client_config_t cfg = {};
+    cfg.url = url;
+    cfg.crt_bundle_attach = esp_crt_bundle_attach;
+    cfg.skip_cert_common_name_check = false;
+    cfg.timeout_ms = 30000;
+
+    esp_http_client_handle_t client = esp_http_client_init(&cfg);
+    if (!client) return ESP_FAIL;
+    esp_err_t err = esp_http_client_open(client, 0);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to open web URL: %s", esp_err_to_name(err));
+        esp_http_client_cleanup(client);
+        return err;
+    }
+
+    const char* tmp_path = "/storage/.web_download.tmp";
+    FILE* f = fopen(tmp_path, "wb");
+    if (!f) {
+        ESP_LOGE(TAG, "Failed to open temp file for web download");
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        return ESP_FAIL;
+    }
+
+    uint8_t buf[2048];
+    int read_total = 0;
+    while (1) {
+        int r = esp_http_client_read(client, (char*)buf, sizeof(buf));
+        if (r < 0) {
+            ESP_LOGE(TAG, "Error reading web content: %d", r);
+            fclose(f);
+            remove(tmp_path);
+            esp_http_client_close(client);
+            esp_http_client_cleanup(client);
+            return ESP_FAIL;
+        }
+        if (r == 0) break;
+        if (fwrite(buf, 1, (size_t)r, f) != (size_t)r) {
+            ESP_LOGE(TAG, "Error writing temp web file");
+            fclose(f);
+            remove(tmp_path);
+            esp_http_client_close(client);
+            esp_http_client_cleanup(client);
+            return ESP_FAIL;
+        }
+        read_total += r;
+    }
+    fclose(f);
+    esp_http_client_close(client);
+    esp_http_client_cleanup(client);
+
+    if (read_total <= 0) {
+        ESP_LOGE(TAG, "Downloaded web asset is empty");
+        remove(tmp_path);
+        return ESP_FAIL;
+    }
+
+    char versioned_path[128];
+    snprintf(versioned_path, sizeof(versioned_path), "/storage/index-%s.html.gz", version_hash);
+
+    // Copy temp to versioned and current
+    if (!copy_file(tmp_path, versioned_path)) {
+        ESP_LOGE(TAG, "Failed to write versioned web file");
+        remove(tmp_path);
+        return ESP_FAIL;
+    }
+    if (!copy_file(tmp_path, "/storage/index.html.gz")) {
+        ESP_LOGE(TAG, "Failed to update current index.html.gz");
+        remove(tmp_path);
+        return ESP_FAIL;
+    }
+    remove(tmp_path);
+    return ESP_OK;
+}
 
 // Determine whether system time has been synchronized (via SNTP)
 static bool is_time_synchronized(void) {
@@ -277,6 +470,10 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     cJSON *version = cJSON_GetObjectItem(root, "version");
     cJSON *url = cJSON_GetObjectItem(root, "url");
     cJSON *build_timestamp_epoch = cJSON_GetObjectItem(root, "build_timestamp_epoch");
+    // Web fields (optional)
+    cJSON *web_version = cJSON_GetObjectItem(root, "web_version");
+    cJSON *web_url = cJSON_GetObjectItem(root, "web_url");
+    cJSON *web_build_timestamp_epoch = cJSON_GetObjectItem(root, "web_build_timestamp_epoch");
 
     if (!cJSON_IsString(version) || !cJSON_IsString(url)) {
         ESP_LOGE(TAG, "Manifest missing required fields");
@@ -448,9 +645,63 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         }
     }
 
-    // If we reach here, no update is needed
+    // If we reach here, no firmware update is needed; proceed to check web app
+
+    // Reset last error before web check
+    web_last_error[0] = '\0';
+
+    // Populate remote web fields if present
+    if (cJSON_IsString(web_version)) {
+        strncpy(web_remote_version, web_version->valuestring, sizeof(web_remote_version) - 1);
+    } else {
+        web_remote_version[0] = '\0';
+    }
+    web_remote_timestamp = 0;
+    if (cJSON_IsNumber(web_build_timestamp_epoch)) {
+        web_remote_timestamp = (time_t)web_build_timestamp_epoch->valuedouble;
+    }
+
+    // Load local web info from file if any
+    load_local_web_info();
+
+    // Default web status when unknown
+    web_status = WEB_STATUS_UNKNOWN;
+
+    if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
+        const char* remote_web_url = web_url->valuestring;
+        const char* remote_web_hash = extract_git_hash(web_remote_version);
+
+        if (web_local_timestamp > 0 && web_local_timestamp > web_remote_timestamp) {
+            // Local dev build is newer; keep it
+            web_status = WEB_STATUS_NEWER;
+            ESP_LOGI(TAG, "Local web assets newer than server; skipping web update");
+        } else if (web_local_timestamp > 0 && web_local_timestamp == web_remote_timestamp) {
+            web_status = WEB_STATUS_UP_TO_DATE;
+            ESP_LOGI(TAG, "Web assets up to date");
+        } else {
+            // Need to update web
+            web_status = WEB_STATUS_UPGRADING;
+            report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash); // report combined status
+
+            esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
+            if (wret == ESP_OK) {
+                // Save local info for future comparisons
+                save_local_web_info(remote_web_hash, web_remote_timestamp);
+                strncpy(web_local_version, remote_web_hash, sizeof(web_local_version) - 1);
+                web_local_timestamp = web_remote_timestamp;
+                web_status = WEB_STATUS_UP_TO_DATE;
+                ESP_LOGI(TAG, "Web assets updated successfully to %s", remote_web_hash);
+            } else {
+                snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret));
+                ESP_LOGE(TAG, "Web update failed: %s", web_last_error);
+            }
+        }
+    }
+
+    // Firmware remains valid; report final status
     mark_app_valid();
     cJSON_Delete(root);
+    report_ota_status((remote_timestamp == FIRMWARE_BUILD_TIME) ? OTA_STATUS_UP_TO_DATE : OTA_STATUS_NEWER, remote_hash);
     return false;
 }
 
@@ -673,6 +924,9 @@ esp_err_t ota_init(void) {
     // Get current firmware version and partition info
     get_current_version();
 
+    // Ensure LittleFS is mounted for web OTA reads/writes
+    webfs::init("storage", false);
+
     // Check if we're running from factory partition
     bool is_factory = false;
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -817,6 +1071,31 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
         strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%dT%H:%M:%SZ", &remote_tm);
         cJSON_AddStringToObject(ota_json, "remote_build_time", remote_time_str);
         ESP_LOGD(TAG, "Adding remote_build_time to status: %s", remote_time_str);
+    }
+
+    // Web telemetry
+    const char* web_status_str = "UNKNOWN";
+    switch (web_status) {
+        case WEB_STATUS_UPGRADING: web_status_str = "UPGRADING"; break;
+        case WEB_STATUS_UP_TO_DATE: web_status_str = "UP_TO_DATE"; break;
+        case WEB_STATUS_NEWER: web_status_str = "NEWER"; break;
+        case WEB_STATUS_UNKNOWN: default: web_status_str = "UNKNOWN"; break;
+    }
+    cJSON_AddStringToObject(ota_json, "web_status", web_status_str);
+    if (web_local_version[0]) cJSON_AddStringToObject(ota_json, "web_local_version", web_local_version);
+    if (web_remote_version[0]) cJSON_AddStringToObject(ota_json, "web_remote_version", extract_git_hash(web_remote_version));
+    if (web_local_timestamp > 0) {
+        char t[64]; struct tm tm1; gmtime_r(&web_local_timestamp, &tm1);
+        strftime(t, sizeof(t), "%Y-%m-%dT%H:%M:%SZ", &tm1);
+        cJSON_AddStringToObject(ota_json, "web_local_build_time", t);
+    }
+    if (web_remote_timestamp > 0) {
+        char t[64]; struct tm tm2; gmtime_r(&web_remote_timestamp, &tm2);
+        strftime(t, sizeof(t), "%Y-%m-%dT%H:%M:%SZ", &tm2);
+        cJSON_AddStringToObject(ota_json, "web_remote_build_time", t);
+    }
+    if (web_last_error[0]) {
+        cJSON_AddStringToObject(ota_json, "web_error", web_last_error);
     }
 
     // Convert to string and publish

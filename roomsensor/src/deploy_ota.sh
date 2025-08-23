@@ -7,6 +7,11 @@ REMOTE_DIR="/mnt/containers/data/updates"
 BASE_URL="https://updates.gaia.bio"
 BIN_FILE="build/surprise.bin"
 
+# JS build paths
+ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
+JS_DIR="$ROOT_DIR/js"
+JS_BUILD_DIR="$JS_DIR/dist"
+
 # Check if we're in a git repository
 if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
     echo "Error: Not in a git repository"
@@ -38,10 +43,23 @@ if [[ "$GIT_DESCRIBE" == *-dirty ]]; then
     exit 1
 fi
 
-# Run idf.py build first to ensure the binary is up-to-date
-echo "Building project with idf.py..."
+# Build firmware first to embed BUILD_TIMESTAMP used by both firmware and web manifest
+echo "Building project (firmware) with idf.py..."
 idf.py fullclean build || { echo "Error: Build failed"; exit 1; }
-echo "Build successful"
+echo "Firmware build successful"
+
+# Build web app (Vite) and gzip index.html
+echo "Building web app..."
+pushd "$JS_DIR" >/dev/null
+npm ci
+npm run build || { echo "Error: Web build failed"; popd >/dev/null; exit 1; }
+popd >/dev/null
+
+INDEX_HTML="$JS_BUILD_DIR/index.html"
+if [ ! -f "$INDEX_HTML" ]; then
+    echo "Error: Built index.html not found at $INDEX_HTML"
+    exit 1
+fi
 
 # Extract build timestamp from CMake cache instead of generating a new one
 BUILD_TIMESTAMP=$(grep -a "BUILD_TIMESTAMP:STRING=" build/CMakeCache.txt | cut -d= -f2)
@@ -64,18 +82,27 @@ fi
 BIN_SIZE=$(stat -f%z "$BIN_FILE")
 echo "Using binary: $BIN_FILE (size: $BIN_SIZE bytes)"
 
-# Create bin filename with git hash
+# Create filenames with git hash
 BIN_FILENAME="firmware-${GIT_HASH}.bin"
+WEB_FILENAME="index-${GIT_HASH}.html.gz"
 MANIFEST_FILE="manifest.json"
 
-# Create manifest.json with version information
+# Produce gzipped web asset in repo root for upload
+gzip -c -9 "$INDEX_HTML" > "$WEB_FILENAME"
+
+# Create manifest.json with firmware and web information
 cat > ${MANIFEST_FILE} << EOF
 {
     "version": "${GIT_HASH}",
     "build_timestamp": "${BUILD_ISO_TIME}",
     "build_timestamp_epoch": ${BUILD_TIMESTAMP},
     "git_describe": "${GIT_DESCRIBE}",
-    "url": "${BASE_URL}/${BIN_FILENAME}"
+    "url": "${BASE_URL}/${BIN_FILENAME}",
+    "web_version": "${GIT_HASH}",
+    "web_build_timestamp": "${BUILD_ISO_TIME}",
+    "web_build_timestamp_epoch": ${BUILD_TIMESTAMP},
+    "web_git_describe": "${GIT_DESCRIBE}",
+    "web_url": "${BASE_URL}/${WEB_FILENAME}"
 }
 EOF
 
@@ -85,10 +112,10 @@ echo "Created manifest file with version ${GIT_HASH}, timestamp ${BUILD_ISO_TIME
 cp "${BIN_FILE}" "${BIN_FILENAME}"
 
 # Upload files to server
-echo "Uploading firmware binary and manifest to ${SERVER}:${REMOTE_DIR}..."
-scp "${BIN_FILENAME}" "${MANIFEST_FILE}" "${SERVER}:${REMOTE_DIR}/"
+echo "Uploading firmware, web asset, and manifest to ${SERVER}:${REMOTE_DIR}..."
+scp "${BIN_FILENAME}" "${WEB_FILENAME}" "${MANIFEST_FILE}" "${SERVER}:${REMOTE_DIR}/"
 
 # Clean up local temporary files
-rm "${BIN_FILENAME}" "${MANIFEST_FILE}"
+rm "${BIN_FILENAME}" "${WEB_FILENAME}" "${MANIFEST_FILE}"
 
 echo "Deployment complete. OTA update is available at ${BASE_URL}/${MANIFEST_FILE}"

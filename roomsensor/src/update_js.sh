@@ -46,6 +46,21 @@ mkdir -p "$FSDATA_DIR"
 echo "[3/5] Compressing index.html -> index.html.gz"
 gzip -c -9 "$INDEX_SRC" > "$FSDATA_DIR/index.html.gz"
 
+# Also write a local web manifest so the device can compare local vs remote web versions
+GIT_HASH=$(git -C "$ROOT_DIR" rev-parse --short HEAD || echo dev)
+GIT_DESCRIBE=$(git -C "$ROOT_DIR" describe --tags --always --dirty 2>/dev/null || echo "v0.0-g$GIT_HASH")
+# Use wall clock for dev flashes so they are considered newer than remote if appropriate
+NOW_EPOCH=$(date -u +%s)
+NOW_ISO=$(date -u -r "$NOW_EPOCH" +"%Y-%m-%dT%H:%M:%SZ" || date -u +"%Y-%m-%dT%H:%M:%SZ")
+cat > "$FSDATA_DIR/webapp.json" << JSON
+{
+  "local_version": "$GIT_HASH",
+  "local_git_describe": "$GIT_DESCRIBE",
+  "local_build_timestamp": "$NOW_ISO",
+  "local_build_timestamp_epoch": $NOW_EPOCH
+}
+JSON
+
 # Always (re)build so storage.bin includes latest fsdata contents
 echo "[4/5] Building project to generate storage.bin (filesystem image)"
 idf.py build >/dev/null
