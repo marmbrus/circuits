@@ -5,7 +5,7 @@ set -e
 SERVER="gaia"
 REMOTE_DIR="/mnt/containers/data/updates"
 BASE_URL="https://updates.gaia.bio"
-BIN_FILE="build/surprise.bin"
+BIN_FILE="build/sensorv2.bin"
 
 # JS build paths
 ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
