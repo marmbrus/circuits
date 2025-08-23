@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(surprise)
+project(sensorv2)
 
 # Create LittleFS image for the 'storage' partition from directory 'fsdata'.
 include($ENV{IDF_PATH}/components/partition_table/littlefs.cmake OPTIONAL)

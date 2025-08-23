@@ -9,9 +9,57 @@ export type UseSensorsResult = {
   publishConfig: (mac: string, moduleName: string, configName: string, value: string | number | boolean) => void
 }
 
-const WS_ENDPOINTS = [
+// Development-only fallback endpoints; in production we fetch from the device
+const DEV_WS_ENDPOINTS = [
   'ws://gaia.home:9001/',
 ]
+
+function deriveWsUrlFromBrokerUri(uri: string | undefined | null): string | null {
+  if (!uri) return null
+  try {
+    const u = new URL(uri)
+    // If already ws/wss, return as-is
+    if (u.protocol === 'ws:' || u.protocol === 'wss:') {
+      // Ensure trailing slash for mqtt.js
+      if (!u.pathname || u.pathname === '/') return `${u.origin}/`
+      return u.toString()
+    }
+    // Map common MQTT URI schemes to WebSocket
+    const isSecure = (u.protocol === 'mqtts:' || u.protocol === 'ssl:' || u.protocol === 'tls:' || u.protocol === 'mqtt+ssl:')
+    const protocol = isSecure ? 'wss:' : 'ws:'
+    const host = u.hostname
+    // Heuristic: 1883 -> 9001; otherwise keep provided port or default to 9001
+    let port = u.port
+    if (!port || port === '1883') port = '9001'
+    return `${protocol}//${host}:${port}/`
+  } catch {
+    return null
+  }
+}
+
+function getWsOverrideFromQuery(): string | null {
+  try {
+    const url = new URL(window.location.href)
+    const v = url.searchParams.get('mqtt_ws')
+    return v ? (deriveWsUrlFromBrokerUri(v) || v) : null
+  } catch {
+    return null
+  }
+}
+
+async function fetchJson<T = unknown>(url: string, timeoutMs = 2000): Promise<T> {
+  const ctrl = new AbortController()
+  const to = setTimeout(() => ctrl.abort(), timeoutMs)
+  try {
+    const r = await fetch(url, { signal: ctrl.signal })
+    if (!r.ok) throw new Error(`http ${r.status}`)
+    const ct = r.headers.get('content-type') || ''
+    if (!ct.includes('application/json')) throw new Error('unexpected content-type')
+    return await r.json()
+  } finally {
+    clearTimeout(to)
+  }
+}
 
 // Debug level: 0=off, 1=truncated payloads, 2=full payloads
 function getDebugLevel(): number {
@@ -32,6 +80,8 @@ class MqttManager {
   private connecting = false
   private attemptIndex = 0
   private probeTimeout: number | undefined
+  private endpoints: string[] = []
+  private initStarted = false
 
   public sensors: SensorsMap = new Map()
   public status: UseSensorsResult['connectionStatus'] = 'idle'
@@ -50,8 +100,8 @@ class MqttManager {
 
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener)
-    // Ensure connection is started
-    this.connectIfNeeded()
+    // Initialize endpoints and then ensure connection is started
+    this.initializeEndpointsIfNeeded()
     // Notify initial state
     listener()
     return () => this.listeners.delete(listener)
@@ -85,6 +135,7 @@ class MqttManager {
 
   private connectIfNeeded() {
     if (this.client || this.connecting) return
+    if (this.endpoints.length === 0) return
     this.connecting = true
     this.attemptIndex = 0
     this.setStatus('connecting')
@@ -92,14 +143,14 @@ class MqttManager {
   }
 
   private tryConnectNext() {
-    if (this.attemptIndex >= WS_ENDPOINTS.length) {
+    if (this.attemptIndex >= this.endpoints.length) {
       this.connecting = false
       this.setStatus('error')
       this.setError('All websocket endpoints failed')
       this.dlog('All websocket endpoints failed')
       return
     }
-    const url = WS_ENDPOINTS[this.attemptIndex++]
+    const url = this.endpoints[this.attemptIndex++]
     this.dlog('Connecting to', url)
 
     const c = mqtt.connect(url, {
@@ -172,6 +223,48 @@ class MqttManager {
 
     c.on('connect', () => { if (this.probeTimeout) clearTimeout(this.probeTimeout) })
     c.on('close', () => { if (this.status === 'connected' && this.probeTimeout) clearTimeout(this.probeTimeout) })
+  }
+
+  private initializeEndpointsIfNeeded() {
+    if (this.initStarted) return
+    this.initStarted = true
+    const qpOverride = getWsOverrideFromQuery()
+    // Statically gate dev path so the production fetch code is not even present in dev builds
+    /* eslint-disable no-constant-condition */
+    if (import.meta.env.DEV) {
+      const eps: string[] = []
+      if (qpOverride) eps.push(qpOverride)
+      else eps.push(...DEV_WS_ENDPOINTS)
+      this.endpoints = eps
+      this.dlog('DEV mode endpoints:', this.endpoints)
+      this.connectIfNeeded()
+      return
+    }
+    // Production: fetch from device HTTP server
+    this.setStatus('connecting')
+    ;(async () => {
+      try {
+        // If override provided, use it directly in prod as well
+        if (qpOverride) {
+          const ws = qpOverride
+          this.endpoints = [ws]
+          this.dlog('Using override endpoint:', this.endpoints)
+          this.connectIfNeeded()
+          return
+        }
+
+        // Fetch broker config
+        const obj = await fetchJson<any>('/mqttconfig', 2000)
+        const broker = String(obj?.mqtt_broker || '')
+        const ws = deriveWsUrlFromBrokerUri(broker)
+        if (!ws) throw new Error('invalid mqtt_broker in mqttconfig')
+        this.endpoints = [ws]
+        this.dlog('Fetched endpoints:', this.endpoints)
+        this.connectIfNeeded()
+      } catch (e: any) {
+        this.setError(`mqttconfig fetch failed: ${e?.message || e}`)
+      }
+    })()
   }
 
   private handleMessage(topic: string, payload: Uint8Array | string) {

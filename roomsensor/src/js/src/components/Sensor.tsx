@@ -193,7 +193,6 @@ export default function Sensor({ sensor }: Props) {
 									const metricName = key.split('|')[0]
 									const raw = (m as any).raw
 									const labelName = raw?.tags?.name ?? raw?.tags?.type ?? 'metric'
-									const data = raw
 									let color: 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' = 'default'
 									try {
 										const t = Date.parse(String(raw?.ts))
@@ -208,7 +207,7 @@ export default function Sensor({ sensor }: Props) {
 											label={`${labelName}:${metricName}=${raw?.value?.toFixed ? raw.value.toFixed(3) : String(raw?.value)}`}
 											size="small"
 											color={color}
-											onClick={() => setMetricOpen({ open: true, data })}
+											onClick={() => setMetricOpen({ open: true, key: key } as any)}
 										/>
 									)
 								})}
@@ -305,7 +304,7 @@ export default function Sensor({ sensor }: Props) {
 			<Dialog open={metricOpen.open} onClose={() => setMetricOpen({ open: false })} fullWidth maxWidth="sm">
 				<DialogTitle>Metric</DialogTitle>
 				<DialogContent>
-					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(metricOpen.data ?? {}, null, 2)}</pre>
+					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify((metricOpen as any).key ? sensor.metrics[(metricOpen as any).key!]?.raw ?? {} : {}, null, 2)}</pre>
 				</DialogContent>
 			</Dialog>
 			<Dialog open={i2cOpen.open} onClose={() => setI2cOpen({ open: false })} fullWidth maxWidth="sm">

@@ -4,6 +4,8 @@
 #include "esp_system.h"
 #include "communication.h"
 #include "filesystem.h"
+#include "ConfigurationManager.h"
+#include "WifiConfig.h"
 #include <time.h>
 #include <sys/time.h>
 #include <cstdio>
@@ -38,6 +40,37 @@ static char* format_timestamp_utc(int64_t timestamp_ms)
     strftime(time_str, 32, "%Y-%m-%dT%H:%M:%SZ", &tm_time);
     
     return time_str;
+}
+
+// Handler for /mqttconfig GET request
+static esp_err_t mqttconfig_get_handler(httpd_req_t *req)
+{
+    using namespace config;
+
+    // Build JSON: { "mqtt_broker": string }
+    cJSON *root = cJSON_CreateObject();
+    const char* broker = nullptr;
+    do {
+        ConfigurationManager &mgr = GetConfigurationManager();
+        auto &w = mgr.wifi();
+        if (w.has_mqtt_broker()) {
+            broker = w.mqtt_broker().c_str();
+        } else {
+            broker = ""; // empty string if not configured
+        }
+        cJSON_AddStringToObject(root, "mqtt_broker", broker);
+    } while (0);
+
+    char *json_response = cJSON_PrintUnformatted(root);
+    // Allow cross-origin dev tooling to fetch this
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req, json_response);
+
+    cJSON_Delete(root);
+    free(json_response);
+    return ESP_OK;
 }
 
 // Handler for /ping GET request
@@ -211,6 +244,13 @@ static const httpd_uri_t metrics = {
     .user_ctx  = NULL
 };
 
+static const httpd_uri_t mqttconfig = {
+    .uri       = "/mqttconfig",
+    .method    = HTTP_GET,
+    .handler   = mqttconfig_get_handler,
+    .user_ctx  = NULL
+};
+
 static const httpd_uri_t index_page = {
     .uri       = "/*",
     .method    = HTTP_GET,
@@ -234,6 +274,7 @@ esp_err_t start_webserver(void)
         ESP_LOGI(TAG, "Registering URI handlers");
         httpd_register_uri_handler(server, &ping);
         httpd_register_uri_handler(server, &metrics);
+        httpd_register_uri_handler(server, &mqttconfig);
         httpd_register_uri_handler(server, &index_page);
         return ESP_OK;
     }
