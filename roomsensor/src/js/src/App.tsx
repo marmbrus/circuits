@@ -11,7 +11,7 @@ function App() {
       <AppBar position="sticky" color="default" elevation={1}>
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Sensors3
+            Sensors
             {import.meta.env.DEV && (
               <Box component="span" sx={{ ml: 1, color: 'warning.main', fontSize: '0.85rem', fontWeight: 600 }}>
                 🚧 development
