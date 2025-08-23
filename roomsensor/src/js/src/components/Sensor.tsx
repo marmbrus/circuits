@@ -292,6 +292,17 @@ export default function Sensor({ sensor }: Props) {
 					{sensor.otaStatusTs ? (
 						<p style={{ marginTop: 0 }}>Last updated: <FriendlyDuration fromMs={sensor.otaStatusTs} /></p>
 					) : null}
+					{(() => {
+						const o = (sensor.otaStatus as any) || {}
+						const fw = `fw: local ${String(o.firmware_local_version || 'n/a')} vs remote ${String(o.firmware_remote_version || 'n/a')}`
+						const web = `web: local ${String(o.web_local_version || 'n/a')} vs remote ${String(o.web_remote_version || 'n/a')}${o.error ? ` — ${String(o.error)}` : ''}`
+						return (
+							<div style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', fontSize: 12, marginBottom: 8 }}>
+								<div>{fw}</div>
+								<div>{web}</div>
+							</div>
+						)
+					})()}
 					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(sensor.otaStatus ?? {}, null, 2)}</pre>
 				</DialogContent>
 			</Dialog>

@@ -73,35 +73,27 @@ static const char* NVS_NAMESPACE = "ota";
 static const char* NVS_LAST_OTA_TIME = "last_ota_time";
 static const char* NVS_LAST_OTA_HASH = "last_ota_hash";
 
-// OTA status types
+// Unified OTA status types (single status per device)
 typedef enum {
-    OTA_STATUS_DEV_BUILD,   // Factory partition (development build, flashed manually)
-    OTA_STATUS_UPGRADING,   // Currently being upgraded
-    OTA_STATUS_UP_TO_DATE,  // Running latest version from server
-    OTA_STATUS_NEWER        // Running newer version than on server
+    OTA_STATUS_DEV_BUILD,
+    OTA_STATUS_UPGRADING_FIRMWARE,
+    OTA_STATUS_UPGRADING_WEB,
+    OTA_STATUS_UP_TO_DATE,
+    OTA_STATUS_ERROR,
 } ota_status_t;
 
 // Store remote version info for status reporting
 static char remote_version[33] = {0};
 static time_t remote_timestamp = 0;
 
-// Web app OTA tracking
-typedef enum {
-    WEB_STATUS_UNKNOWN = 0,
-    WEB_STATUS_UPGRADING,
-    WEB_STATUS_UP_TO_DATE,
-    WEB_STATUS_NEWER
-} web_status_t;
-
 static char web_remote_version[33] = {0};
 static time_t web_remote_timestamp = 0;
 static char web_local_version[33] = {0};
 static time_t web_local_timestamp = 0;
-static web_status_t web_status = WEB_STATUS_UNKNOWN;
 static char web_last_error[96] = {0};
 
 // Forward declarations
-static void report_ota_status(ota_status_t status, const char* remote_hash);
+static void report_ota_status(ota_status_t status, const char* error_message);
 static const char* extract_git_hash(const char* version);
 
 // Helper: read a small JSON file fully into memory
@@ -210,14 +202,30 @@ static esp_err_t download_web_asset(const char* url, const char* version_hash) {
     cfg.crt_bundle_attach = esp_crt_bundle_attach;
     cfg.skip_cert_common_name_check = false;
     cfg.timeout_ms = 30000;
+    cfg.disable_auto_redirect = false; // follow 30x redirects
 
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
     if (!client) return ESP_FAIL;
+    // Be explicit about headers
+    esp_http_client_set_header(client, "User-Agent", "roomsensor-ota/1.0");
+    esp_http_client_set_header(client, "Accept-Encoding", "identity");
     esp_err_t err = esp_http_client_open(client, 0);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to open web URL: %s", esp_err_to_name(err));
         esp_http_client_cleanup(client);
         return err;
+    }
+
+    // Read and validate headers
+    int64_t hdrs = esp_http_client_fetch_headers(client);
+    int status = esp_http_client_get_status_code(client);
+    long long content_length = esp_http_client_get_content_length(client);
+    ESP_LOGI(TAG, "Web GET status=%d, content_length=%lld (hdrs=%lld)", status, content_length, (long long)hdrs);
+    if (status < 200 || status >= 300) {
+        ESP_LOGE(TAG, "Unexpected HTTP status for web asset: %d", status);
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        return ESP_FAIL;
     }
 
     const char* tmp_path = "/storage/.web_download.tmp";
@@ -241,7 +249,7 @@ static esp_err_t download_web_asset(const char* url, const char* version_hash) {
             esp_http_client_cleanup(client);
             return ESP_FAIL;
         }
-        if (r == 0) break;
+        if (r == 0) break; // connection closed
         if (fwrite(buf, 1, (size_t)r, f) != (size_t)r) {
             ESP_LOGE(TAG, "Error writing temp web file");
             fclose(f);
@@ -257,13 +265,28 @@ static esp_err_t download_web_asset(const char* url, const char* version_hash) {
     esp_http_client_cleanup(client);
 
     if (read_total <= 0) {
-        ESP_LOGE(TAG, "Downloaded web asset is empty");
+        ESP_LOGE(TAG, "Downloaded web asset is empty (status=%d, content_length=%lld)", status, content_length);
         remove(tmp_path);
         return ESP_FAIL;
     }
 
     char versioned_path[128];
     snprintf(versioned_path, sizeof(versioned_path), "/storage/index-%s.html.gz", version_hash);
+
+    // Prune old versions: keep at most current + this new version
+    // Remove any existing previous version different from current and new
+    // Read local manifest to know the current version filename
+    char* cur_info = read_text_file("/storage/webapp.json");
+    char cur_ver[64] = {0};
+    if (cur_info) {
+        cJSON* j = cJSON_Parse(cur_info);
+        if (j) {
+            const cJSON* v = cJSON_GetObjectItem(j, "local_version");
+            if (cJSON_IsString(v)) strncpy(cur_ver, v->valuestring, sizeof(cur_ver)-1);
+            cJSON_Delete(j);
+        }
+        free(cur_info);
+    }
 
     // Copy temp to versioned and current
     if (!copy_file(tmp_path, versioned_path)) {
@@ -275,6 +298,13 @@ static esp_err_t download_web_asset(const char* url, const char* version_hash) {
         ESP_LOGE(TAG, "Failed to update current index.html.gz");
         remove(tmp_path);
         return ESP_FAIL;
+    }
+
+    // Remove older archived version if it exists and differs from new/current
+    if (cur_ver[0] && strcmp(cur_ver, version_hash) != 0) {
+        char old_path[128];
+        snprintf(old_path, sizeof(old_path), "/storage/index-%s.html.gz", cur_ver);
+        remove(old_path);
     }
     remove(tmp_path);
     return ESP_OK;
@@ -572,8 +602,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
             // LED animation during OTA will be handled by LEDManager patterns
 
-            // Report OTA status as UPGRADING before starting the update
-            report_ota_status(OTA_STATUS_UPGRADING, remote_hash);
+            // Report OTA status as UPGRADING_FIRMWARE before starting the update
+            report_ota_status(OTA_STATUS_UPGRADING_FIRMWARE, NULL);
 
             // Perform the OTA update
             ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
@@ -605,6 +635,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 // LED state handled by LEDManager patterns
                 mark_app_valid();
                 cJSON_Delete(root);
+                report_ota_status(OTA_STATUS_ERROR, esp_err_to_name(ret));
                 return false;
             }
         } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
@@ -614,8 +645,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
                 ESP_LOGI(TAG, "Running factory build with newer version than server");
             } else {
-                // Report as NEWER for OTA partition
-                report_ota_status(OTA_STATUS_NEWER, remote_hash);
+                // Treat as up to date when local newer than server
+                report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
                 ESP_LOGI(TAG, "Running newer version than available on server");
             }
         } else {
@@ -664,8 +695,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // Load local web info from file if any
     load_local_web_info();
 
-    // Default web status when unknown
-    web_status = WEB_STATUS_UNKNOWN;
+    /* unified status: no separate web_status */
 
     if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
         const char* remote_web_url = web_url->valuestring;
@@ -673,15 +703,14 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
         if (web_local_timestamp > 0 && web_local_timestamp > web_remote_timestamp) {
             // Local dev build is newer; keep it
-            web_status = WEB_STATUS_NEWER;
+            /* unified status: no separate web_status */
             ESP_LOGI(TAG, "Local web assets newer than server; skipping web update");
         } else if (web_local_timestamp > 0 && web_local_timestamp == web_remote_timestamp) {
-            web_status = WEB_STATUS_UP_TO_DATE;
+            /* unified status: no separate web_status */
             ESP_LOGI(TAG, "Web assets up to date");
         } else {
             // Need to update web
-            web_status = WEB_STATUS_UPGRADING;
-            report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash); // report combined status
+            report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
 
             esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
             if (wret == ESP_OK) {
@@ -689,11 +718,12 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 save_local_web_info(remote_web_hash, web_remote_timestamp);
                 strncpy(web_local_version, remote_web_hash, sizeof(web_local_version) - 1);
                 web_local_timestamp = web_remote_timestamp;
-                web_status = WEB_STATUS_UP_TO_DATE;
+                /* unified status: no separate web_status */
                 ESP_LOGI(TAG, "Web assets updated successfully to %s", remote_web_hash);
             } else {
                 snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret));
                 ESP_LOGE(TAG, "Web update failed: %s", web_last_error);
+                report_ota_status(OTA_STATUS_ERROR, web_last_error);
             }
         }
     }
@@ -701,7 +731,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // Firmware remains valid; report final status
     mark_app_valid();
     cJSON_Delete(root);
-    report_ota_status((remote_timestamp == FIRMWARE_BUILD_TIME) ? OTA_STATUS_UP_TO_DATE : OTA_STATUS_NEWER, remote_hash);
+    report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
     return false;
 }
 
@@ -995,7 +1025,7 @@ esp_err_t check_for_ota_update(void) {
 }
 
 // Report OTA status to MQTT
-static void report_ota_status(ota_status_t status, const char* remote_hash) {
+static void report_ota_status(ota_status_t status, const char* error_message) {
     cJSON *ota_json = cJSON_CreateObject();
     if (!ota_json) {
         ESP_LOGE(TAG, "Failed to create OTA status JSON");
@@ -1014,18 +1044,11 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
     // Status as string
     const char* status_str = "UNKNOWN";
     switch (status) {
-        case OTA_STATUS_DEV_BUILD:
-            status_str = "DEV_BUILD";
-            break;
-        case OTA_STATUS_UPGRADING:
-            status_str = "UPGRADING";
-            break;
-        case OTA_STATUS_UP_TO_DATE:
-            status_str = "UP_TO_DATE";
-            break;
-        case OTA_STATUS_NEWER:
-            status_str = "NEWER";
-            break;
+        case OTA_STATUS_DEV_BUILD: status_str = "DEV_BUILD"; break;
+        case OTA_STATUS_UPGRADING_FIRMWARE: status_str = "UPGRADING_FIRMWARE"; break;
+        case OTA_STATUS_UPGRADING_WEB: status_str = "UPGRADING_WEB"; break;
+        case OTA_STATUS_UP_TO_DATE: status_str = "UP_TO_DATE"; break;
+        case OTA_STATUS_ERROR: status_str = "ERROR"; break;
     }
     cJSON_AddStringToObject(ota_json, "status", status_str);
 
@@ -1036,24 +1059,9 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
             running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY ? "factory" : "ota");
     }
 
-    // Only include git hashes for non-dev builds
-    if (status != OTA_STATUS_DEV_BUILD) {
-        // Local firmware git hash
-        if (strlen(extracted_hash) > 0) {
-            cJSON_AddStringToObject(ota_json, "local_version", extracted_hash);
-        }
-    }
-
-    // Include remote version when available
-    if (remote_hash && strlen(remote_hash) > 0) {
-        cJSON_AddStringToObject(ota_json, "remote_version", remote_hash);
-        ESP_LOGD(TAG, "Adding remote_version to status: %s", remote_hash);
-    } else if (strlen(remote_version) > 0) {
-        // Use global remote_version as fallback
-        const char* hash = extract_git_hash(remote_version);
-        cJSON_AddStringToObject(ota_json, "remote_version", hash);
-        ESP_LOGD(TAG, "Adding remote_version from global: %s", hash);
-    }
+    // Firmware versions/times
+    if (strlen(extracted_hash) > 0) cJSON_AddStringToObject(ota_json, "firmware_local_version", extracted_hash);
+    if (strlen(remote_version) > 0) cJSON_AddStringToObject(ota_json, "firmware_remote_version", extract_git_hash(remote_version));
 
     // Format build timestamps in ISO format
     if (FIRMWARE_BUILD_TIME > 0) {
@@ -1073,15 +1081,7 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
         ESP_LOGD(TAG, "Adding remote_build_time to status: %s", remote_time_str);
     }
 
-    // Web telemetry
-    const char* web_status_str = "UNKNOWN";
-    switch (web_status) {
-        case WEB_STATUS_UPGRADING: web_status_str = "UPGRADING"; break;
-        case WEB_STATUS_UP_TO_DATE: web_status_str = "UP_TO_DATE"; break;
-        case WEB_STATUS_NEWER: web_status_str = "NEWER"; break;
-        case WEB_STATUS_UNKNOWN: default: web_status_str = "UNKNOWN"; break;
-    }
-    cJSON_AddStringToObject(ota_json, "web_status", web_status_str);
+    // Web versions/times
     if (web_local_version[0]) cJSON_AddStringToObject(ota_json, "web_local_version", web_local_version);
     if (web_remote_version[0]) cJSON_AddStringToObject(ota_json, "web_remote_version", extract_git_hash(web_remote_version));
     if (web_local_timestamp > 0) {
@@ -1094,8 +1094,9 @@ static void report_ota_status(ota_status_t status, const char* remote_hash) {
         strftime(t, sizeof(t), "%Y-%m-%dT%H:%M:%SZ", &tm2);
         cJSON_AddStringToObject(ota_json, "web_remote_build_time", t);
     }
-    if (web_last_error[0]) {
-        cJSON_AddStringToObject(ota_json, "web_error", web_last_error);
+    if (status == OTA_STATUS_ERROR) {
+        if (error_message && strlen(error_message) > 0) cJSON_AddStringToObject(ota_json, "error", error_message);
+        else if (web_last_error[0]) cJSON_AddStringToObject(ota_json, "error", web_last_error);
     }
 
     // Convert to string and publish
@@ -1121,7 +1122,7 @@ void ota_report_status(void) {
     }
 
     // Determine current status
-    ota_status_t status;
+    ota_status_t status = OTA_STATUS_UP_TO_DATE;
 
     // Check if running from factory partition - ALWAYS a dev build
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -1133,14 +1134,7 @@ void ota_report_status(void) {
         if (remote_timestamp > 0) {
             // We have remote version info, can determine exact status
             if (remote_timestamp > FIRMWARE_BUILD_TIME) {
-                // Remote is newer (shouldn't happen unless we skipped update)
-                status = OTA_STATUS_UPGRADING;
-            } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
-                // Local is newer
-                status = OTA_STATUS_NEWER;
-            } else {
-                // Same version
-                status = OTA_STATUS_UP_TO_DATE;
+                status = OTA_STATUS_UPGRADING_FIRMWARE;
             }
         } else {
             // Default to UP_TO_DATE if we can't determine, but only for OTA partitions
@@ -1149,6 +1143,5 @@ void ota_report_status(void) {
     }
 
     // Report the status
-    const char* remote_hash = (strlen(remote_version) > 0) ? extract_git_hash(remote_version) : NULL;
-    report_ota_status(status, remote_hash);
+    report_ota_status(status, NULL);
 }
