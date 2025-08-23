@@ -642,6 +642,10 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
 }
 
 esp_err_t wifi_wait_for_boot_publish(int timeout_ms) {
+    // If MQTT isn't initialized, there's nothing to wait for; return immediately
+    if (mqtt_client == NULL) {
+        return ESP_OK;
+    }
     // Fast-path if already acknowledged
     if (s_boot_pub_acked) {
         return ESP_OK;

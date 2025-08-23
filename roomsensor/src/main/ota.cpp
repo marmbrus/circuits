@@ -58,6 +58,7 @@ static const char *TAG = "ota";
 static const char *MANIFEST_URL = "https://updates.gaia.bio/manifest.json";
 static char current_version[33] = {0}; // Store current firmware version (git hash)
 static char extracted_hash[33] = {0};  // Store extracted Git hash
+static bool firmware_is_dirty = false;  // Whether local firmware version is dirty
 static TaskHandle_t ota_task_handle = NULL;
 static bool ota_running = false;
 
@@ -85,6 +86,7 @@ typedef enum {
 // Store remote version info for status reporting
 static char remote_version[33] = {0};
 static time_t remote_timestamp = 0;
+static bool manifest_fw_is_dirty = false; // Whether manifest firmware version is dirty
 
 static char web_remote_version[33] = {0};
 static time_t web_remote_timestamp = 0;
@@ -161,8 +163,11 @@ static void load_local_web_info(void) {
     cJSON* root = cJSON_Parse(s);
     if (!root) { free(s); return; }
     const cJSON* v = cJSON_GetObjectItem(root, "local_version");
+    const cJSON* vd = cJSON_GetObjectItem(root, "local_git_describe");
     const cJSON* t = cJSON_GetObjectItem(root, "local_build_timestamp_epoch");
-    if (cJSON_IsString(v)) {
+    if (cJSON_IsString(vd)) {
+        strncpy(web_local_version, vd->valuestring, sizeof(web_local_version) - 1);
+    } else if (cJSON_IsString(v)) {
         strncpy(web_local_version, v->valuestring, sizeof(web_local_version) - 1);
     }
     if (cJSON_IsNumber(t)) {
@@ -423,6 +428,7 @@ static void get_current_version() {
     if (esp_ota_get_partition_description(running, &app_desc) == ESP_OK) {
         // Use project version as the git hash
         strncpy(current_version, app_desc.version, sizeof(current_version) - 1);
+        firmware_is_dirty = (strstr(app_desc.version, "dirty") != NULL);
         ESP_LOGI(TAG, "Current firmware version: %s", current_version);
 
         // Extract the git hash part
@@ -522,6 +528,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
     // Store remote version for status reporting
     strncpy(remote_version, remote_version_str, sizeof(remote_version) - 1);
+    manifest_fw_is_dirty = (strstr(remote_version_str, "dirty") != NULL);
     ESP_LOGD(TAG, "Stored remote version: %s", remote_version);
 
     // Get remote timestamp for comparison
@@ -642,7 +649,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             // Local is newer than remote
             if (is_factory) {
                 // Report as DEV_BUILD for factory partition
-                report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
+                report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
                 ESP_LOGI(TAG, "Running factory build with newer version than server");
             } else {
                 // Treat as up to date when local newer than server
@@ -653,11 +660,11 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             // Versions are identical
             if (is_factory) {
                 // Report as DEV_BUILD for factory partition
-                report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
+                report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
                 ESP_LOGI(TAG, "Running factory build with same version as server");
             } else {
                 // Report as UP_TO_DATE for OTA partition
-                report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
+                report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
                 ESP_LOGI(TAG, "Running the latest version");
             }
         }
@@ -667,16 +674,18 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
         // Always report status even if we can't compare versions
         if (is_factory) {
-            report_ota_status(OTA_STATUS_DEV_BUILD, remote_hash);
+            report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
             ESP_LOGI(TAG, "Running factory build, status unknown (missing timestamp)");
         } else {
             // Default to UP_TO_DATE if we can't determine
-            report_ota_status(OTA_STATUS_UP_TO_DATE, remote_hash);
+            report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
             ESP_LOGI(TAG, "Running OTA partition, status unknown (missing timestamp)");
         }
     }
 
     // If we reach here, no firmware update is needed; proceed to check web app
+
+    bool had_error = false;
 
     // Reset last error before web check
     web_last_error[0] = '\0';
@@ -694,6 +703,17 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
     // Load local web info from file if any
     load_local_web_info();
+
+    // In DEV_BUILD (factory), treat local web as at least as new as the firmware build
+    // to avoid overwriting serial-flashed dev images unless the server is strictly newer.
+    if (is_factory) {
+        if (FIRMWARE_BUILD_TIME > 0 && web_local_timestamp < FIRMWARE_BUILD_TIME) {
+            web_local_timestamp = FIRMWARE_BUILD_TIME;
+            if (strlen(extracted_hash) > 0) {
+                strncpy(web_local_version, extracted_hash, sizeof(web_local_version) - 1);
+            }
+        }
+    }
 
     /* unified status: no separate web_status */
 
@@ -724,14 +744,22 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret));
                 ESP_LOGE(TAG, "Web update failed: %s", web_last_error);
                 report_ota_status(OTA_STATUS_ERROR, web_last_error);
+                had_error = true;
             }
         }
     }
 
-    // Firmware remains valid; report final status
+    // Firmware remains valid; report final status unless an error was already reported
     mark_app_valid();
     cJSON_Delete(root);
-    report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
+    if (!had_error) {
+        // Keep DEV_BUILD final status for factory partition to reflect local dev flash
+        if (is_factory) {
+            report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
+        } else {
+            report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
+        }
+    }
     return false;
 }
 
@@ -1060,8 +1088,25 @@ static void report_ota_status(ota_status_t status, const char* error_message) {
     }
 
     // Firmware versions/times
-    if (strlen(extracted_hash) > 0) cJSON_AddStringToObject(ota_json, "firmware_local_version", extracted_hash);
-    if (strlen(remote_version) > 0) cJSON_AddStringToObject(ota_json, "firmware_remote_version", extract_git_hash(remote_version));
+    if (strlen(extracted_hash) > 0) {
+        if (firmware_is_dirty) {
+            char buf[48];
+            snprintf(buf, sizeof(buf), "%s-dirty", extracted_hash);
+            cJSON_AddStringToObject(ota_json, "firmware_local_version", buf);
+        } else {
+            cJSON_AddStringToObject(ota_json, "firmware_local_version", extracted_hash);
+        }
+    }
+    if (strlen(remote_version) > 0) {
+        const char* rh = extract_git_hash(remote_version);
+        if (manifest_fw_is_dirty) {
+            char buf[48];
+            snprintf(buf, sizeof(buf), "%s-dirty", rh);
+            cJSON_AddStringToObject(ota_json, "firmware_remote_version", buf);
+        } else {
+            cJSON_AddStringToObject(ota_json, "firmware_remote_version", rh);
+        }
+    }
 
     // Format build timestamps in ISO format
     if (FIRMWARE_BUILD_TIME > 0) {

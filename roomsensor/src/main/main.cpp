@@ -14,6 +14,7 @@
 #include "ota.h"
 #include "console.h"
 #include "ConfigurationManager.h"
+#include "WifiConfig.h"
 #include "gpio.h"
 #include "filesystem.h"
 #include "netlog.h"
@@ -48,12 +49,26 @@ extern "C" void app_main(void)
 
     // Block until retained boot/device message has been published (or timeout).
     // This includes the boot message that may wait up to 60s for SNTP before publishing.
+    // If WiFi credentials or broker are not configured, skip waiting to reach console quickly.
     {
-        esp_err_t wait_err = wifi_wait_for_boot_publish(70000);
-        if (wait_err != ESP_OK) {
-            ESP_LOGW(TAG, "Proceeding without boot publish ACK: %s", esp_err_to_name(wait_err));
+        bool should_wait_for_boot = false;
+        {
+            using namespace config;
+            auto& w = cfg.wifi();
+            if (w.has_ssid() && w.has_password() && w.has_mqtt_broker()) {
+                should_wait_for_boot = true;
+            }
+        }
+
+        if (should_wait_for_boot) {
+            esp_err_t wait_err = wifi_wait_for_boot_publish(70000);
+            if (wait_err != ESP_OK) {
+                ESP_LOGW(TAG, "Proceeding without boot publish ACK: %s", esp_err_to_name(wait_err));
+            } else {
+                ESP_LOGI(TAG, "Boot publish acknowledged; continuing startup");
+            }
         } else {
-            ESP_LOGI(TAG, "Boot publish acknowledged; continuing startup");
+            ESP_LOGI(TAG, "WiFi not fully configured; skipping boot publish wait");
         }
     }
 
