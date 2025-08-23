@@ -159,15 +159,14 @@ bool LEDStripRmt::flush_if_dirty(uint64_t now_us, uint64_t max_quiescent_us) {
         if (has_white_) {
             if (chip_ == LEDChip::WS2814) {
                 // Driver emits GRBW. WS2814 expects WRGB.
-                // Map desired (R,G,B,W) -> driver args (r,g,b,w) so that [G,R,B,W] equals [W,R,G,B]
                 uint8_t desired_r = pixels_[off+0];
                 uint8_t desired_g = pixels_[off+1];
                 uint8_t desired_b = pixels_[off+2];
                 uint8_t desired_w = pixels_[off+3];
-                uint8_t arg_r = desired_r;      // driver R carries R (2nd on wire)
-                uint8_t arg_g = desired_w;      // driver G carries W (1st on wire)
-                uint8_t arg_b = desired_g;      // driver B carries G (3rd on wire)
-                uint8_t arg_w = desired_b;      // driver W carries B (4th on wire)
+                uint8_t arg_g = desired_w;
+                uint8_t arg_r = desired_r;
+                uint8_t arg_b = desired_g;
+                uint8_t arg_w = desired_b;
                 led_strip_set_pixel_rgbw(handle_, i, arg_r, arg_g, arg_b, arg_w);
             } else {
                 led_strip_set_pixel_rgbw(handle_, i, pixels_[off+0], pixels_[off+1], pixels_[off+2], pixels_[off+3]);
