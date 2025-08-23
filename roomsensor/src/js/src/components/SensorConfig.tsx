@@ -60,7 +60,7 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
               <Typography variant="subtitle2">LEDs</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <LEDConfigSection config={config as any} onEdit={openEditor} />
+              <LEDConfigSection config={config as any} onEdit={openEditor} publish={publish} />
             </AccordionDetails>
           </Accordion>
         </Fragment>

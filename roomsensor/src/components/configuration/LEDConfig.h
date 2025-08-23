@@ -31,6 +31,7 @@ public:
         INVALID = -1,
         WS2812 = 0,
         SK6812,
+        WS2814,
     };
 
     // Accessors

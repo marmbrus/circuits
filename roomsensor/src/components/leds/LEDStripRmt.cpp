@@ -26,7 +26,7 @@ LEDStripRmt::LEDStripRmt(const CreateParams& params)
     }
     // Normalize length to rows * cols to ensure consistency
     length_ = rows_ * cols_;
-    has_white_ = (chip_ == LEDChip::SK6812);
+    has_white_ = (chip_ == LEDChip::SK6812 || chip_ == LEDChip::WS2814);
     size_t bytes_per = has_white_ ? 4 : 3;
     pixels_.assign(length_ * bytes_per, 0);
 }
@@ -46,11 +46,35 @@ bool LEDStripRmt::init_handle() {
         // default off until a pattern turns it on
         gpio_set_level((gpio_num_t)enable_gpio_, 0);
     }
+    // Select pixel format and model per chip to ensure correct color channel ordering
+    led_pixel_format_t pix_fmt = LED_PIXEL_FORMAT_GRB;
+    led_model_t led_model = LED_MODEL_WS2812;
+    switch (chip_) {
+        case LEDChip::WS2812:
+            pix_fmt = LED_PIXEL_FORMAT_GRB;
+            led_model = LED_MODEL_WS2812;
+            break;
+        case LEDChip::SK6812:
+            // SK6812 RGBW strips use GRBW ordering
+            pix_fmt = LED_PIXEL_FORMAT_GRBW;
+            led_model = LED_MODEL_SK6812;
+            break;
+        case LEDChip::WS2814:
+            // Driver only supports GRBW; we'll remap to achieve WRGB on the wire
+            pix_fmt = LED_PIXEL_FORMAT_GRBW;
+            led_model = LED_MODEL_WS2812; // timings compatible
+            break;
+        default:
+            pix_fmt = LED_PIXEL_FORMAT_GRB;
+            led_model = LED_MODEL_WS2812;
+            break;
+    }
+
     led_strip_config_t led_cfg = {
         .strip_gpio_num = gpio_,
         .max_leds = static_cast<uint32_t>(length_),
-        .led_pixel_format = has_white_ ? LED_PIXEL_FORMAT_GRBW : LED_PIXEL_FORMAT_GRB,
-        .led_model = has_white_ ? LED_MODEL_SK6812 : LED_MODEL_WS2812,
+        .led_pixel_format = pix_fmt,
+        .led_model = led_model,
         .flags = { .invert_out = 0 },
     };
     led_strip_rmt_config_t rmt_cfg = {
@@ -133,7 +157,21 @@ bool LEDStripRmt::flush_if_dirty(uint64_t now_us, uint64_t max_quiescent_us) {
     for (size_t i = 0; i < length_; ++i) {
         size_t off = i * bytes_per;
         if (has_white_) {
-            led_strip_set_pixel_rgbw(handle_, i, pixels_[off+0], pixels_[off+1], pixels_[off+2], pixels_[off+3]);
+            if (chip_ == LEDChip::WS2814) {
+                // Driver emits GRBW. WS2814 expects WRGB.
+                // Map desired (R,G,B,W) -> driver args (r,g,b,w) so that [G,R,B,W] equals [W,R,G,B]
+                uint8_t desired_r = pixels_[off+0];
+                uint8_t desired_g = pixels_[off+1];
+                uint8_t desired_b = pixels_[off+2];
+                uint8_t desired_w = pixels_[off+3];
+                uint8_t arg_r = desired_r;      // driver R carries R (2nd on wire)
+                uint8_t arg_g = desired_w;      // driver G carries W (1st on wire)
+                uint8_t arg_b = desired_g;      // driver B carries G (3rd on wire)
+                uint8_t arg_w = desired_b;      // driver W carries B (4th on wire)
+                led_strip_set_pixel_rgbw(handle_, i, arg_r, arg_g, arg_b, arg_w);
+            } else {
+                led_strip_set_pixel_rgbw(handle_, i, pixels_[off+0], pixels_[off+1], pixels_[off+2], pixels_[off+3]);
+            }
         } else {
             led_strip_set_pixel(handle_, i, pixels_[off+0], pixels_[off+1], pixels_[off+2]);
         }

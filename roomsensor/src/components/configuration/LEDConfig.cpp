@@ -40,6 +40,7 @@ LEDConfig::Chip LEDConfig::parse_chip(const char* value) {
     if (!value) return Chip::INVALID;
     if (strcmp(value, "WS2812") == 0) return Chip::WS2812;
     if (strcmp(value, "SK6812") == 0) return Chip::SK6812;
+    if (strcmp(value, "WS2814") == 0) return Chip::WS2814;
     return Chip::INVALID;
 }
 
@@ -47,6 +48,7 @@ const char* LEDConfig::chip_to_string(LEDConfig::Chip c) {
     switch (c) {
         case Chip::WS2812: return "WS2812";
         case Chip::SK6812: return "SK6812";
+        case Chip::WS2814: return "WS2814";
         case Chip::INVALID: default: return "WS2812";
     }
 }

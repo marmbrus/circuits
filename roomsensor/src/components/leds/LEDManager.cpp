@@ -27,6 +27,7 @@ static leds::LEDChip ToLEDChip(config::LEDConfig::Chip c) {
     switch (c) {
         case config::LEDConfig::Chip::WS2812: return leds::LEDChip::WS2812;
         case config::LEDConfig::Chip::SK6812: return leds::LEDChip::SK6812;
+        case config::LEDConfig::Chip::WS2814: return leds::LEDChip::WS2814;
         default: return leds::LEDChip::WS2812;
     }
 }
