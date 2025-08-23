@@ -110,12 +110,26 @@ export default function Sensor({ sensor }: Props) {
 							onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setOtaOpen(true) }}
 						/>
 						{sensor.deviceBoot && (
-							<Chip
-								label={`boot: ${sensor.deviceBootTs ? formatDuration(now - (sensor.deviceBootTs || 0)) : 'unknown'}`}
-								size="small"
-								variant="outlined"
-								onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setBootOpen(true) }}
-							/>
+							(() => {
+								const bootTsIso = (sensor.deviceBoot as any)?.boot_ts as string | undefined
+								let label = 'unknown'
+								if (bootTsIso) {
+									const t = Date.parse(bootTsIso)
+									if (!Number.isNaN(t)) {
+										label = formatDuration(now - t)
+									}
+								} else if (sensor.deviceBootTs) {
+									label = `> ${formatDuration(now - sensor.deviceBootTs)}`
+								}
+								return (
+									<Chip
+										label={`boot: ${label}`}
+										size="small"
+										variant="outlined"
+										onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setBootOpen(true) }}
+									/>
+								)
+							})()
 						)}
 					</Stack>
 					{cfg && (

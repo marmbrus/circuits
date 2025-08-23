@@ -1,6 +1,5 @@
 #include "telemetry.h"
 #include "ConfigurationManager.h"
-#include "TagsConfig.h"
 #include "wifi.h"
 #include "communication.h"
 #include "cJSON.h"
@@ -25,6 +24,7 @@ static void format_mac_nosep_lower(char* out, size_t out_len) {
 }
 
 static TaskHandle_t s_status_task = nullptr;
+static TaskHandle_t s_boot_task = nullptr;
 
 static void publish_device_status_once(void) {
     // Gather cheap stats
@@ -68,7 +68,7 @@ static void status_task_entry(void* arg) {
     }
 }
 
-static void publish_device_info(void) {
+static void publish_device_info(bool include_timestamp) {
     cJSON *device_json = cJSON_CreateObject();
 
     // MAC Address
@@ -123,6 +123,16 @@ static void publish_device_info(void) {
     esp_flash_get_size(NULL, &flash_size);
     cJSON_AddNumberToObject(device_json, "flash_size", flash_size);
 
+    // Optional boot timestamp in ISO 8601 if SNTP time is available
+    if (include_timestamp) {
+        time_t now_secs = time(nullptr);
+        struct tm tm_utc;
+        gmtime_r(&now_secs, &tm_utc);
+        char iso_ts[32];
+        strftime(iso_ts, sizeof(iso_ts), "%Y-%m-%dT%H:%M:%SZ", &tm_utc);
+        cJSON_AddStringToObject(device_json, "boot_ts", iso_ts);
+    }
+
     // Convert to string and publish
     char *device_string = cJSON_Print(device_json);
     // Retained boot info
@@ -133,63 +143,15 @@ static void publish_device_info(void) {
     cJSON_Delete(device_json);
 }
 
-static void publish_location_info(void) {
-    using namespace config;
-    auto& tags = GetConfigurationManager().tags();
-
-    const char* area = tags.area().c_str();
-    const char* room = tags.room().c_str();
-    const char* id = tags.id().c_str();
-
-    // Create JSON for device info
-    cJSON *device_json = cJSON_CreateObject();
-
-    // MAC Address
-    const uint8_t* device_mac = get_device_mac();
-    char mac_str[18];
-    snprintf(mac_str, sizeof(mac_str), "%02x:%02x:%02x:%02x:%02x:%02x",
-             device_mac[0], device_mac[1], device_mac[2],
-             device_mac[3], device_mac[4], device_mac[5]);
-    cJSON_AddStringToObject(device_json, "mac", mac_str);
-
-    // IP Address
-    ip_event_got_ip_t ip_event;
-    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_event.ip_info);
-    char ip_str[16];
-    snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&ip_event.ip_info.ip));
-    cJSON_AddStringToObject(device_json, "ip", ip_str);
-
-    char *device_string = cJSON_Print(device_json);
-
-    // Build the topic: location/$area/$room/$id/device
-    char topic[128];
-    snprintf(topic, sizeof(topic), "location/%s/%s/%s/device", area, room, id);
-    publish_to_topic(topic, device_string, 1, 1);
-
-    // Now publish the connected status as a retained message with LWT
-    cJSON *connected_json = cJSON_CreateObject();
-    cJSON_AddBoolToObject(connected_json, "connected", true);
-    char *connected_string = cJSON_PrintUnformatted(connected_json);
-
-    char connected_topic[128];
-    snprintf(connected_topic, sizeof(connected_topic), "location/%s/%s/%s/connected", area, room, id);
-    publish_to_topic(connected_topic, connected_string, 1, 1);
-
-    // Cleanup
-    cJSON_free(device_string);
-    cJSON_Delete(device_json);
-    cJSON_free(connected_string);
-    cJSON_Delete(connected_json);
-}
 
 esp_err_t telemetry_configure_lwt(esp_mqtt_client_config_t* mqtt_cfg) {
     if (!mqtt_cfg) return ESP_ERR_INVALID_ARG;
-    using namespace config;
-    auto& tags = GetConfigurationManager().tags();
+
+    char mac_nosep[13] = {0};
+    format_mac_nosep_lower(mac_nosep, sizeof(mac_nosep));
 
     char lwt_topic[128];
-    snprintf(lwt_topic, sizeof(lwt_topic), "location/%s/%s/%s/connected",
-             tags.area().c_str(), tags.room().c_str(), tags.id().c_str());
+    snprintf(lwt_topic, sizeof(lwt_topic), "sensor/%s/device/connected", mac_nosep);
 
     const char* lwt_message = "{\"connected\":false}";
     mqtt_cfg->session.last_will.topic = strdup(lwt_topic);
@@ -202,15 +164,55 @@ esp_err_t telemetry_configure_lwt(esp_mqtt_client_config_t* mqtt_cfg) {
     return ESP_OK;
 }
 
-void telemetry_report_connected(void) {
-    publish_device_info();
-    publish_location_info();
+static void boot_publish_task_entry(void* arg) {
+    (void)arg;
+    // Wait up to 60s for time sync; if it doesn't arrive, proceed without timestamp
+    esp_err_t time_ok = wifi_wait_for_time_sync(60000);
+    bool include_ts = (time_ok == ESP_OK);
+    if (!include_ts) {
+        ESP_LOGW(TAG, "SNTP time not available within timeout; publishing boot without timestamp");
+    }
+
+    publish_device_info(include_ts);
+
+    // Publish connected true retained to sensor/$mac/device/connected
+    {
+        char mac_nosep[13] = {0};
+        format_mac_nosep_lower(mac_nosep, sizeof(mac_nosep));
+        char topic[128];
+        snprintf(topic, sizeof(topic), "sensor/%s/device/connected", mac_nosep);
+
+        const char* connected_payload = "{\"connected\":true}";
+        publish_to_topic(topic, connected_payload, 1, 1);
+    }
+
     // Start status task once
     if (s_status_task == nullptr) {
         BaseType_t ok = xTaskCreatePinnedToCore(&status_task_entry, "status-pub", 4096, nullptr, tskIDLE_PRIORITY + 1, &s_status_task, tskNO_AFFINITY);
         if (ok != pdPASS) {
             ESP_LOGE(TAG, "Failed to create status task");
             s_status_task = nullptr;
+        }
+    }
+
+    vTaskDelete(nullptr);
+}
+
+void telemetry_report_connected(void) {
+    if (s_boot_task == nullptr) {
+        BaseType_t ok = xTaskCreatePinnedToCore(&boot_publish_task_entry, "boot-pub", 4096, nullptr, tskIDLE_PRIORITY + 2, &s_boot_task, tskNO_AFFINITY);
+        if (ok != pdPASS) {
+            ESP_LOGE(TAG, "Failed to create boot publish task");
+            s_boot_task = nullptr;
+            // Fallback: publish synchronously without timestamp wait
+            publish_device_info(false);
+            // Also publish connected true retained
+            char mac_nosep[13] = {0};
+            format_mac_nosep_lower(mac_nosep, sizeof(mac_nosep));
+            char topic[128];
+            snprintf(topic, sizeof(topic), "sensor/%s/device/connected", mac_nosep);
+            const char* connected_payload = "{\"connected\":true}";
+            publish_to_topic(topic, connected_payload, 1, 1);
         }
     }
 }

@@ -17,6 +17,8 @@
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 #include "communication.h"
 
@@ -30,6 +32,13 @@ static esp_timer_handle_t s_wifi_retry_timer = nullptr;
 static esp_timer_handle_t s_wifi_initial_connect_timer = nullptr;
 static int s_retry_delay_ms = 1000; // start at 1s
 static const int s_retry_delay_max_ms = 30000; // cap at 30s
+// Synchronization for waiting until boot publish is acknowledged
+static SemaphoreHandle_t s_boot_pub_sem = nullptr;
+static volatile int s_boot_pub_msg_id = -1;
+static volatile bool s_boot_pub_acked = false;
+// Synchronization for waiting until time is synchronized
+static SemaphoreHandle_t s_time_sync_sem = nullptr;
+static volatile bool s_time_synced = false;
 
 static void wifi_init_sta(void);
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
@@ -153,6 +162,13 @@ static void time_sync_notification_cb(struct timeval *tv) {
     char* time_str = asctime(&timeinfo);
     time_str[strcspn(time_str, "\n")] = '\0';  // Trim newline
     ESP_LOGI("sntp", "System time updated: %s", time_str);
+    s_time_synced = true;
+    if (!s_time_sync_sem) {
+        s_time_sync_sem = xSemaphoreCreateBinary();
+    }
+    if (s_time_sync_sem) {
+        xSemaphoreGive(s_time_sync_sem);
+    }
 }
 
 static void initialize_sntp(void) {
@@ -167,6 +183,10 @@ static void initialize_sntp(void) {
     esp_sntp_set_time_sync_notification_cb(time_sync_notification_cb);
     esp_sntp_init();
     sntp_initialized = true;
+    // Initialize semaphore for time sync waiters
+    if (!s_time_sync_sem) {
+        s_time_sync_sem = xSemaphoreCreateBinary();
+    }
 }
 
 // Publishing helpers moved to telemetry.cpp
@@ -368,6 +388,17 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 
             mqtt_error_count = 0; // Reset error count on disconnect
         }
+        else if (mqtt_event == MQTT_EVENT_PUBLISHED) {
+            // QoS1 PUBACK received for a publish we initiated
+            if (s_boot_pub_msg_id >= 0 && event->msg_id == s_boot_pub_msg_id) {
+                s_boot_pub_acked = true;
+                s_boot_pub_msg_id = -1;
+                if (s_boot_pub_sem) {
+                    xSemaphoreGive(s_boot_pub_sem);
+                }
+                ESP_LOGI(TAG, "Boot/device publish acknowledged by broker");
+            }
+        }
         else if (mqtt_event == MQTT_EVENT_ERROR) {
             ESP_LOGW(TAG, "MQTT Error");
 
@@ -543,18 +574,7 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
         // New format: sensor/{MAC}/device/ota
         snprintf(full_topic, sizeof(full_topic), "sensor/%s/device/ota", mac_str);
     }
-    // Special handling for location topic
-    else if (strncmp(subtopic, "location/", 9) == 0) {
-        // Format already provided: location/{area}/{room}/{id}/device
-        strncpy(full_topic, subtopic, sizeof(full_topic) - 1);
-        full_topic[sizeof(full_topic) - 1] = '\0'; // Ensure null termination
-    }
-    // Special handling for LWT topic
-    else if (strncmp(subtopic, "location/", 9) == 0 && strstr(subtopic, "/connected") != NULL) {
-        // Format already provided: location/{area}/{room}/{id}/connected
-        strncpy(full_topic, subtopic, sizeof(full_topic) - 1);
-        full_topic[sizeof(full_topic) - 1] = '\0'; // Ensure null termination
-    }
+    // (location/*) topics are removed
     // Handle metrics topics - check if it's coming from the metrics module
     else if (strstr(subtopic, "roomsensor/") == subtopic) {
         // This is from the old metrics format - extract the metric name
@@ -603,7 +623,54 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
         return ESP_FAIL;
     }
 
+    // Track boot publish so callers can wait for PUBACK
+    if (subtopic && strcmp(subtopic, "device") == 0 && qos > 0) {
+        // Ensure semaphore exists
+        if (!s_boot_pub_sem) {
+            s_boot_pub_sem = xSemaphoreCreateBinary();
+        }
+        // Drain any previous signal
+        if (s_boot_pub_sem) {
+            while (xSemaphoreTake(s_boot_pub_sem, 0) == pdTRUE) {}
+        }
+        s_boot_pub_acked = false;
+        s_boot_pub_msg_id = msg_id;
+        ESP_LOGI(TAG, "Tracking boot/device publish (msg_id=%d)", msg_id);
+    }
+
     return ESP_OK;
+}
+
+esp_err_t wifi_wait_for_boot_publish(int timeout_ms) {
+    // Fast-path if already acknowledged
+    if (s_boot_pub_acked) {
+        return ESP_OK;
+    }
+    // Ensure semaphore exists so we can wait for a future publish
+    if (!s_boot_pub_sem) {
+        s_boot_pub_sem = xSemaphoreCreateBinary();
+    }
+    if (s_boot_pub_acked) {
+        return ESP_OK;
+    }
+    TickType_t to_ticks = (timeout_ms <= 0) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
+    BaseType_t ok = xSemaphoreTake(s_boot_pub_sem, to_ticks);
+    return (ok == pdTRUE) ? ESP_OK : ESP_ERR_TIMEOUT;
+}
+
+esp_err_t wifi_wait_for_time_sync(int timeout_ms) {
+    if (s_time_synced) {
+        return ESP_OK;
+    }
+    if (!sntp_initialized) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    if (!s_time_sync_sem) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    TickType_t to_ticks = (timeout_ms <= 0) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
+    BaseType_t ok = xSemaphoreTake(s_time_sync_sem, to_ticks);
+    return (ok == pdTRUE) ? ESP_OK : ESP_ERR_TIMEOUT;
 }
 
 

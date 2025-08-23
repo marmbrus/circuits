@@ -6,6 +6,7 @@
 #include "filesystem.h"
 #include <time.h>
 #include <sys/time.h>
+#include <cstdio>
 
 static const char *TAG = "http_server";
 
@@ -67,21 +68,50 @@ static esp_err_t index_get_handler(httpd_req_t *req)
     const char* gz_path = "/storage/index.html.gz";
     const char* plain_path = "/storage/index.html";
 
-    std::vector<uint8_t> body;
-    if (webfs::exists(gz_path) && webfs::read_file(gz_path, body) == ESP_OK) {
-        httpd_resp_set_type(req, "text/html");
+    const char* path = NULL;
+    bool is_gzip = false;
+    if (webfs::exists(gz_path)) {
+        path = gz_path;
+        is_gzip = true;
+    } else if (webfs::exists(plain_path)) {
+        path = plain_path;
+    } else {
+        httpd_resp_set_status(req, "404 Not Found");
+        httpd_resp_set_type(req, "text/plain");
+        return httpd_resp_sendstr(req, "index.html not found");
+    }
+
+    FILE* file = fopen(path, "rb");
+    if (!file) {
+        httpd_resp_set_status(req, "500 Internal Server Error");
+        httpd_resp_set_type(req, "text/plain");
+        return httpd_resp_sendstr(req, "failed to open index.html");
+    }
+
+    // Set headers
+    httpd_resp_set_type(req, "text/html");
+    if (is_gzip) {
         httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-        return httpd_resp_send(req, (const char*)body.data(), body.size());
     }
 
-    if (webfs::read_file(plain_path, body) == ESP_OK) {
-        httpd_resp_set_type(req, "text/html");
-        return httpd_resp_send(req, (const char*)body.data(), body.size());
-    }
+    // Stream file in chunks to avoid large allocations
+    static const size_t kChunkSize = 2048;
+    char buffer[kChunkSize];
+    size_t bytes_read = 0;
+    do {
+        bytes_read = fread(buffer, 1, kChunkSize, file);
+        if (bytes_read > 0) {
+            esp_err_t r = httpd_resp_send_chunk(req, buffer, bytes_read);
+            if (r != ESP_OK) {
+                fclose(file);
+                return r;
+            }
+        }
+    } while (bytes_read == kChunkSize);
 
-    httpd_resp_set_status(req, "404 Not Found");
-    httpd_resp_set_type(req, "text/plain");
-    return httpd_resp_sendstr(req, "index.html not found");
+    fclose(file);
+    // Signal end of chunks
+    return httpd_resp_send_chunk(req, NULL, 0);
 }
 
 // Handler for /metrics GET request

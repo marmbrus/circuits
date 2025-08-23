@@ -45,6 +45,17 @@ extern "C" void app_main(void)
     // Initialize WiFi and MQTT
     wifi_mqtt_init();
 
+    // Block until retained boot/device message has been published (or timeout).
+    // This includes the boot message that may wait up to 60s for SNTP before publishing.
+    {
+        esp_err_t wait_err = wifi_wait_for_boot_publish(70000);
+        if (wait_err != ESP_OK) {
+            ESP_LOGW(TAG, "Proceeding without boot publish ACK: %s", esp_err_to_name(wait_err));
+        } else {
+            ESP_LOGI(TAG, "Boot publish acknowledged; continuing startup");
+        }
+    }
+
     // Initialize the metrics reporting system (both queue and background task)
     if (initialize_metrics_system() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize metrics system");

@@ -29,7 +29,7 @@ static I2CSensor* s_sensors[] = {
     new ADS1115Sensor(0x4A),
     new ADS1115Sensor(0x4B),
     // MCP23008 GPIO expanders at all valid addresses (0x20-0x27)
-    new MCP23008Sensor(0x20),
+    new MCP23008Sensor(0x20), //Conflicts with PD controller
     new MCP23008Sensor(0x21),
     new MCP23008Sensor(0x22),
     new MCP23008Sensor(0x23),
