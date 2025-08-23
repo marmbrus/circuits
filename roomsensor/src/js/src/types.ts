@@ -51,12 +51,12 @@ export type MetricPayload = {
   metric: string
   value: number
   tags: MetricTags
+  ts: string
+  [k: string]: unknown
 }
 
 export type MetricEntry = {
-  value: number
-  ts: number
-  tags: MetricTags
+  raw: MetricPayload
 }
 
 export type SensorState = {

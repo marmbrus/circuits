@@ -220,7 +220,7 @@ class MqttManager {
         const m = JSON.parse(text) as MetricPayload
         const s = this.ensureSensor(mac)
         const key = m.metric + '|' + JSON.stringify(m.tags || {})
-        s.metrics[key] = { value: m.value, ts: Date.now(), tags: m.tags }
+        s.metrics[key] = { raw: m }
         this.notify()
       } catch (e) {
         this.setError(`metric parse error: ${(e as Error).message}`)

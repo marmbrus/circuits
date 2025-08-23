@@ -31,6 +31,33 @@ static int metrics_count = 0;
 static int metrics_capacity = 0;
 static SemaphoreHandle_t metrics_mutex = NULL;
 
+// Format current UTC time as ISO 8601 string with milliseconds: YYYY-MM-DDTHH:MM:SS.mmmZ
+static void format_iso8601_utc(char* buffer, size_t buffer_size) {
+    if (buffer == NULL || buffer_size == 0) {
+        return;
+    }
+
+    time_t now_seconds;
+    time(&now_seconds);
+
+    // Use esp_timer for sub-second precision (microseconds since boot)
+    int64_t now_microseconds = esp_timer_get_time();
+    int milliseconds = (int)((now_microseconds / 1000) % 1000);
+
+    struct tm tm_utc;
+    gmtime_r(&now_seconds, &tm_utc);
+
+    char date_time_without_ms[32];
+    size_t written = strftime(date_time_without_ms, sizeof(date_time_without_ms), "%Y-%m-%dT%H:%M:%S", &tm_utc);
+    if (written == 0) {
+        buffer[0] = '\0';
+        return;
+    }
+
+    // Compose final string with milliseconds and Z suffix
+    snprintf(buffer, buffer_size, "%s.%03dZ", date_time_without_ms, milliseconds);
+}
+
 // Safe string concatenation function
 static void safe_strcat(char* dst, size_t dst_size, const char* src) {
     if (dst == NULL || src == NULL || dst_size == 0) {
@@ -92,6 +119,11 @@ static char* create_json_message(const MetricReport* report) {
     // Add metric name and value
     cJSON_AddStringToObject(root, "metric", report->metric_name);
     cJSON_AddNumberToObject(root, "value", report->value);
+
+    // Add ISO 8601 UTC timestamp string (ts)
+    char iso_ts[32];
+    format_iso8601_utc(iso_ts, sizeof(iso_ts));
+    cJSON_AddStringToObject(root, "ts", iso_ts);
 
     // Add tags as a nested object
     cJSON* tags_obj = cJSON_AddObjectToObject(root, "tags");

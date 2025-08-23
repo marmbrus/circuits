@@ -191,13 +191,23 @@ export default function Sensor({ sensor }: Props) {
 							<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
 								{Object.entries(sensor.metrics).map(([key, m]) => {
 									const metricName = key.split('|')[0]
-									const labelName = m.tags.name ?? m.tags.type ?? 'metric'
-									const data = { metric: metricName, value: m.value, ts: m.ts, tags: m.tags }
+									const raw = (m as any).raw
+									const labelName = raw?.tags?.name ?? raw?.tags?.type ?? 'metric'
+									const data = raw
+									let color: 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' = 'default'
+									try {
+										const t = Date.parse(String(raw?.ts))
+										if (Number.isFinite(t)) {
+											const fresh = (Date.now() - t) <= 10000
+											if (fresh) color = 'warning'
+										}
+									} catch { /* ignore */ }
 									return (
 										<Chip
 											key={key}
-											label={`${labelName}:${metricName}=${m.value.toFixed(3)}`}
+											label={`${labelName}:${metricName}=${raw?.value?.toFixed ? raw.value.toFixed(3) : String(raw?.value)}`}
 											size="small"
+											color={color}
 											onClick={() => setMetricOpen({ open: true, data })}
 										/>
 									)
