@@ -34,25 +34,54 @@ if (RAW_GIT_DESCRIBE)
     endif()
 endif()
 
-# Add a custom target that forces reconfiguration when files change
-add_custom_target(check_git_status
-    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/CMakeCache.txt
-    COMMENT "Checking git status for changes"
-)
-
 project(sensorv2)
 
-# Generate fsdata/webapp.json on build to embed local dev web version metadata (including -dirty)
-# Use the same logic as PROJECT_VER for consistency
+# Create a script that generates webapp.json with current git status at build time
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/fsdata)
+set(UPDATE_VERSION_SCRIPT "${CMAKE_CURRENT_BINARY_DIR}/update_version.cmake")
+file(WRITE "${UPDATE_VERSION_SCRIPT}" "
+# Refresh git index and get current status
+execute_process(COMMAND git update-index --refresh WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" ERROR_QUIET)
+execute_process(COMMAND git describe --tags --always --dirty WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" OUTPUT_VARIABLE GIT_DESCRIBE OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND git rev-parse --short HEAD WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\" OUTPUT_VARIABLE GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Format version based on dirty status
+if(GIT_DESCRIBE MATCHES \".*-dirty$\")
+    string(TIMESTAMP BUILD_TIME \"%Y%m%d%H%M%S\" UTC)
+    set(VERSION_STRING \"rev\${BUILD_TIME}-\${GIT_HASH}-dirty\")
+else()
+    set(VERSION_STRING \"\${GIT_HASH}\")
+endif()
+
+# Generate current timestamp
+string(TIMESTAMP NOW_EPOCH \"%s\" UTC)
+string(TIMESTAMP NOW_ISO \"%Y-%m-%dT%H:%M:%SZ\" UTC)
+
+# Write webapp.json
+file(WRITE \"${CMAKE_SOURCE_DIR}/fsdata/webapp.json\" \"{
+  \\\"local_version\\\": \\\"\${VERSION_STRING}\\\",
+  \\\"local_git_describe\\\": \\\"\${VERSION_STRING}\\\",
+  \\\"local_build_timestamp\\\": \\\"\${NOW_ISO}\\\",
+  \\\"local_build_timestamp_epoch\\\": \${NOW_EPOCH}
+}
+\")
+")
+
+# Add custom target that runs the version update script on every build
+add_custom_target(update_git_version ALL
+    COMMAND ${CMAKE_COMMAND} -P "${UPDATE_VERSION_SCRIPT}"
+    COMMENT "Updating git version information"
+    VERBATIM
+)
+
+# Initial webapp.json generation (will be updated by custom target)
+string(TIMESTAMP NOW_EPOCH "%s" UTC)
+string(TIMESTAMP NOW_ISO "%Y-%m-%dT%H:%M:%SZ" UTC)
 if("${RAW_GIT_DESCRIBE}" MATCHES ".*-dirty$")
     set(WEB_GIT_DESCRIBE "rev${BUILD_TIMESTAMP_UNIFORM}-${GIT_SHORT_HASH}-dirty")
 else()
     set(WEB_GIT_DESCRIBE "${GIT_SHORT_HASH}")
 endif()
-
-string(TIMESTAMP NOW_EPOCH "%s" UTC)
-string(TIMESTAMP NOW_ISO "%Y-%m-%dT%H:%M:%SZ" UTC)
-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/fsdata)
 file(WRITE ${CMAKE_SOURCE_DIR}/fsdata/webapp.json
 "{\n"
 "  \"local_version\": \"${WEB_GIT_DESCRIBE}\",\n"

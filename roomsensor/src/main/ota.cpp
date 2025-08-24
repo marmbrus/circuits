@@ -32,7 +32,6 @@
  * Version Format:
  * - Clean builds: Just git hash (e.g., "9046537")
  * - Dirty builds: Uniform format "revYYYYMMDDHHMMSS-shortHash-dirty"
- * - All versions reported consistently across firmware/web, local/remote
  *
  * Behavior by Partition Type:
  * - Factory partition: Always reports status as DEV_BUILD, but follows the same upgrade
@@ -96,15 +95,9 @@ static char web_local_version[33] = {0};
 static time_t web_local_timestamp = 0;
 static char web_last_error[96] = {0};
 
-
-
 // Forward declare file read helper before first use
 static char* read_text_file(const char* path);
 static bool write_text_file_atomic(const char* path, const char* text);
-
-
-
-
 
 // Forward declarations
 static void report_ota_status(ota_status_t status, const char* error_message);
