@@ -335,7 +335,6 @@ void ota_notify_network_connected(void) {
 }
 
 
-
 // Save OTA information for logging purposes (does not affect update decision)
 static void save_ota_info(time_t timestamp, const char* hash) {
     nvs_handle_t nvs_handle;

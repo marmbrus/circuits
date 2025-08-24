@@ -42,17 +42,19 @@ if [[ "$RAW_GIT_DESCRIBE" == *-dirty ]]; then
     exit 1
 fi
 
-# Format git describe uniformly: revYYYYMMDDHHMMSS-shortHash(-dirty)
-# Extract timestamp and create uniform format
+# Format versions consistently: git hash for clean, revYYYYMMDDHHMMSS-shortHash-dirty for dirty
 TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
 if [[ "$RAW_GIT_DESCRIBE" == *-dirty ]]; then
     # For dirty builds, use uniform format
     GIT_DESCRIBE="rev${TIMESTAMP}-${GIT_HASH}-dirty"
+    VERSION_FOR_MANIFEST="$GIT_DESCRIBE"
 else
-    # For clean builds, use the original format but ensure consistency
-    GIT_DESCRIBE="$RAW_GIT_DESCRIBE"
+    # For clean builds, use just the git hash
+    GIT_DESCRIBE="$RAW_GIT_DESCRIBE"  # Keep original for logging
+    VERSION_FOR_MANIFEST="$GIT_HASH"  # Use hash for manifest
 fi
 echo "Git describe: $GIT_DESCRIBE"
+echo "Version for manifest: $VERSION_FOR_MANIFEST"
 
 # Build firmware first to embed BUILD_TIMESTAMP used by both firmware and web manifest
 echo "Building project (firmware) with idf.py..."
@@ -115,12 +117,12 @@ gzip -c -9 "$INDEX_HTML" > "$WEB_FILENAME"
 # Create manifest.json with firmware and web information
 cat > ${MANIFEST_FILE} << EOF
 {
-    "version": "${GIT_HASH}",
+    "version": "${VERSION_FOR_MANIFEST}",
     "build_timestamp": "${BUILD_ISO_TIME}",
     "build_timestamp_epoch": ${BUILD_TIMESTAMP},
     "git_describe": "${GIT_DESCRIBE}",
     "url": "${BASE_URL}/${BIN_FILENAME}",
-    "web_version": "${GIT_HASH}",
+    "web_version": "${VERSION_FOR_MANIFEST}",
     "web_build_timestamp": "${BUILD_ISO_TIME}",
     "web_build_timestamp_epoch": ${BUILD_TIMESTAMP},
     "web_git_describe": "${GIT_DESCRIBE}",
@@ -128,7 +130,7 @@ cat > ${MANIFEST_FILE} << EOF
 }
 EOF
 
-echo "Created manifest file with version ${GIT_HASH}, timestamp ${BUILD_ISO_TIME} (UTC)"
+echo "Created manifest file with version ${VERSION_FOR_MANIFEST}, timestamp ${BUILD_ISO_TIME} (UTC)"
 
 # Copy bin file to a new name with git hash
 cp "${BIN_FILE}" "${BIN_FILENAME}"

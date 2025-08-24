@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-# Set PROJECT_VER with uniform format: revYYYYMMDDHHMMSS-shortHash(-dirty)
+# Set PROJECT_VER: git hash for clean builds, revYYYYMMDDHHMMSS-shortHash-dirty for dirty builds
 execute_process(
     COMMAND git describe --tags --always --dirty
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -17,24 +17,25 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 if (RAW_GIT_DESCRIBE)
-    # Check if dirty and format uniformly for dirty builds
+    # Check if dirty and format accordingly
     if("${RAW_GIT_DESCRIBE}" MATCHES ".*-dirty$")
+        # Dirty builds: use uniform timestamp format
         string(TIMESTAMP BUILD_TIMESTAMP_UNIFORM "%Y%m%d%H%M%S" UTC)
         set(PROJECT_VER "rev${BUILD_TIMESTAMP_UNIFORM}-${GIT_SHORT_HASH}-dirty")
     else()
-        # Use original format for clean builds
-        set(PROJECT_VER "${RAW_GIT_DESCRIBE}")
+        # Clean builds: use just the git hash
+        set(PROJECT_VER "${GIT_SHORT_HASH}")
     endif()
 endif()
 
 project(sensorv2)
 
 # Generate fsdata/webapp.json on build to embed local dev web version metadata (including -dirty)
-# Use the same uniform formatting logic as PROJECT_VER
+# Use the same logic as PROJECT_VER for consistency
 if("${RAW_GIT_DESCRIBE}" MATCHES ".*-dirty$")
     set(WEB_GIT_DESCRIBE "rev${BUILD_TIMESTAMP_UNIFORM}-${GIT_SHORT_HASH}-dirty")
 else()
-    set(WEB_GIT_DESCRIBE "${RAW_GIT_DESCRIBE}")
+    set(WEB_GIT_DESCRIBE "${GIT_SHORT_HASH}")
 endif()
 
 string(TIMESTAMP NOW_EPOCH "%s" UTC)
