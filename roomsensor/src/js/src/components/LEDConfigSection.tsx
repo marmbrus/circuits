@@ -15,11 +15,6 @@ export default function LEDConfigSection({ config, onEdit, publish }: Props) {
     <MuiBox sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 0.75 }}>
       {ledKeys.map((k) => {
         const led = (config as Record<string, any>)[k] as any
-        const r = ('R' in led && led.R !== undefined) ? led.R : 0
-        const g = ('G' in led && led.G !== undefined) ? led.G : 0
-        const b = ('B' in led && led.B !== undefined) ? led.B : 0
-        const toHex = (n: number) => Number(n).toString(16).padStart(2, '0').toUpperCase()
-        const hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`
         return (
           <MuiBox key={k}>
             <Box sx={{ border: '1px solid', borderColor: 'divider', p: 0.75, borderRadius: 1 }}>
@@ -43,10 +38,6 @@ export default function LEDConfigSection({ config, onEdit, publish }: Props) {
                 {'num_rows' in led && <Chip label={`Rows: ${led.num_rows}`} size="small" onClick={() => onEdit(k, 'num_rows', led.num_rows, { type: 'number', label: 'Rows' })} />}
               </Stack>
               <Stack spacing={0.75} sx={{ mt: 0.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 24, height: 24, borderRadius: 0.5, border: '1px solid', borderColor: 'divider', backgroundColor: hexColor }} />
-                  <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>{hexColor}</Typography>
-                </Box>
                 <Box>
                   <Typography variant="caption">Brightness ({('brightness' in led && led.brightness !== undefined) ? led.brightness : 100})</Typography>
                   <Slider
@@ -55,7 +46,7 @@ export default function LEDConfigSection({ config, onEdit, publish }: Props) {
                     max={100}
                     step={1}
                     value={('brightness' in led && led.brightness !== undefined) ? led.brightness : 100}
-                    onChange={(_, v) => publish ? publish(k, 'brightness', Math.round(v as number)) : onEdit(k, 'brightness', Math.round(v as number))}
+                    onChangeCommitted={(_, v) => publish ? publish(k, 'brightness', Math.round(v as number)) : onEdit(k, 'brightness', Math.round(v as number))}
                   />
                 </Box>
                 <Box>
@@ -66,18 +57,7 @@ export default function LEDConfigSection({ config, onEdit, publish }: Props) {
                     max={100}
                     step={1}
                     value={('speed' in led && led.speed !== undefined) ? led.speed : 50}
-                    onChange={(_, v) => publish ? publish(k, 'speed', Math.round(v as number)) : onEdit(k, 'speed', Math.round(v as number))}
-                  />
-                </Box>
-                <Box>
-                  <Typography variant="caption">Duty ({('duty' in led && led.duty !== undefined) ? led.duty : 100})</Typography>
-                  <Slider
-                    size="small"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={('duty' in led && led.duty !== undefined) ? led.duty : 100}
-                    onChange={(_, v) => publish ? publish(k, 'duty', Math.round(v as number)) : onEdit(k, 'duty', Math.round(v as number))}
+                    onChangeCommitted={(_, v) => publish ? publish(k, 'speed', Math.round(v as number)) : onEdit(k, 'speed', Math.round(v as number))}
                   />
                 </Box>
                 <Box>
@@ -88,7 +68,7 @@ export default function LEDConfigSection({ config, onEdit, publish }: Props) {
                     max={255}
                     step={1}
                     value={('R' in led && led.R !== undefined) ? led.R : 0}
-                    onChange={(_, v) => publish ? publish(k, 'R', Math.round(v as number)) : onEdit(k, 'R', Math.round(v as number))}
+                    onChangeCommitted={(_, v) => publish ? publish(k, 'R', Math.round(v as number)) : onEdit(k, 'R', Math.round(v as number))}
                   />
                 </Box>
                 <Box>
@@ -99,7 +79,7 @@ export default function LEDConfigSection({ config, onEdit, publish }: Props) {
                     max={255}
                     step={1}
                     value={('G' in led && led.G !== undefined) ? led.G : 0}
-                    onChange={(_, v) => publish ? publish(k, 'G', Math.round(v as number)) : onEdit(k, 'G', Math.round(v as number))}
+                    onChangeCommitted={(_, v) => publish ? publish(k, 'G', Math.round(v as number)) : onEdit(k, 'G', Math.round(v as number))}
                   />
                 </Box>
                 <Box>
@@ -110,7 +90,7 @@ export default function LEDConfigSection({ config, onEdit, publish }: Props) {
                     max={255}
                     step={1}
                     value={('B' in led && led.B !== undefined) ? led.B : 0}
-                    onChange={(_, v) => publish ? publish(k, 'B', Math.round(v as number)) : onEdit(k, 'B', Math.round(v as number))}
+                    onChangeCommitted={(_, v) => publish ? publish(k, 'B', Math.round(v as number)) : onEdit(k, 'B', Math.round(v as number))}
                   />
                 </Box>
                 {(led.chip === 'SK6812' || led.chip === 'WS2814') && (
@@ -122,7 +102,7 @@ export default function LEDConfigSection({ config, onEdit, publish }: Props) {
                       max={255}
                       step={1}
                       value={('W' in led && led.W !== undefined) ? led.W : 0}
-                      onChange={(_, v) => publish ? publish(k, 'W', Math.round(v as number)) : onEdit(k, 'W', Math.round(v as number))}
+                      onChangeCommitted={(_, v) => publish ? publish(k, 'W', Math.round(v as number)) : onEdit(k, 'W', Math.round(v as number))}
                     />
                   </Box>
                 )}

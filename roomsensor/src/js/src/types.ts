@@ -9,7 +9,6 @@ export type LedConfig = {
   R?: number
   B?: number
   speed?: number
-  duty?: number
 }
 
 export type WifiConfig = {
