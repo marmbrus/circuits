@@ -57,15 +57,12 @@
 
 static const char *TAG = "ota";
 static const char *MANIFEST_URL = "https://updates.gaia.bio/manifest.json";
-static char current_version[33] = {0}; // Store current firmware version (git hash)
-static char extracted_hash[33] = {0};  // Store extracted Git hash
-static bool firmware_is_dirty = false;  // Whether local firmware version is dirty
+static char current_version[64] = {0}; // Store current firmware version
 static TaskHandle_t ota_task_handle = NULL;
 static bool ota_running = false;
 
 // Event group to signal that network is connected
 static EventGroupHandle_t network_event_group;
-#define NETWORK_CONNECTED_BIT BIT0
 
 // Get the embedded build timestamp (set at compile time)
 static const time_t FIRMWARE_BUILD_TIME = (time_t)FIRMWARE_BUILD_TIMESTAMP;
@@ -85,9 +82,8 @@ typedef enum {
 } ota_status_t;
 
 // Store remote version info for status reporting
-static char remote_version[33] = {0};
+static char remote_version[64] = {0};
 static time_t remote_timestamp = 0;
-static bool manifest_fw_is_dirty = false; // Whether manifest firmware version is dirty
 
 static char web_remote_version[33] = {0};
 static time_t web_remote_timestamp = 0;
@@ -107,7 +103,6 @@ static bool write_text_file_atomic(const char* path, const char* text);
 
 // Forward declarations
 static void report_ota_status(ota_status_t status, const char* error_message);
-static const char* extract_git_hash(const char* version);
 
 // Helper: read a small JSON file fully into memory
 static char* read_text_file(const char* path) {
@@ -335,64 +330,11 @@ static bool is_time_synchronized(void) {
 
 // Set the network connected bit when network is up
 void ota_notify_network_connected(void) {
-    if (network_event_group != NULL) {
-        xEventGroupSetBits(network_event_group, NETWORK_CONNECTED_BIT);
-        ESP_LOGD(TAG, "Network connection signaled to OTA task");
-    }
+    // Network connectivity is now handled by checking system state directly
+    ESP_LOGD(TAG, "Network connection notification received");
 }
 
-// Extract the git hash from a version string that might be in format like "rev20241211-75-gb1768e2-dirty"
-static const char* extract_git_hash(const char* version) {
-    static char hash_buf[33] = {0};
-    memset(hash_buf, 0, sizeof(hash_buf));
 
-    if (!version || strlen(version) == 0) {
-        ESP_LOGW(TAG, "Empty version string");
-        return "";
-    }
-
-    // If the version string contains "g" followed by a hash (typical git describe format)
-    const char* hash_start = strstr(version, "g");
-    if (hash_start && hash_start[1] != '\0') {
-        hash_start++; // Skip the 'g'
-
-        // Copy until dash or end of string
-        const char* end = strchr(hash_start, '-');
-        if (end) {
-            // Copy just the hash part
-            size_t len = end - hash_start;
-            if (len > 32) len = 32; // Limit to 32 chars
-            strncpy(hash_buf, hash_start, len);
-        } else {
-            // No dash, copy to the end
-            strncpy(hash_buf, hash_start, 32);
-        }
-
-        ESP_LOGI(TAG, "Extracted git hash '%s' from version '%s'", hash_buf, version);
-        return hash_buf;
-    }
-
-    // If this is already just a hash (alphanumeric, 4-12 chars typically)
-    if (strlen(version) >= 4 && strlen(version) <= 12) {
-        // Check if it looks like a hash (alphanumeric)
-        bool is_hash = true;
-        for (int i = 0; version[i] != '\0'; i++) {
-            if (!isalnum(version[i])) {
-                is_hash = false;
-                break;
-            }
-        }
-
-        if (is_hash) {
-            ESP_LOGD(TAG, "Version '%s' appears to be a git hash", version);
-            return version;
-        }
-    }
-
-    // Could not extract hash, return original
-    ESP_LOGW(TAG, "Could not extract git hash from '%s', using as-is", version);
-    return version;
-}
 
 // Save OTA information for logging purposes (does not affect update decision)
 static void save_ota_info(time_t timestamp, const char* hash) {
@@ -437,14 +379,9 @@ static void get_current_version() {
     // Get version info from nvs or partition
     esp_app_desc_t app_desc;
     if (esp_ota_get_partition_description(running, &app_desc) == ESP_OK) {
-        // Use project version as the git hash
+        // Store the current firmware version
         strncpy(current_version, app_desc.version, sizeof(current_version) - 1);
-        firmware_is_dirty = (strstr(app_desc.version, "dirty") != NULL);
         ESP_LOGI(TAG, "Current firmware version: %s", current_version);
-
-        // Extract the git hash part
-        const char* hash = extract_git_hash(current_version);
-        strncpy(extracted_hash, hash, sizeof(extracted_hash) - 1);
 
         // Display embedded build timestamp
         char build_time_str[64];
@@ -539,7 +476,6 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
     // Store remote version for status reporting
     strncpy(remote_version, remote_version_str, sizeof(remote_version) - 1);
-    manifest_fw_is_dirty = (strstr(remote_version_str, "dirty") != NULL);
     ESP_LOGD(TAG, "Stored remote version: %s", remote_version);
 
     // Get remote timestamp for comparison
@@ -547,35 +483,15 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     if (build_timestamp_epoch && cJSON_IsNumber(build_timestamp_epoch)) {
         remote_timestamp = (time_t)build_timestamp_epoch->valuedouble;
 
-        // Format remote timestamp for logging
-        char remote_time_str[64];
-        struct tm remote_tm;
-        gmtime_r(&remote_timestamp, &remote_tm);
-        strftime(remote_time_str, sizeof(remote_time_str), "%Y-%m-%dT%H:%M:%SZ", &remote_tm);
-        // Reduce logging verbosity
-        // ESP_LOGI(TAG, "Remote firmware build time: %s (epoch: %ld)", remote_time_str, (long)remote_timestamp);
-
-        // Format local timestamp for comparison
-        char local_time_str[64] = {0};
-        if (FIRMWARE_BUILD_TIME > 0) {
-            struct tm local_tm;
-            gmtime_r(&FIRMWARE_BUILD_TIME, &local_tm);
-            strftime(local_time_str, sizeof(local_time_str), "%Y-%m-%dT%H:%M:%SZ", &local_tm);
-            // Reduce logging verbosity
-            // ESP_LOGI(TAG, "Local firmware build time: %s (epoch: %ld)",
-            //          local_time_str, (long)FIRMWARE_BUILD_TIME);
-        } else {
+        // Timestamp validation (no detailed logging needed - raw values logged below)
+        if (FIRMWARE_BUILD_TIME <= 0) {
             ESP_LOGW(TAG, "Local firmware build time is not available");
         }
     } else {
         ESP_LOGW(TAG, "Remote manifest missing build timestamp");
     }
 
-    // Extract the hash part from the remote version
-    const char* remote_hash = extract_git_hash(remote_version_str);
-    // Reduce logging verbosity
-    // ESP_LOGI(TAG, "Local firmware hash: %s, Remote firmware hash: %s",
-    //          extracted_hash, remote_hash);
+    // Store the remote version for comparison and reporting
 
     // Check if we're running from factory partition
     bool is_factory = false;
@@ -587,16 +503,12 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // Load local web info from LittleFS
     load_local_web_info();
 
-    // Use embedded build timestamp as local firmware timestamp
-    time_t local_effective_timestamp = FIRMWARE_BUILD_TIME;
+    // Use embedded build timestamp directly for comparison
 
     // PRIMARY CHECK: Compare build timestamps
-    if (remote_timestamp > 0 && local_effective_timestamp > 0) {
-        // Log raw timestamp values for debugging - change to DEBUG level
-        // ESP_LOGI(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
-        //         (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
+    if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
         ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
-                (long)remote_timestamp, (long)local_effective_timestamp);
+                (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
 
         // Only run sanity checks if system time is known
         if (is_time_synchronized()) {
@@ -605,7 +517,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             if (remote_timestamp > current_time + 315360000) { // 10 years in seconds
                 ESP_LOGW(TAG, "Remote timestamp is unrealistically far in the future, may be corrupted");
             }
-            if (local_effective_timestamp > current_time + 315360000) {
+            if (FIRMWARE_BUILD_TIME > current_time + 315360000) {
                 ESP_LOGW(TAG, "Local build timestamp is unrealistically far in the future, may be corrupted");
             }
         } else {
@@ -613,15 +525,15 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         }
 
         // Directly compare the timestamps
-        if (remote_timestamp > local_effective_timestamp) {
-            time_t time_diff = remote_timestamp - local_effective_timestamp;
+        if (remote_timestamp > FIRMWARE_BUILD_TIME) {
+            time_t time_diff = remote_timestamp - FIRMWARE_BUILD_TIME;
 
             // Keep this log concise
             ESP_LOGI(TAG, "Newer version found (%ld sec newer), starting upgrade...", (long)time_diff);
 
             // Special message for factory builds
             if (is_factory) {
-                ESP_LOGI(TAG, "OTA update available for factory build - will upgrade to: %s", remote_hash);
+                ESP_LOGI(TAG, "OTA update available for factory build - will upgrade to: %s", remote_version_str);
             }
 
             // LED animation during OTA will be handled by LEDManager patterns
@@ -648,7 +560,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 ESP_LOGI(TAG, "OTA update successful! Saving update info and rebooting...");
 
                 // Save OTA information before reboot
-                save_ota_info(remote_timestamp, remote_hash);
+                save_ota_info(remote_timestamp, remote_version_str);
 
                 cJSON_Delete(root);
                 vTaskDelay(pdMS_TO_TICKS(1000));
@@ -662,7 +574,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 report_ota_status(OTA_STATUS_ERROR, esp_err_to_name(ret));
                 return false;
             }
-        } else if (remote_timestamp < local_effective_timestamp) {
+        } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
             // Local is newer than remote
             if (is_factory) {
                 // Report as DEV_BUILD for factory partition
@@ -721,22 +633,22 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // Load local web info from file if any
     load_local_web_info();
 
-    // In DEV_BUILD (factory), treat local web as at least as new as the firmware build
-    // to avoid overwriting serial-flashed dev images unless the server is strictly newer.
-    if (is_factory) {
-        if (FIRMWARE_BUILD_TIME > 0 && web_local_timestamp < FIRMWARE_BUILD_TIME) {
-            web_local_timestamp = FIRMWARE_BUILD_TIME;
-            if (strlen(extracted_hash) > 0) {
-                strncpy(web_local_version, extracted_hash, sizeof(web_local_version) - 1);
+            // In DEV_BUILD (factory), treat local web as at least as new as the firmware build
+        // to avoid overwriting serial-flashed dev images unless the server is strictly newer.
+        if (is_factory) {
+            if (FIRMWARE_BUILD_TIME > 0 && web_local_timestamp < FIRMWARE_BUILD_TIME) {
+                web_local_timestamp = FIRMWARE_BUILD_TIME;
+                if (strlen(current_version) > 0) {
+                    strncpy(web_local_version, current_version, sizeof(web_local_version) - 1);
+                }
             }
         }
-    }
 
     /* unified status: no separate web_status */
 
     if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
         const char* remote_web_url = web_url->valuestring;
-        const char* remote_web_hash = extract_git_hash(web_remote_version);
+        const char* remote_web_hash = web_remote_version;
 
         if (web_local_timestamp > 0 && web_local_timestamp > web_remote_timestamp) {
             // Local dev build is newer; keep it
@@ -825,22 +737,14 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
 
         case HTTP_EVENT_ON_FINISH:
             if (manifest_data != NULL) {
-                // Reduce logging verbosity for successful downloads
-                // ESP_LOGI(TAG, "Manifest downloaded (%d bytes)", data_len);
                 if (data_len > 0) {
-                    // Only show preview at DEBUG level
-                    char preview[101] = {0}; // Declare preview here
+                    char preview[101] = {0};
                     strncpy(preview, manifest_data, 100);
-                    // ESP_LOGI(TAG, "Manifest preview: %s%s", preview,
-                    //          (strlen(manifest_data) > 100) ? "..." : "");
                     ESP_LOGD(TAG, "Manifest downloaded (%d bytes): %s%s", data_len,
                              preview, (strlen(manifest_data) > 100) ? "..." : "");
 
-                    // Process the manifest - remove unused variable assignment
-                    // bool update_result = parse_manifest_and_check_update(manifest_data);
+                    // Process the manifest
                     parse_manifest_and_check_update(manifest_data);
-                    // Remove redundant log - the status report is the main output
-                    // ESP_LOGI(TAG, "Manifest parse result: %s", update_result ? "Update triggered" : "No update needed");
                 } else {
                     ESP_LOGW(TAG, "Empty manifest received");
                 }
@@ -1002,13 +906,11 @@ esp_err_t ota_init(void) {
     // Ensure LittleFS is mounted for web OTA reads/writes
     webfs::init("storage", false);
 
-    // Check if we're running from factory partition
-    bool is_factory = false;
+    // Check if we're running from factory partition (for future use)
     const esp_partition_t *running = esp_ota_get_running_partition();
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
-        is_factory = true;
         // Report DEV_BUILD status - this will be done when status is published
-        // No need for extra log here
+        ESP_LOGD(TAG, "Running from factory partition");
     }
 
     // Mark app as valid to prevent rollback
@@ -1105,24 +1007,11 @@ static void report_ota_status(ota_status_t status, const char* error_message) {
     }
 
     // Firmware versions/times
-    if (strlen(extracted_hash) > 0) {
-        if (firmware_is_dirty) {
-            char buf[48];
-            snprintf(buf, sizeof(buf), "%s-dirty", extracted_hash);
-            cJSON_AddStringToObject(ota_json, "firmware_local_version", buf);
-        } else {
-            cJSON_AddStringToObject(ota_json, "firmware_local_version", extracted_hash);
-        }
+    if (strlen(current_version) > 0) {
+        cJSON_AddStringToObject(ota_json, "firmware_local_version", current_version);
     }
     if (strlen(remote_version) > 0) {
-        const char* rh = extract_git_hash(remote_version);
-        if (manifest_fw_is_dirty) {
-            char buf[48];
-            snprintf(buf, sizeof(buf), "%s-dirty", rh);
-            cJSON_AddStringToObject(ota_json, "firmware_remote_version", buf);
-        } else {
-            cJSON_AddStringToObject(ota_json, "firmware_remote_version", rh);
-        }
+        cJSON_AddStringToObject(ota_json, "firmware_remote_version", remote_version);
     }
 
     // Format build timestamps in ISO format
@@ -1145,7 +1034,7 @@ static void report_ota_status(ota_status_t status, const char* error_message) {
 
     // Web versions/times
     if (web_local_version[0]) cJSON_AddStringToObject(ota_json, "web_local_version", web_local_version);
-    if (web_remote_version[0]) cJSON_AddStringToObject(ota_json, "web_remote_version", extract_git_hash(web_remote_version));
+    if (web_remote_version[0]) cJSON_AddStringToObject(ota_json, "web_remote_version", web_remote_version);
     if (web_local_timestamp > 0) {
         char t[64]; struct tm tm1; gmtime_r(&web_local_timestamp, &tm1);
         strftime(t, sizeof(t), "%Y-%m-%dT%H:%M:%SZ", &tm1);

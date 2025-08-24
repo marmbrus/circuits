@@ -33,15 +33,26 @@ if [ -z "$GIT_HASH" ]; then
     exit 1
 fi
 
-# Get the full git describe output which includes tag information
-GIT_DESCRIBE=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0-g$GIT_HASH")
-echo "Git describe: $GIT_DESCRIBE"
+# Get the full git describe output and format it uniformly
+RAW_GIT_DESCRIBE=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0-g$GIT_HASH")
 
 # Check if Git describe contains "dirty"
-if [[ "$GIT_DESCRIBE" == *-dirty ]]; then
+if [[ "$RAW_GIT_DESCRIBE" == *-dirty ]]; then
     echo "Error: Git working directory contains uncommitted changes. Please commit all changes first."
     exit 1
 fi
+
+# Format git describe uniformly: revYYYYMMDDHHMMSS-shortHash(-dirty)
+# Extract timestamp and create uniform format
+TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
+if [[ "$RAW_GIT_DESCRIBE" == *-dirty ]]; then
+    # For dirty builds, use uniform format
+    GIT_DESCRIBE="rev${TIMESTAMP}-${GIT_HASH}-dirty"
+else
+    # For clean builds, use the original format but ensure consistency
+    GIT_DESCRIBE="$RAW_GIT_DESCRIBE"
+fi
+echo "Git describe: $GIT_DESCRIBE"
 
 # Build firmware first to embed BUILD_TIMESTAMP used by both firmware and web manifest
 echo "Building project (firmware) with idf.py..."
