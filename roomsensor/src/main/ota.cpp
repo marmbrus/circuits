@@ -58,7 +58,7 @@
 #error "FIRMWARE_BUILD_TIMESTAMP not defined - check CMakeLists.txt"
 #endif
 
-static const char *TAG = "ota";
+static const char *TAG = "ota"; // test dirty detection again
 static const char *MANIFEST_URL = "https://updates.gaia.bio/manifest.json";
 static char current_version[64] = {0}; // Store current firmware version
 static TaskHandle_t ota_task_handle = NULL;
@@ -93,11 +93,9 @@ static char web_local_version[33] = {0};
 static time_t web_local_timestamp = 0;
 static char web_last_error[96] = {0};
 
-// Forward declare file read helper before first use
+// Forward declare
 static char* read_text_file(const char* path);
 static bool write_text_file_atomic(const char* path, const char* text);
-
-// Forward declarations
 static void report_ota_status(ota_status_t status, const char* error_message);
 
 // Helper: read a small JSON file fully into memory
