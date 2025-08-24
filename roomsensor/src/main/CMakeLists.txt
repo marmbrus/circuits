@@ -13,19 +13,18 @@ idf_component_register(
     REQUIRES i2c leds driver nvs_flash mqtt json esp_wifi esp_app_format esp_http_server esp_http_client esp_https_ota app_update console vfs joltwallet__littlefs serial_console configuration
 )
 
-# Add build timestamp (in UTC seconds since epoch) at compile time
-execute_process(
-    COMMAND bash -c "date -u +%s"
-    OUTPUT_VARIABLE BUILD_TIMESTAMP
-    OUTPUT_STRIP_TRAILING_WHITESPACE
+# Generate build_timestamp.h on every build with current UTC epoch seconds using Python to avoid shell $ escaping
+set(BUILD_TIMESTAMP_HEADER "${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.h")
+
+add_custom_command(
+    OUTPUT ${BUILD_TIMESTAMP_HEADER}
+    COMMAND ${CMAKE_COMMAND} -DOUT=${BUILD_TIMESTAMP_HEADER} -P ${CMAKE_CURRENT_SOURCE_DIR}/gen_build_timestamp.cmake
+    COMMENT "Generating build_timestamp.h with current UTC epoch"
+    VERBATIM
 )
 
-message(STATUS "Embedding build timestamp (UTC): ${BUILD_TIMESTAMP}")
+add_custom_target(update_build_timestamp ALL DEPENDS ${BUILD_TIMESTAMP_HEADER})
 
-# Explicitly set the timestamp in the CMake cache so deploy_ota.sh can read it
-set(BUILD_TIMESTAMP ${BUILD_TIMESTAMP} CACHE STRING "Firmware build timestamp (UTC epoch)" FORCE)
+add_dependencies(${COMPONENT_LIB} update_build_timestamp)
 
-# Add the timestamp as a compile definition
-target_compile_definitions(${COMPONENT_LIB} PRIVATE
-    "BUILD_TIMESTAMP=${BUILD_TIMESTAMP}"
-)
+target_include_directories(${COMPONENT_LIB} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

@@ -39,6 +39,16 @@ file(WRITE ${CMAKE_SOURCE_DIR}/fsdata/webapp.json
 "}\n"
 )
 
+# Also write firmware.json with the same metadata scheme so firmware can read a host-derived epoch
+file(WRITE ${CMAKE_SOURCE_DIR}/fsdata/firmware.json
+"{\n"
+"  \"local_version\": \"${GIT_HASH}\",\n"
+"  \"local_git_describe\": \"${GIT_DESCRIBE}\",\n"
+"  \"local_build_timestamp\": \"${NOW_ISO}\",\n"
+"  \"local_build_timestamp_epoch\": ${NOW_EPOCH}\n"
+"}\n"
+)
+
 # Create LittleFS image for the 'storage' partition from directory 'fsdata'.
 include($ENV{IDF_PATH}/components/partition_table/littlefs.cmake OPTIONAL)
 if (COMMAND littlefs_create_partition_image)

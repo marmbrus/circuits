@@ -61,10 +61,11 @@ if [ ! -f "$INDEX_HTML" ]; then
     exit 1
 fi
 
-# Extract build timestamp from CMake cache instead of generating a new one
-BUILD_TIMESTAMP=$(grep -a "BUILD_TIMESTAMP:STRING=" build/CMakeCache.txt | cut -d= -f2)
+# Extract build timestamp from generated header to match firmware embed
+TS_HEADER="build/esp-idf/main/build_timestamp.h"
+BUILD_TIMESTAMP=$(grep -Eo '[0-9]+' "$TS_HEADER" | head -1)
 if [ -z "$BUILD_TIMESTAMP" ]; then
-    echo "Error: Could not extract BUILD_TIMESTAMP from CMake cache"
+    echo "Error: Could not extract BUILD_TIMESTAMP from $TS_HEADER"
     exit 1
 fi
 

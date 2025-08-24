@@ -18,6 +18,7 @@
 #include "system_state.h"
 #include "communication.h"
 #include "filesystem.h"
+#include "build_timestamp.h"
 
 /*
  * OTA Update State Machine
@@ -93,6 +94,31 @@ static time_t web_remote_timestamp = 0;
 static char web_local_version[33] = {0};
 static time_t web_local_timestamp = 0;
 static char web_last_error[96] = {0};
+
+// Local firmware info stored in LittleFS at /storage/firmware.json
+static time_t firmware_local_timestamp = 0;
+
+// Forward declare file read helper before first use
+static char* read_text_file(const char* path);
+
+// Load local firmware info from /storage/firmware.json (host-provided at flash time)
+static void load_local_firmware_info(void) {
+    firmware_local_timestamp = 0;
+    const char* path = "/storage/firmware.json";
+    char* s = read_text_file(path);
+    if (!s) {
+        ESP_LOGW(TAG, "No local firmware.json found; firmware timestamp unknown");
+        return;
+    }
+    cJSON* root = cJSON_Parse(s);
+    if (!root) { free(s); return; }
+    const cJSON* t = cJSON_GetObjectItem(root, "local_build_timestamp_epoch");
+    if (cJSON_IsNumber(t)) {
+        firmware_local_timestamp = (time_t)t->valuedouble;
+    }
+    cJSON_Delete(root);
+    free(s);
+}
 
 // Forward declarations
 static void report_ota_status(ota_status_t status, const char* error_message);
@@ -573,13 +599,20 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         is_factory = true;
     }
 
+    // Load local firmware and web info from LittleFS
+    load_local_firmware_info();
+    load_local_web_info();
+
+    // Determine effective local timestamp for comparison (prefer firmware.json written at flash time)
+    time_t local_effective_timestamp = firmware_local_timestamp > 0 ? firmware_local_timestamp : FIRMWARE_BUILD_TIME;
+
     // PRIMARY CHECK: Compare build timestamps
-    if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
+    if (remote_timestamp > 0 && local_effective_timestamp > 0) {
         // Log raw timestamp values for debugging - change to DEBUG level
         // ESP_LOGI(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
         //         (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
         ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
-                (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
+                (long)remote_timestamp, (long)local_effective_timestamp);
 
         // Only run sanity checks if system time is known
         if (is_time_synchronized()) {
@@ -588,7 +621,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             if (remote_timestamp > current_time + 315360000) { // 10 years in seconds
                 ESP_LOGW(TAG, "Remote timestamp is unrealistically far in the future, may be corrupted");
             }
-            if (FIRMWARE_BUILD_TIME > current_time + 315360000) {
+            if (local_effective_timestamp > current_time + 315360000) {
                 ESP_LOGW(TAG, "Local build timestamp is unrealistically far in the future, may be corrupted");
             }
         } else {
@@ -596,8 +629,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         }
 
         // Directly compare the timestamps
-        if (remote_timestamp > FIRMWARE_BUILD_TIME) {
-            time_t time_diff = remote_timestamp - FIRMWARE_BUILD_TIME;
+        if (remote_timestamp > local_effective_timestamp) {
+            time_t time_diff = remote_timestamp - local_effective_timestamp;
 
             // Keep this log concise
             ESP_LOGI(TAG, "Newer version found (%ld sec newer), starting upgrade...", (long)time_diff);
@@ -645,7 +678,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 report_ota_status(OTA_STATUS_ERROR, esp_err_to_name(ret));
                 return false;
             }
-        } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
+        } else if (remote_timestamp < local_effective_timestamp) {
             // Local is newer than remote
             if (is_factory) {
                 // Report as DEV_BUILD for factory partition
