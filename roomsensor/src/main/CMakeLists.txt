@@ -13,18 +13,21 @@ idf_component_register(
     REQUIRES i2c leds driver nvs_flash mqtt json esp_wifi esp_app_format esp_http_server esp_http_client esp_https_ota app_update console vfs joltwallet__littlefs serial_console configuration
 )
 
-# Generate build_timestamp.h on every build with current UTC epoch seconds using Python to avoid shell $ escaping
-set(BUILD_TIMESTAMP_HEADER "${CMAKE_CURRENT_BINARY_DIR}/build_timestamp.h")
-
-add_custom_command(
-    OUTPUT ${BUILD_TIMESTAMP_HEADER}
-    COMMAND ${CMAKE_COMMAND} -DOUT=${BUILD_TIMESTAMP_HEADER} -P ${CMAKE_CURRENT_SOURCE_DIR}/gen_build_timestamp.cmake
-    COMMENT "Generating build_timestamp.h with current UTC epoch"
-    VERBATIM
+# Generate build timestamp directly as compile definition (no header file)
+execute_process(
+    COMMAND date -u +%s
+    OUTPUT_VARIABLE BUILD_TIMESTAMP_EPOCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE DATE_RESULT
 )
 
-add_custom_target(update_build_timestamp ALL DEPENDS ${BUILD_TIMESTAMP_HEADER})
+if(NOT DATE_RESULT EQUAL 0)
+    message(FATAL_ERROR "Failed to get current timestamp")
+endif()
 
-add_dependencies(${COMPONENT_LIB} update_build_timestamp)
+message(STATUS "Embedding build timestamp: ${BUILD_TIMESTAMP_EPOCH}")
 
-target_include_directories(${COMPONENT_LIB} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+# Add timestamp as compile definition
+target_compile_definitions(${COMPONENT_LIB} PRIVATE 
+    "FIRMWARE_BUILD_TIMESTAMP=${BUILD_TIMESTAMP_EPOCH}"
+)
