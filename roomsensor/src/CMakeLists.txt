@@ -5,6 +5,12 @@ cmake_minimum_required(VERSION 3.5)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
 # Set PROJECT_VER: git hash for clean builds, revYYYYMMDDHHMMSS-shortHash-dirty for dirty builds
+# Refresh git index first to ensure dirty detection works correctly
+execute_process(
+    COMMAND git update-index --refresh
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    ERROR_QUIET
+)
 execute_process(
     COMMAND git describe --tags --always --dirty
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -28,6 +34,12 @@ if (RAW_GIT_DESCRIBE)
     endif()
 endif()
 
+# Add a custom target that forces reconfiguration when files change
+add_custom_target(check_git_status
+    COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/CMakeCache.txt
+    COMMENT "Checking git status for changes"
+)
+
 project(sensorv2)
 
 # Generate fsdata/webapp.json on build to embed local dev web version metadata (including -dirty)
@@ -43,7 +55,7 @@ string(TIMESTAMP NOW_ISO "%Y-%m-%dT%H:%M:%SZ" UTC)
 file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/fsdata)
 file(WRITE ${CMAKE_SOURCE_DIR}/fsdata/webapp.json
 "{\n"
-"  \"local_version\": \"${GIT_SHORT_HASH}\",\n"
+"  \"local_version\": \"${WEB_GIT_DESCRIBE}\",\n"
 "  \"local_git_describe\": \"${WEB_GIT_DESCRIBE}\",\n"
 "  \"local_build_timestamp\": \"${NOW_ISO}\",\n"
 "  \"local_build_timestamp_epoch\": ${NOW_EPOCH}\n"

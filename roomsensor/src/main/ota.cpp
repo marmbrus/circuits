@@ -19,35 +19,40 @@
 #include "communication.h"
 #include "filesystem.h"
 
-
 /*
  * OTA Update State Machine
  * ========================
  *
  * Core OTA Decision Logic:
  * 1. The ONLY factor for deciding whether to upgrade is comparing embedded build timestamp
- *    (BUILD_TIMESTAMP) with the timestamp in the server manifest (build_timestamp_epoch).
+ *    (FIRMWARE_BUILD_TIMESTAMP) with the timestamp in the server manifest (build_timestamp_epoch).
  * 2. If server timestamp > local timestamp, perform upgrade
  * 3. No stored state/history should influence this decision
+ *
+ * Version Format:
+ * - Clean builds: Just git hash (e.g., "9046537")
+ * - Dirty builds: Uniform format "revYYYYMMDDHHMMSS-shortHash-dirty"
+ * - All versions reported consistently across firmware/web, local/remote
  *
  * Behavior by Partition Type:
  * - Factory partition: Always reports status as DEV_BUILD, but follows the same upgrade
  *   rules - upgrades if server version is newer, no special treatment
- * - OTA partition: Reports status based on version comparison (UP_TO_DATE, NEWER, UPGRADING)
+ * - OTA partition: Reports status based on timestamp comparison (UP_TO_DATE, UPGRADING)
  *
  * Status Reporting:
  * - DEV_BUILD: Running from factory partition (regardless of version)
- * - UPGRADING: When an update is in progress
- * - UP_TO_DATE: When running on an OTA partition with same version as server
- * - NEWER: When running on an OTA partition with newer version than server
+ * - UPGRADING_FIRMWARE: When a firmware update is in progress
+ * - UPGRADING_WEB: When a web asset update is in progress
+ * - UP_TO_DATE: When running latest version available on server
+ * - ERROR: When an update fails
  *
  * Process Flow:
  * 1. ota_init() starts a background task (ota_update_task)
- * 2. Task waits for network connectivity notification
+ * 2. Task waits for full system connectivity (WiFi + MQTT)
  * 3. When connected, periodically checks server for manifest
- * 4. Parses manifest and compares timestamps
- * 5. If newer version exists, triggers OTA update
- * 6. Reports status to MQTT at key points (boot, network connection, before update)
+ * 4. Parses manifest and compares build timestamps
+ * 5. If newer version exists, triggers OTA update (firmware first, then web)
+ * 6. Reports status to MQTT at key points (boot, network connection, before/after updates)
  */
 
 // Build timestamp is provided as FIRMWARE_BUILD_TIMESTAMP compile definition
