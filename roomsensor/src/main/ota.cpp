@@ -560,6 +560,13 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             if (ret == ESP_OK) {
                 ESP_LOGI(TAG, "OTA update successful! Saving update info and rebooting...");
 
+                // Update the firmware version file so the new firmware reports the correct version
+                if (write_text_file_atomic("/storage/firmware_version.txt", remote_version_str)) {
+                    ESP_LOGI(TAG, "Updated firmware version file to: %s", remote_version_str);
+                } else {
+                    ESP_LOGW(TAG, "Failed to update firmware version file, but OTA succeeded");
+                }
+
                 // Save OTA information before reboot
                 save_ota_info(remote_timestamp, remote_version_str);
 
