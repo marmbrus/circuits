@@ -87,7 +87,6 @@ typedef enum {
 // Store remote version info for status reporting
 static char remote_version[64] = {0};
 static time_t remote_timestamp = 0;
-
 static char web_remote_version[33] = {0};
 static time_t web_remote_timestamp = 0;
 static char web_local_version[33] = {0};
