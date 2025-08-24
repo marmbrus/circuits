@@ -67,10 +67,9 @@ add_custom_target(update_git_version ALL
 include($ENV{IDF_PATH}/components/partition_table/littlefs.cmake OPTIONAL)
 if (COMMAND littlefs_create_partition_image)
     littlefs_create_partition_image(storage fsdata FLASH_IN_PROJECT)
-    # Make LittleFS image depend on our version update target (if storage target exists)
-    if(TARGET storage)
-        add_dependencies(storage update_git_version)
-    endif()
+    # Make LittleFS image depend on our version update target
+    # The actual target name is littlefs_storage_bin, not storage
+    add_dependencies(littlefs_storage_bin update_git_version)
 else()
     message(STATUS "littlefs_create_partition_image not available; relying on update_js.sh")
 endif()

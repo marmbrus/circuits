@@ -58,7 +58,7 @@
 #error "FIRMWARE_BUILD_TIMESTAMP not defined - check CMakeLists.txt"
 #endif
 
-static const char *TAG = "ota";
+static const char *TAG = "ota"; // test dependency fix
 static const char *MANIFEST_URL = "https://updates.gaia.bio/manifest.json";
 static char current_version[64] = {0}; // Store current firmware version
 static TaskHandle_t ota_task_handle = NULL;
@@ -369,6 +369,7 @@ static void get_current_version() {
     ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
              running->type, running->subtype, running->address);
 
+             
     // Try to read version from build-time updated file first
     char* version_from_file = read_text_file("/storage/firmware_version.txt");
     if (version_from_file && strlen(version_from_file) > 0) {
