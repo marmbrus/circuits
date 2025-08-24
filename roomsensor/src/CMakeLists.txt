@@ -4,34 +4,19 @@ cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-# Set PROJECT_VER: git hash for clean builds, revYYYYMMDDHHMMSS-shortHash-dirty for dirty builds
-# Refresh git index first to ensure dirty detection works correctly
-execute_process(
-    COMMAND git update-index --refresh
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    ERROR_QUIET
-)
-execute_process(
-    COMMAND git describe --tags --always --dirty
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE RAW_GIT_DESCRIBE
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+# Set PROJECT_VER to a placeholder - actual version comes from build-time generated files
+# The firmware will read the real version from /storage/firmware_version.txt
 execute_process(
     COMMAND git rev-parse --short HEAD
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     OUTPUT_VARIABLE GIT_SHORT_HASH
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
 
-if (RAW_GIT_DESCRIBE)
-    # Check if dirty and format accordingly
-    if("${RAW_GIT_DESCRIBE}" MATCHES ".*-dirty$")
-        # Dirty builds: use uniform timestamp format
-        string(TIMESTAMP BUILD_TIMESTAMP_UNIFORM "%Y%m%d%H%M%S" UTC)
-        set(PROJECT_VER "rev${BUILD_TIMESTAMP_UNIFORM}-${GIT_SHORT_HASH}-dirty")
-    else()
-        # Clean builds: use just the git hash
-        set(PROJECT_VER "${GIT_SHORT_HASH}")
-    endif()
+if (GIT_SHORT_HASH)
+    set(PROJECT_VER "${GIT_SHORT_HASH}")
+else()
+    set(PROJECT_VER "unknown")
 endif()
 
 project(sensorv2)
