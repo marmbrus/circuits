@@ -58,7 +58,7 @@
 #error "FIRMWARE_BUILD_TIMESTAMP not defined - check CMakeLists.txt"
 #endif
 
-static const char *TAG = "ota"; // test dependency fix
+static const char *TAG = "ota";
 static const char *MANIFEST_URL = "https://updates.gaia.bio/manifest.json";
 static char current_version[64] = {0}; // Store current firmware version
 static TaskHandle_t ota_task_handle = NULL;
