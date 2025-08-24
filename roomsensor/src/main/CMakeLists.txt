@@ -27,7 +27,10 @@ endif()
 
 message(STATUS "Embedding build timestamp: ${BUILD_TIMESTAMP_EPOCH}")
 
+# Write timestamp to a file for deploy script to use
+file(WRITE "${CMAKE_BINARY_DIR}/firmware_build_timestamp.txt" "${BUILD_TIMESTAMP_EPOCH}")
+
 # Add timestamp as compile definition
-target_compile_definitions(${COMPONENT_LIB} PRIVATE 
+target_compile_definitions(${COMPONENT_LIB} PRIVATE
     "FIRMWARE_BUILD_TIMESTAMP=${BUILD_TIMESTAMP_EPOCH}"
 )

@@ -61,13 +61,23 @@ if [ ! -f "$INDEX_HTML" ]; then
     exit 1
 fi
 
-# Extract build timestamp from generated header to match firmware embed
-TS_HEADER="build/esp-idf/main/build_timestamp.h"
-BUILD_TIMESTAMP=$(grep -Eo '[0-9]+' "$TS_HEADER" | head -1)
-if [ -z "$BUILD_TIMESTAMP" ]; then
-    echo "Error: Could not extract BUILD_TIMESTAMP from $TS_HEADER"
+# Read the build timestamp that was written by CMake during build
+TIMESTAMP_FILE="build/firmware_build_timestamp.txt"
+
+if [ ! -f "$TIMESTAMP_FILE" ]; then
+    echo "Error: Build timestamp file not found at $TIMESTAMP_FILE"
+    echo "Make sure to run 'idf.py build' first"
     exit 1
 fi
+
+BUILD_TIMESTAMP=$(cat "$TIMESTAMP_FILE")
+
+if [ -z "$BUILD_TIMESTAMP" ]; then
+    echo "Error: Build timestamp file is empty"
+    exit 1
+fi
+
+echo "Using firmware build timestamp: $BUILD_TIMESTAMP"
 
 # Generate ISO format time from the timestamp
 BUILD_ISO_TIME=$(date -u -r $BUILD_TIMESTAMP +"%Y-%m-%dT%H:%M:%SZ")
