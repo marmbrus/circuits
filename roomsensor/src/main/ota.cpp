@@ -24,10 +24,9 @@
  * ========================
  *
  * Core OTA Decision Logic:
- * 1. The ONLY factor for deciding whether to upgrade is comparing embedded build timestamp
- *    (FIRMWARE_BUILD_TIMESTAMP) with the timestamp in the server manifest (build_timestamp_epoch).
- * 2. If server timestamp > local timestamp, perform upgrade
- * 3. No stored state/history should influence this decision
+ * The ONLY factor for deciding whether to upgrade is comparing embedded build timestamp
+ * (FIRMWARE_BUILD_TIMESTAMP) with the timestamp in the server manifest (build_timestamp_epoch).
+ * If server timestamp > local timestamp, perform upgrade
  *
  * Version Format:
  * - Clean builds: Just git hash (e.g., "9046537")
@@ -373,23 +372,31 @@ static void get_current_version() {
     ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
              running->type, running->subtype, running->address);
 
-    // Get version info from nvs or partition
-    esp_app_desc_t app_desc;
-    if (esp_ota_get_partition_description(running, &app_desc) == ESP_OK) {
-        // Store the current firmware version
-        strncpy(current_version, app_desc.version, sizeof(current_version) - 1);
-        ESP_LOGI(TAG, "Current firmware version: %s", current_version);
-
-        // Display embedded build timestamp
-        char build_time_str[64];
-        struct tm build_timeinfo;
-        gmtime_r(&FIRMWARE_BUILD_TIME, &build_timeinfo);
-        strftime(build_time_str, sizeof(build_time_str), "%Y-%m-%d %H:%M:%S UTC", &build_timeinfo);
-        ESP_LOGI(TAG, "Current firmware build time: %s (epoch: %ld)",
-                build_time_str, (long)FIRMWARE_BUILD_TIME);
+    // Try to read version from build-time updated file first
+    char* version_from_file = read_text_file("/storage/firmware_version.txt");
+    if (version_from_file && strlen(version_from_file) > 0) {
+        strncpy(current_version, version_from_file, sizeof(current_version) - 1);
+        free(version_from_file);
+        ESP_LOGI(TAG, "Current firmware version (from file): %s", current_version);
     } else {
-        ESP_LOGW(TAG, "Failed to get partition description");
+        // Fallback to embedded version from app descriptor
+        esp_app_desc_t app_desc;
+        if (esp_ota_get_partition_description(running, &app_desc) == ESP_OK) {
+            strncpy(current_version, app_desc.version, sizeof(current_version) - 1);
+            ESP_LOGI(TAG, "Current firmware version (from app_desc): %s", current_version);
+        } else {
+            ESP_LOGW(TAG, "Failed to get partition description");
+        }
+        if (version_from_file) free(version_from_file);
     }
+
+    // Display embedded build timestamp
+    char build_time_str[64];
+    struct tm build_timeinfo;
+    gmtime_r(&FIRMWARE_BUILD_TIME, &build_timeinfo);
+    strftime(build_time_str, sizeof(build_time_str), "%Y-%m-%d %H:%M:%S UTC", &build_timeinfo);
+    ESP_LOGI(TAG, "Current firmware build time: %s (epoch: %ld)",
+            build_time_str, (long)FIRMWARE_BUILD_TIME);
 
     // Check if the current app is marked as valid
     const esp_partition_t *validated = esp_ota_get_boot_partition();

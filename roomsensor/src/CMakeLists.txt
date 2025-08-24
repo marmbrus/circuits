@@ -57,7 +57,7 @@ endif()
 string(TIMESTAMP NOW_EPOCH \"%s\" UTC)
 string(TIMESTAMP NOW_ISO \"%Y-%m-%dT%H:%M:%SZ\" UTC)
 
-# Write webapp.json
+# Write both webapp.json and firmware_version.txt
 file(WRITE \"${CMAKE_SOURCE_DIR}/fsdata/webapp.json\" \"{
   \\\"local_version\\\": \\\"\${VERSION_STRING}\\\",
   \\\"local_git_describe\\\": \\\"\${VERSION_STRING}\\\",
@@ -65,6 +65,7 @@ file(WRITE \"${CMAKE_SOURCE_DIR}/fsdata/webapp.json\" \"{
   \\\"local_build_timestamp_epoch\\\": \${NOW_EPOCH}
 }
 \")
+file(WRITE \"${CMAKE_SOURCE_DIR}/fsdata/firmware_version.txt\" \"\${VERSION_STRING}\")
 ")
 
 # Add custom target that runs the version update script on every build
