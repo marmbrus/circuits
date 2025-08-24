@@ -35,6 +35,7 @@ public:
     virtual void set_brightness_percent(int brightness_percent) {}
     virtual void set_solid_color(uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) {}
     virtual void set_start_string(const char* start) {}
+    virtual void set_duty_percent(int duty_percent) {}
 };
 
 } // namespace leds

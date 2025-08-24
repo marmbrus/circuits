@@ -14,7 +14,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
 
     // Non-persisted runtime values (still declared so they can be updated and optionally loaded once)
     // NOTE: The following keys are intentionally NOT persisted to avoid flash wear from frequent updates:
-    //   - pattern, speed, brightness, R, G, B, W, dma
+    //   - pattern, speed, brightness, duty, R, G, B, W, dma
     // ConfigurationManager will still read any pre-provisioned string values from NVS (e.g., pattern)
     // regardless of the 'persisted' flag, allowing device-specific defaults without ongoing writes.
     descriptors_.push_back({"pattern", ConfigValueType::String, nullptr, false});
@@ -24,6 +24,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     descriptors_.push_back({"W", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"brightness", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"speed", ConfigValueType::I32, nullptr, false});
+    descriptors_.push_back({"duty", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"start", ConfigValueType::String, nullptr, false});
     descriptors_.push_back({"dma", ConfigValueType::Bool, nullptr, false});
 }
@@ -141,6 +142,13 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         speed_set_ = (value_str != nullptr);
         return ESP_OK;
     }
+    if (strcmp(key, "duty") == 0) {
+        duty_ = value_str ? atoi(value_str) : 100;
+        if (duty_ < 0) duty_ = 0;
+        if (duty_ > 100) duty_ = 100;
+        duty_set_ = (value_str != nullptr);
+        return ESP_OK;
+    }
     if (strcmp(key, "start") == 0) {
         start_set_ = (value_str != nullptr);
         start_ = value_str ? value_str : "";
@@ -189,6 +197,7 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     if (w_set_) cJSON_AddNumberToObject(obj, "W", w_);
     if (brightness_set_) cJSON_AddNumberToObject(obj, "brightness", brightness_);
     if (speed_set_) cJSON_AddNumberToObject(obj, "speed", speed_);
+    if (duty_set_) cJSON_AddNumberToObject(obj, "duty", duty_);
     if (start_set_) cJSON_AddStringToObject(obj, "start", start_.c_str());
     if (dma_set_) cJSON_AddBoolToObject(obj, "dma", dma_);
 

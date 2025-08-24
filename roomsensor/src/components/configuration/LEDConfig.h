@@ -59,6 +59,8 @@ public:
     int brightness() const { return brightness_; }
     bool has_speed() const { return speed_set_; }
     int speed() const { return speed_; }
+    bool has_duty() const { return duty_set_; }
+    int duty() const { return duty_; }
     bool has_start() const { return start_set_; }
     const std::string& start() const { return start_; }
     bool has_dma() const { return dma_set_; }
@@ -93,6 +95,7 @@ private:
     bool w_set_ = false; int w_ = 0;
     bool brightness_set_ = false; int brightness_ = 100;
     bool speed_set_ = false; int speed_ = 100;
+    bool duty_set_ = false; int duty_ = 100;
     bool start_set_ = false; std::string start_;
     bool dma_set_ = false; bool dma_ = false;
 

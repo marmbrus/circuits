@@ -236,6 +236,7 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
                                  cfg.has_b() ? cfg.b() : 0,
                                  cfg.has_w() ? cfg.w() : 0);
             if (cfg.has_brightness()) pat->set_brightness_percent(cfg.brightness());
+            if (cfg.has_duty()) pat->set_duty_percent(cfg.duty());
             if (cfg.has_start()) pat->set_start_string(cfg.start().c_str());
             pat->reset(*strip, now_us);
             // Render first frame with correct parameters
@@ -250,6 +251,7 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
                              cfg.has_b() ? cfg.b() : 0,
                              cfg.has_w() ? cfg.w() : 0);
         if (cfg.has_brightness()) pat->set_brightness_percent(cfg.brightness());
+        if (cfg.has_duty()) pat->set_duty_percent(cfg.duty());
         if (cfg.has_start()) pat->set_start_string(cfg.start().c_str());
     }
 }
