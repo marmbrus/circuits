@@ -112,12 +112,19 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
         <Chip
           label={`Pattern: ${'pattern' in led ? led.pattern : 'OFF'}`}
           size="small"
-          onClick={() => onEdit(ledKey, 'pattern', ('pattern' in led ? led.pattern : 'OFF'), { type: 'select', options: ['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE'], label: 'Pattern' })}
+          onClick={() => onEdit(ledKey, 'pattern', ('pattern' in led ? led.pattern : 'OFF'), { type: 'select', options: ['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION'], label: 'Pattern' })}
         />
         {'dataGPIO' in led && <Chip label={`Data: ${led.dataGPIO}`} size="small" onClick={() => onEdit(ledKey, 'dataGPIO', led.dataGPIO, { type: 'number', label: 'Data GPIO' })} />}                
         {'enabledGPIO' in led && <Chip label={`Enable: ${led.enabledGPIO}`} size="small" onClick={() => onEdit(ledKey, 'enabledGPIO', led.enabledGPIO, { type: 'number', label: 'Enable GPIO' })} />}
         {'num_columns' in led && <Chip label={`Cols: ${led.num_columns}`} size="small" onClick={() => onEdit(ledKey, 'num_columns', led.num_columns, { type: 'number', label: 'Columns' })} />}
         {'num_rows' in led && <Chip label={`Rows: ${led.num_rows}`} size="small" onClick={() => onEdit(ledKey, 'num_rows', led.num_rows, { type: 'number', label: 'Rows' })} />}
+        {'layout' in led && (
+          <Chip
+            label={`Layout: ${led.layout}`}
+            size="small"
+            onClick={() => onEdit(ledKey, 'layout', led.layout, { type: 'select', options: ['ROW_MAJOR','SERPENTINE_ROW','COLUMN_MAJOR','FLIPDOT_GRID'], label: 'Layout' })}
+          />
+        )}
       </Stack>
       <Stack spacing={0.75} sx={{ mt: 0.5 }}>
         <Box>

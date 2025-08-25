@@ -28,19 +28,20 @@ public:
             uint8_t rch = 0, gch = 0, bch = 0;
             if (li0 < logical) {
                 const uint8_t* px = logical_rgba + li0 * 4;
-                rch = (px[0] | px[1] | px[2] | px[3]) ? 255 : 0;
+                rch = (px[0] | px[1] | px[2] | px[3]) ? 0 : 255; // inverted: non-black -> 0, black -> 255
             }
             if (li1 < logical) {
                 const uint8_t* px = logical_rgba + li1 * 4;
-                gch = (px[0] | px[1] | px[2] | px[3]) ? 255 : 0;
+                gch = (px[0] | px[1] | px[2] | px[3]) ? 0 : 255;
             }
             if (li2 < logical) {
                 const uint8_t* px = logical_rgba + li2 * 4;
-                bch = (px[0] | px[1] | px[2] | px[3]) ? 255 : 0;
+                bch = (px[0] | px[1] | px[2] | px[3]) ? 0 : 255;
             }
-            out_frame_bytes[p * 3 + 0] = rch;
-            out_frame_bytes[p * 3 + 1] = gch;
-            out_frame_bytes[p * 3 + 2] = bch;
+            // Map first three logical dots onto (G,R,B) channels to match observed hardware ordering
+            out_frame_bytes[p * 3 + 0] = gch; // channel G carries index 0
+            out_frame_bytes[p * 3 + 1] = rch; // channel R carries index 1
+            out_frame_bytes[p * 3 + 2] = bch; // channel B carries index 2
         }
     }
 

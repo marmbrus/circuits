@@ -5,7 +5,6 @@
 namespace leds {
 
 void FadePattern::update(LEDStrip& strip, uint64_t now_us) {
-    if (strip.has_enable_pin()) strip.set_power_enabled(true);
     // Simple sine fade over 2 seconds scaled by speed_percent
     float speed = (speed_percent_ <= 0) ? 0.01f : (speed_percent_ / 100.0f);
     float phase = fmodf((now_us - start_us_) * speed / 2'000'000.0f, 1.0f);

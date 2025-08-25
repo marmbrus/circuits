@@ -21,7 +21,6 @@ static void hsv_to_rgb(float h, float s, float v, uint8_t& r, uint8_t& g, uint8_
 }
 
 void RainbowPattern::update(LEDStrip& strip, uint64_t now_us) {
-    if (strip.has_enable_pin()) strip.set_power_enabled(true);
     float speed = (speed_percent_ <= 0) ? 0.01f : (speed_percent_ / 100.0f);
     float t = (now_us - start_us_) * speed / 1'000'000.0f; // seconds
     for (size_t i = 0; i < strip.length(); ++i) {

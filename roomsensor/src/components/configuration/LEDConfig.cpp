@@ -11,6 +11,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     descriptors_.push_back({"chip", ConfigValueType::String, "WS2812", true});
     descriptors_.push_back({"num_columns", ConfigValueType::I32, "1", true});
     descriptors_.push_back({"num_rows", ConfigValueType::I32, "1", true});
+    descriptors_.push_back({"layout", ConfigValueType::String, "ROW_MAJOR", true});
 
     // Non-persisted runtime values (still declared so they can be updated and optionally loaded once)
     // NOTE: The following keys are intentionally NOT persisted to avoid flash wear from frequent updates:
@@ -55,6 +56,25 @@ const char* LEDConfig::chip_to_string(LEDConfig::Chip c) {
     }
 }
 
+LEDConfig::Layout LEDConfig::parse_layout(const char* value) {
+    if (!value) return Layout::ROW_MAJOR;
+    if (strcmp(value, "ROW_MAJOR") == 0) return Layout::ROW_MAJOR;
+    if (strcmp(value, "SERPENTINE_ROW") == 0) return Layout::SERPENTINE_ROW;
+    if (strcmp(value, "COLUMN_MAJOR") == 0) return Layout::COLUMN_MAJOR;
+    if (strcmp(value, "FLIPDOT_GRID") == 0) return Layout::FLIPDOT_GRID;
+    return Layout::ROW_MAJOR;
+}
+
+const char* LEDConfig::layout_to_string(LEDConfig::Layout l) {
+    switch (l) {
+        case Layout::ROW_MAJOR: return "ROW_MAJOR";
+        case Layout::SERPENTINE_ROW: return "SERPENTINE_ROW";
+        case Layout::COLUMN_MAJOR: return "COLUMN_MAJOR";
+        case Layout::FLIPDOT_GRID: return "FLIPDOT_GRID";
+    }
+    return "ROW_MAJOR";
+}
+
 LEDConfig::Pattern LEDConfig::parse_pattern(const char* value) {
     if (!value) return Pattern::INVALID;
     if (strcmp(value, "OFF") == 0) return Pattern::OFF;
@@ -64,6 +84,7 @@ LEDConfig::Pattern LEDConfig::parse_pattern(const char* value) {
     if (strcmp(value, "RAINBOW") == 0) return Pattern::RAINBOW;
     if (strcmp(value, "LIFE") == 0) return Pattern::LIFE;
     if (strcmp(value, "CHASE") == 0) return Pattern::CHASE;
+    if (strcmp(value, "POSITION") == 0) return Pattern::POSITION;
     return Pattern::INVALID;
 }
 
@@ -77,6 +98,7 @@ const char* LEDConfig::pattern_to_string(LEDConfig::Pattern p) {
         case Pattern::RAINBOW: return "RAINBOW";
         case Pattern::LIFE: return "LIFE";
         case Pattern::CHASE: return "CHASE";
+        case Pattern::POSITION: return "POSITION";
     }
     return "OFF";
 }
@@ -111,6 +133,12 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
     if (strcmp(key, "num_rows") == 0) {
         num_rows_ = value_str ? atoi(value_str) : 1;
         if (num_rows_ <= 0) num_rows_ = 1;
+        return ESP_OK;
+    }
+    if (strcmp(key, "layout") == 0) {
+        Layout parsed = parse_layout(value_str);
+        layout_enum_ = parsed;
+        layout_ = layout_to_string(parsed);
         return ESP_OK;
     }
 
@@ -182,6 +210,7 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     cJSON_AddStringToObject(obj, "chip", chip_.c_str());
     cJSON_AddNumberToObject(obj, "num_columns", num_columns_);
     cJSON_AddNumberToObject(obj, "num_rows", num_rows_);
+    cJSON_AddStringToObject(obj, "layout", layout_.c_str());
 
     // Non-persisted runtime fields (include only if set)
     if (pattern_set_) cJSON_AddStringToObject(obj, "pattern", pattern_.c_str());

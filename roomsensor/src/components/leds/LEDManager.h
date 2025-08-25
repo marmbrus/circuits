@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include "LEDConfig.h"
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -55,6 +56,10 @@ private:
     config::ConfigurationManager* cfg_manager_ = nullptr; // not owned
     std::vector<std::unique_ptr<LEDStrip>> strips_;
     std::vector<std::unique_ptr<LEDPattern>> patterns_; // 1:1 with strips_
+    // Track layout used for each strip to detect when grid mapping changes
+    std::vector<config::LEDConfig::Layout> last_layouts_;
+    // Track last applied pattern to avoid reinstalling the same type repeatedly
+    std::vector<config::LEDConfig::Pattern> last_patterns_;
     TaskHandle_t update_task_ = nullptr;
     int update_task_core_ = 1; // APP CPU on ESP32-S3
     int update_task_priority_ = 1; // keep near idle to avoid starving IDLE task on APP CPU

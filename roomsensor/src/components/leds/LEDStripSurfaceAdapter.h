@@ -19,10 +19,10 @@ public:
         size_t cols = 1;
     };
 
-    LEDStripSurfaceAdapter(const Params& p, std::unique_ptr<internal::LEDWireEncoder> encoder)
+    LEDStripSurfaceAdapter(const Params& p,
+                           std::unique_ptr<internal::LEDCoordinateMapper> mapper,
+                           std::unique_ptr<internal::LEDWireEncoder> encoder)
         : gpio_(p.gpio), enable_gpio_(p.enable_gpio), rows_(p.rows), cols_(p.cols) {
-        using namespace leds::internal;
-        auto mapper = std::unique_ptr<LEDCoordinateMapper>(new RowMajorMapper(rows_, cols_));
         surface_.reset(new LEDSurfaceImpl(rows_, cols_, std::move(mapper), std::move(encoder)));
         shadow_rgba_.assign(rows_ * cols_ * 4, 0);
         if (enable_gpio_ >= 0) {

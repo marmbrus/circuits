@@ -9,6 +9,7 @@ idf_component_register(
         "StatusPattern.cpp"
         "GameOfLifePattern.cpp"
         "ChasePattern.cpp"
+        "PositionTestPattern.cpp"
 
         # New internal mapper/encoder implementations
         "LEDWireEncoderWS2812.cpp"

@@ -41,7 +41,6 @@ void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
 }
 
 void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
-    if (strip.has_enable_pin()) strip.set_power_enabled(true);
 
     // Determine generation cadence. At speed=100, advance one generation per update
     // (bounded by RMT transmit rate) to avoid skipping generations.
@@ -171,13 +170,11 @@ void GameOfLifePattern::render_current(LEDStrip& strip) const {
         b = static_cast<uint8_t>((static_cast<uint16_t>(b) * brightness_percent_) / 100);
         w = static_cast<uint8_t>((static_cast<uint16_t>(w) * brightness_percent_) / 100);
     }
-    // Serpentine row-major mapping: even rows left->right, odd rows right->left
+    // Row-major logical mapping; adapter/mapper will translate to physical layout
     for (size_t row = 0; row < rows; ++row) {
-        bool reverse = (row % 2u) == 1u;
-        for (size_t cc = 0; cc < cols; ++cc) {
-            size_t col = reverse ? (cols - 1 - cc) : cc;
-            size_t logical_i = col * rows + row; // current_ layout is column-major (col*rows + row)
-            size_t physical_idx = row * cols + cc; // physical linear index along serpentine rows
+        for (size_t col = 0; col < cols; ++col) {
+            size_t logical_i = col * rows + row; // current_ is column-major (col*rows + row)
+            size_t physical_idx = strip.index_for_row_col(row, col);
             if (logical_i < current_.size()) {
                 if (current_[logical_i]) {
                     strip.set_pixel(physical_idx, r, g, b, w);

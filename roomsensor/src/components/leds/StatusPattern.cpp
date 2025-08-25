@@ -7,7 +7,6 @@ namespace leds {
 static inline uint8_t clamp_u8(int v) { if (v < 0) return 0; if (v > 255) return 255; return static_cast<uint8_t>(v); }
 
 void StatusPattern::update(LEDStrip& strip, uint64_t now_us) {
-    if (strip.has_enable_pin()) strip.set_power_enabled(true);
 
     SystemState s = get_system_state();
     if (s != prev_state_) {

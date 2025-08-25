@@ -23,7 +23,8 @@ public:
         SOLID,
         RAINBOW,
         LIFE,
-        CHASE
+        CHASE,
+        POSITION
     };
 
     // Supported LED chips for internal use
@@ -35,6 +36,14 @@ public:
         FLIPDOT,
     };
 
+    // Grid layout for mapping logical (row,col) to physical. Defaults to ROW_MAJOR.
+    enum class Layout {
+        ROW_MAJOR = 0,
+        SERPENTINE_ROW,
+        COLUMN_MAJOR,
+        FLIPDOT_GRID,
+    };
+
     // Accessors
     bool has_data_gpio() const { return data_gpio_set_; }
     int data_gpio() const { return data_gpio_; }
@@ -44,6 +53,8 @@ public:
     Chip chip_enum() const { return chip_enum_; }
     int num_columns() const { return num_columns_; }
     int num_rows() const { return num_rows_; }
+    const std::string& layout() const { return layout_; }
+    Layout layout_enum() const { return layout_enum_; }
 
     bool has_pattern() const { return pattern_set_; }
     const std::string& pattern() const { return pattern_; }
@@ -71,6 +82,8 @@ private:
     static const char* pattern_to_string(Pattern p);
     static Chip parse_chip(const char* value);
     static const char* chip_to_string(Chip c);
+    static Layout parse_layout(const char* value);
+    static const char* layout_to_string(Layout l);
 
     std::string name_;
 
@@ -83,6 +96,8 @@ private:
     Chip chip_enum_ = Chip::WS2812; // internal representation
     int num_columns_ = 1;
     int num_rows_ = 1;
+    std::string layout_ = "ROW_MAJOR";
+    Layout layout_enum_ = Layout::ROW_MAJOR;
 
     // Non-persisted runtime fields (loaded from NVS if present)
     bool pattern_set_ = false;

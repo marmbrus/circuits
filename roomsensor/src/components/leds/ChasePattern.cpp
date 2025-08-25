@@ -4,7 +4,6 @@
 namespace leds {
 
 void ChasePattern::update(LEDStrip& strip, uint64_t now_us) {
-    if (strip.has_enable_pin()) strip.set_power_enabled(true);
 
     // Determine step interval: map speed 0..100 to 800ms..30ms per LED
     int sp = speed_percent_;
