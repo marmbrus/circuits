@@ -10,6 +10,7 @@ enum class LEDChip {
     WS2812 = 0, // GRB (RGB) with implicit W=0
     SK6812,     // RGBW
     WS2814,     // RGBW (timings compatible; model treated as SK6812 in driver)
+    FLIPDOT,    // Monochrome on/off (maps any non-zero RGBW to ON)
 };
 
 // Abstraction for a single LED strip backed by RMT hardware.

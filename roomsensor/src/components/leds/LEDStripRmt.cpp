@@ -27,7 +27,7 @@ LEDStripRmt::LEDStripRmt(const CreateParams& params)
     // Normalize length to rows * cols to ensure consistency
     length_ = rows_ * cols_;
     has_white_ = (chip_ == LEDChip::SK6812 || chip_ == LEDChip::WS2814);
-    size_t bytes_per = has_white_ ? 4 : 3;
+    size_t bytes_per = (chip_ == LEDChip::FLIPDOT) ? 1 : (has_white_ ? 4 : 3);
     pixels_.assign(length_ * bytes_per, 0);
 }
 
@@ -64,15 +64,22 @@ bool LEDStripRmt::init_handle() {
             pix_fmt = LED_PIXEL_FORMAT_GRBW;
             led_model = LED_MODEL_WS2812; // timings compatible
             break;
+        case LEDChip::FLIPDOT:
+            // Use WS2812 timings; we will map logical on/off to a single color channel
+            pix_fmt = LED_PIXEL_FORMAT_GRB;
+            led_model = LED_MODEL_WS2812;
+            break;
         default:
             pix_fmt = LED_PIXEL_FORMAT_GRB;
             led_model = LED_MODEL_WS2812;
             break;
     }
 
+    // For FLIPDOT, three logical dots are packed into one physical WS2812 LED
+    size_t physical_leds = (chip_ == LEDChip::FLIPDOT) ? ((length_ + 2) / 3) : length_;
     led_strip_config_t led_cfg = {
         .strip_gpio_num = gpio_,
-        .max_leds = static_cast<uint32_t>(length_),
+        .max_leds = static_cast<uint32_t>(physical_leds),
         .led_pixel_format = pix_fmt,
         .led_model = led_model,
         .flags = { .invert_out = 0 },
@@ -93,8 +100,8 @@ bool LEDStripRmt::init_handle() {
         handle_ = nullptr;
         return false;
     }
-    ESP_LOGI(TAG, "Created RMT strip: gpio=%d enable_gpio=%d len=%zu rows=%zu cols=%zu dma=%s mem=%zu res=%luHz",
-             gpio_, enable_gpio_, length_, rows_, cols_, with_dma_ ? "true" : "false", mem_block_symbols_, (unsigned long)rmt_resolution_hz_);
+    ESP_LOGI(TAG, "Created RMT strip: gpio=%d enable_gpio=%d len=%zu rows=%zu cols=%zu dma=%s mem=%zu res=%luHz phys_leds=%zu",
+             gpio_, enable_gpio_, length_, rows_, cols_, with_dma_ ? "true" : "false", mem_block_symbols_, (unsigned long)rmt_resolution_hz_, physical_leds);
     return true;
 }
 
@@ -107,26 +114,37 @@ void LEDStripRmt::destroy_handle() {
 
 bool LEDStripRmt::set_pixel(size_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
     if (index >= length_) return false;
-    size_t bytes_per = has_white_ ? 4 : 3;
+    size_t bytes_per = (chip_ == LEDChip::FLIPDOT) ? 1 : (has_white_ ? 4 : 3);
     size_t off = index * bytes_per;
     bool changed = false;
-    // store RGBA order internally
-    if (pixels_[off+0] != r) { pixels_[off+0] = r; changed = true; }
-    if (pixels_[off+1] != g) { pixels_[off+1] = g; changed = true; }
-    if (pixels_[off+2] != b) { pixels_[off+2] = b; changed = true; }
-    if (has_white_ && pixels_[off+3] != w) { pixels_[off+3] = w; changed = true; }
+    // For FLIPDOT, store a single byte (0 or 255) per logical dot
+    if (chip_ == LEDChip::FLIPDOT) {
+        uint8_t on = ((r | g | b | w) != 0) ? 255 : 0;
+        if (pixels_[off] != on) { pixels_[off] = on; changed = true; }
+    } else {
+        // store RGBA order internally
+        if (pixels_[off+0] != r) { pixels_[off+0] = r; changed = true; }
+        if (pixels_[off+1] != g) { pixels_[off+1] = g; changed = true; }
+        if (pixels_[off+2] != b) { pixels_[off+2] = b; changed = true; }
+        if (has_white_ && pixels_[off+3] != w) { pixels_[off+3] = w; changed = true; }
+    }
     if (changed) dirty_ = true;
     return changed;
 }
 
 bool LEDStripRmt::get_pixel(size_t index, uint8_t& r, uint8_t& g, uint8_t& b, uint8_t& w) const {
     if (index >= length_) return false;
-    size_t bytes_per = has_white_ ? 4 : 3;
+    size_t bytes_per = (chip_ == LEDChip::FLIPDOT) ? 1 : (has_white_ ? 4 : 3);
     size_t off = index * bytes_per;
-    r = pixels_[off+0];
-    g = pixels_[off+1];
-    b = pixels_[off+2];
-    w = has_white_ ? pixels_[off+3] : 0;
+    if (chip_ == LEDChip::FLIPDOT) {
+        uint8_t on = pixels_[off];
+        r = on; g = on; b = on; w = 0;
+    } else {
+        r = pixels_[off+0];
+        g = pixels_[off+1];
+        b = pixels_[off+2];
+        w = has_white_ ? pixels_[off+3] : 0;
+    }
     return true;
 }
 
@@ -137,9 +155,10 @@ void LEDStripRmt::clear() {
 }
 
 void LEDStripRmt::estimate_transmission_end(uint64_t now_us) {
-    // conservative estimate: each LED ~30 bits (RGB) or 40 bits (RGBW). 1.25us per bit at 800kHz.
+    // conservative estimate: each physical LED ~30 bits (RGB) or 40 bits (RGBW). 1.25us per bit at 800kHz.
     size_t bits_per_led = has_white_ ? 32 : 24; // plus reset; we add margin below
-    uint64_t strip_time_us = static_cast<uint64_t>(bits_per_led) * length_ * 1250ULL / 1000ULL; // 1.25us/bit
+    size_t physical_leds = (chip_ == LEDChip::FLIPDOT) ? ((length_ + 2) / 3) : length_;
+    uint64_t strip_time_us = static_cast<uint64_t>(bits_per_led) * physical_leds * 1250ULL / 1000ULL; // 1.25us/bit
     uint64_t reset_us = 80; // typical >50us
     expected_done_us_ = now_us + strip_time_us + reset_us;
 }
@@ -153,26 +172,40 @@ bool LEDStripRmt::flush_if_dirty(uint64_t now_us, uint64_t max_quiescent_us) {
     if (!dirty_ && (now_us - last_flush_us_) < max_quiescent_us) return false;
 
     // write pixels via led_strip API
-    size_t bytes_per = has_white_ ? 4 : 3;
-    for (size_t i = 0; i < length_; ++i) {
-        size_t off = i * bytes_per;
-        if (has_white_) {
-            if (chip_ == LEDChip::WS2814) {
-                // Driver emits GRBW. WS2814 expects WRGB.
-                uint8_t desired_r = pixels_[off+0];
-                uint8_t desired_g = pixels_[off+1];
-                uint8_t desired_b = pixels_[off+2];
-                uint8_t desired_w = pixels_[off+3];
-                uint8_t arg_g = desired_w;
-                uint8_t arg_r = desired_r;
-                uint8_t arg_b = desired_g;
-                uint8_t arg_w = desired_b;
-                led_strip_set_pixel_rgbw(handle_, i, arg_r, arg_g, arg_b, arg_w);
+    size_t bytes_per = (chip_ == LEDChip::FLIPDOT) ? 1 : (has_white_ ? 4 : 3);
+    if (chip_ == LEDChip::FLIPDOT) {
+        // Pack three logical dots into one physical WS2812 pixel's RGB channels
+        size_t physical_leds = (length_ + 2) / 3;
+        for (size_t pi = 0; pi < physical_leds; ++pi) {
+            size_t li0 = 3 * pi + 0;
+            size_t li1 = 3 * pi + 1;
+            size_t li2 = 3 * pi + 2;
+            uint8_t rch = (li0 < length_) ? pixels_[li0 * bytes_per] : 0;
+            uint8_t gch = (li1 < length_) ? pixels_[li1 * bytes_per] : 0;
+            uint8_t bch = (li2 < length_) ? pixels_[li2 * bytes_per] : 0;
+            led_strip_set_pixel(handle_, pi, rch, gch, bch);
+        }
+    } else {
+        for (size_t i = 0; i < length_; ++i) {
+            size_t off = i * bytes_per;
+            if (has_white_) {
+                if (chip_ == LEDChip::WS2814) {
+                    // Driver emits GRBW. WS2814 expects WRGB.
+                    uint8_t desired_r = pixels_[off+0];
+                    uint8_t desired_g = pixels_[off+1];
+                    uint8_t desired_b = pixels_[off+2];
+                    uint8_t desired_w = pixels_[off+3];
+                    uint8_t arg_g = desired_w;
+                    uint8_t arg_r = desired_r;
+                    uint8_t arg_b = desired_g;
+                    uint8_t arg_w = desired_b;
+                    led_strip_set_pixel_rgbw(handle_, i, arg_r, arg_g, arg_b, arg_w);
+                } else {
+                    led_strip_set_pixel_rgbw(handle_, i, pixels_[off+0], pixels_[off+1], pixels_[off+2], pixels_[off+3]);
+                }
             } else {
-                led_strip_set_pixel_rgbw(handle_, i, pixels_[off+0], pixels_[off+1], pixels_[off+2], pixels_[off+3]);
+                led_strip_set_pixel(handle_, i, pixels_[off+0], pixels_[off+1], pixels_[off+2]);
             }
-        } else {
-            led_strip_set_pixel(handle_, i, pixels_[off+0], pixels_[off+1], pixels_[off+2]);
         }
     }
     auto err = led_strip_refresh(handle_);

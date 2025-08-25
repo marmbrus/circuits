@@ -1,6 +1,11 @@
 #include "LEDManager.h"
 #include "LEDStripRmt.h"
 #include "LEDPattern.h"
+#include "LEDStripSurfaceAdapter.h"
+#include "LEDWireEncoderWS2812.h"
+#include "LEDWireEncoderSK6812.h"
+#include "LEDWireEncoderWS2814.h"
+#include "LEDWireEncoderFlipdot.h"
 #include "OffPattern.h"
 #include "SolidPattern.h"
 #include "FadePattern.h"
@@ -28,6 +33,7 @@ static leds::LEDChip ToLEDChip(config::LEDConfig::Chip c) {
         case config::LEDConfig::Chip::WS2812: return leds::LEDChip::WS2812;
         case config::LEDConfig::Chip::SK6812: return leds::LEDChip::SK6812;
         case config::LEDConfig::Chip::WS2814: return leds::LEDChip::WS2814;
+        case config::LEDConfig::Chip::FLIPDOT: return leds::LEDChip::FLIPDOT;
         default: return leds::LEDChip::WS2812;
     }
 }
@@ -99,18 +105,56 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     for (size_t i = 0; i < active.size(); ++i) {
         LEDConfig* c = active[i];
         bool use_dma = (i == selected_dma_idx);
-        LEDStripRmt::CreateParams p;
-        p.gpio = c->data_gpio();
-        p.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
-        p.length = static_cast<size_t>(c->num_columns() * c->num_rows());
-        p.rows = static_cast<size_t>(c->num_rows());
-        p.cols = static_cast<size_t>(c->num_columns());
-        p.chip = ToLEDChip(c->chip_enum());
-        p.use_dma = use_dma;
-        p.mem_block_symbols = use_dma ? 256 : 48;
-        auto s = LEDStripRmt::Create(p);
+        size_t rows = static_cast<size_t>(c->num_rows());
+        size_t cols = static_cast<size_t>(c->num_columns());
+        auto chip = ToLEDChip(c->chip_enum());
+        std::unique_ptr<LEDStrip> s;
+        if (chip == LEDChip::WS2812) {
+            LEDStripSurfaceAdapter::Params ap;
+            ap.gpio = c->data_gpio();
+            ap.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
+            ap.rows = rows;
+            ap.cols = cols;
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2812(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            s.reset(new LEDStripSurfaceAdapter(ap, std::move(enc)));
+        } else if (chip == LEDChip::SK6812) {
+            LEDStripSurfaceAdapter::Params ap;
+            ap.gpio = c->data_gpio();
+            ap.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
+            ap.rows = rows;
+            ap.cols = cols;
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderSK6812(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            s.reset(new LEDStripSurfaceAdapter(ap, std::move(enc)));
+        } else if (chip == LEDChip::WS2814) {
+            LEDStripSurfaceAdapter::Params ap;
+            ap.gpio = c->data_gpio();
+            ap.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
+            ap.rows = rows;
+            ap.cols = cols;
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2814(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            s.reset(new LEDStripSurfaceAdapter(ap, std::move(enc)));
+        } else if (chip == LEDChip::FLIPDOT) {
+            LEDStripSurfaceAdapter::Params ap;
+            ap.gpio = c->data_gpio();
+            ap.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
+            ap.rows = rows;
+            ap.cols = cols;
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderFlipdot(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, ((rows * cols) + 2) / 3));
+            s.reset(new LEDStripSurfaceAdapter(ap, std::move(enc)));
+        } else {
+            LEDStripRmt::CreateParams p;
+            p.gpio = c->data_gpio();
+            p.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
+            p.length = rows * cols;
+            p.rows = rows;
+            p.cols = cols;
+            p.chip = chip;
+            p.use_dma = use_dma;
+            p.mem_block_symbols = use_dma ? 256 : 48;
+            s = LEDStripRmt::Create(p);
+        }
         if (!s) {
-            ESP_LOGE(TAG, "Failed to create strip on GPIO %d (dma=%d)", p.gpio, (int)use_dma);
+            ESP_LOGE(TAG, "Failed to create strip on GPIO %d (dma=%d)", c->data_gpio(), (int)use_dma);
             continue;
         }
         strips_.push_back(std::move(s));

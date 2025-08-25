@@ -9,6 +9,15 @@ idf_component_register(
         "StatusPattern.cpp"
         "GameOfLifePattern.cpp"
         "ChasePattern.cpp"
+
+        # New internal mapper/encoder implementations
+        "LEDWireEncoderWS2812.cpp"
+        "LEDWireEncoderFlipdot.cpp"
+        "LEDWireEncoderSK6812.cpp"
+        "LEDWireEncoderWS2814.cpp"
+        
+        # Adapter (header-only)
+        
     INCLUDE_DIRS "."
     REQUIRES json freertos configuration espressif__led_strip esp_timer
     PRIV_REQUIRES esp_driver_gpio
