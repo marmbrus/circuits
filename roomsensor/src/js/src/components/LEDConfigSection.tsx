@@ -16,7 +16,7 @@ function useSliderValue(
   debounceMs: number = 300
 ) {
   const [localValue, setLocalValue] = useState(initialValue)
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Update local value when prop changes
   useEffect(() => {
@@ -106,7 +106,7 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
           <Chip
             label={`Chip: ${led.chip}`}
             size="small"
-            onClick={() => onEdit(ledKey, 'chip', led.chip, { type: 'select', options: ['WS2812', 'SK6812', 'WS2814'], label: 'Chip' })}
+            onClick={() => onEdit(ledKey, 'chip', led.chip, { type: 'select', options: ['WS2812', 'SK6812', 'WS2814', 'FLIPDOT'], label: 'Chip' })}
           />
         )}
         <Chip
