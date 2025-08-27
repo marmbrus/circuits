@@ -15,9 +15,11 @@
 #include "console.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
+#include "SpeakerConfig.h"
 #include "gpio.h"
 #include "filesystem.h"
 #include "netlog.h"
+#include "audio_init.h"
 #include <time.h>
 #include <stdlib.h>
 
@@ -127,6 +129,16 @@ extern "C" void app_main(void)
         ESP_LOGW(TAG, "OTA initialization failed");
     } else {
         ESP_LOGI(TAG, "OTA system initialized successfully");
+    }
+
+    // Initialize audio if speaker GPIOs are configured (last step before console)
+    {
+        using namespace config;
+        auto& speaker_cfg = cfg.speaker();
+        if (speaker_cfg.has_sdin() && speaker_cfg.has_sclk() && speaker_cfg.has_lrclk()) {
+            ESP_LOGI(TAG, "Initializing audio with SDIN=%u SCLK=%u LRCLK=%u", (unsigned)speaker_cfg.sdin(), (unsigned)speaker_cfg.sclk(), (unsigned)speaker_cfg.lrclk());
+            audio_component_init();
+        }
     }
 
     // Initialize interactive console

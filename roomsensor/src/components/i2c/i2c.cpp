@@ -7,6 +7,7 @@
 #include "i2c_master_ext.h"
 #include "opt3001_sensor.h"
 #include "mcp23008_sensor.h"
+#include "tas5825m_sensor.h"
 #include "i2c_telemetry.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -23,6 +24,9 @@ static I2CSensor* s_sensors[] = {
     new SEN55Sensor(),
     new SCD4xSensor(),
     new OPT3001Sensor(), // OPT3001 at default 0x44
+    // TAS5825M class-D amplifier
+    new TAS5825MSensor(0x4E),
+    new TAS5825MSensor(0x4C),
     // ADS1115 ADCs at all four possible addresses
     new ADS1115Sensor(0x48),
     new ADS1115Sensor(0x49),

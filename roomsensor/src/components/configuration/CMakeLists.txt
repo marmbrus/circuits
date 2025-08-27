@@ -7,6 +7,7 @@ idf_component_register(
         "A2DConfig.cpp"
         "IOConfig.cpp"
         "MotionConfig.cpp"
+        "SpeakerConfig.cpp"
     INCLUDE_DIRS "." "../common"
     REQUIRES nvs_flash json
 )
