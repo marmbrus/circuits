@@ -1,7 +1,8 @@
-import { AppBar, Box, Container, LinearProgress, Toolbar, Typography } from '@mui/material'
+import { AppBar, Box, Chip, Container, LinearProgress, Stack, Toolbar, Typography } from '@mui/material'
 import './App.css'
 import { useSensors } from './mqttStore'
 import SensorGrid from './components/SensorGrid'
+import VersionsChip from './components/VersionsChip'
 
 function App() {
   const { sensors, connectionStatus, lastError } = useSensors()
@@ -18,9 +19,20 @@ function App() {
               </Box>
             )}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {connectionStatus}
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Chip
+              label={connectionStatus}
+              size="small"
+              color={
+                connectionStatus === 'connected' ? 'success'
+                : (connectionStatus === 'connecting' || connectionStatus === 'reconnecting') ? 'warning'
+                : (connectionStatus === 'error') ? 'error'
+                : 'default'
+              }
+              variant={connectionStatus === 'connected' ? 'filled' : 'outlined'}
+            />
+            <VersionsChip sensors={sensors} />
+          </Stack>
         </Toolbar>
         {(connectionStatus === 'connecting' || connectionStatus === 'reconnecting') && <LinearProgress />}
       </AppBar>
