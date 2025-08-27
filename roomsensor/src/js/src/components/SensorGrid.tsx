@@ -70,12 +70,17 @@ export default function SensorGrid({ sensors }: Props) {
                     <Box
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+                        gridTemplateColumns: {
+                          xs: 'repeat(auto-fill, minmax(280px, 1fr))',
+                          sm: 'repeat(auto-fill, minmax(300px, 1fr))',
+                          md: 'repeat(auto-fill, minmax(340px, 1fr))',
+                        },
                         gap: 2,
+                        alignItems: 'start',
                       }}
                     >
                       {list.map((s) => (
-                        <Box key={s.mac}>
+                        <Box key={s.mac} sx={{ justifySelf: 'center', width: '100%' }}>
                           <Sensor sensor={s} />
                         </Box>
                       ))}

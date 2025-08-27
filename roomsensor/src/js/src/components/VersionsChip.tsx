@@ -1,5 +1,5 @@
 import { Chip, Dialog, DialogContent, DialogTitle, Stack, Typography } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { SensorsMap, SensorState } from '../types'
 
 type Props = {
@@ -17,37 +17,32 @@ function labelForSensor(s: SensorState): string {
 export default function VersionsChip({ sensors }: Props) {
   const [open, setOpen] = useState(false)
 
-  const { fwVersions, webVersions, unionCount, fwMap, webMap } = useMemo(() => {
-    const fwSet = new Set<string>()
-    const webSet = new Set<string>()
-    const fwMap = new Map<string, string[]>()
-    const webMap = new Map<string, string[]>()
-
-    for (const [, s] of sensors) {
-      const o = (s.otaStatus || {}) as Record<string, unknown>
-      const fw = String(o.firmware_local_version || '')
-      const web = String(o.web_local_version || '')
-      if (fw) {
-        fwSet.add(fw)
-        if (!fwMap.has(fw)) fwMap.set(fw, [])
-        fwMap.get(fw)!.push(labelForSensor(s))
-      }
-      if (web) {
-        webSet.add(web)
-        if (!webMap.has(web)) webMap.set(web, [])
-        webMap.get(web)!.push(labelForSensor(s))
-      }
+  // Compute on every render so it reacts to sensor content changes;
+  // cost is small for expected sensor counts.
+  const fwSet = new Set<string>()
+  const webSet = new Set<string>()
+  const fwMap = new Map<string, string[]>()
+  const webMap = new Map<string, string[]>()
+  for (const [, s] of sensors) {
+    const o = (s.otaStatus || {}) as Record<string, unknown>
+    const fw = String(o.firmware_local_version || '')
+    const web = String(o.web_local_version || '')
+    if (fw) {
+      fwSet.add(fw)
+      if (!fwMap.has(fw)) fwMap.set(fw, [])
+      fwMap.get(fw)!.push(labelForSensor(s))
     }
-
-    // Sort sensor labels for stable display
-    for (const list of fwMap.values()) list.sort((a, b) => a.localeCompare(b))
-    for (const list of webMap.values()) list.sort((a, b) => a.localeCompare(b))
-
-    const fwVersions = Array.from(fwSet).sort()
-    const webVersions = Array.from(webSet).sort()
-    const unionSet = new Set<string>([...fwSet, ...webSet])
-    return { fwVersions, webVersions, unionCount: unionSet.size, fwMap, webMap }
-  }, [sensors])
+    if (web) {
+      webSet.add(web)
+      if (!webMap.has(web)) webMap.set(web, [])
+      webMap.get(web)!.push(labelForSensor(s))
+    }
+  }
+  for (const list of fwMap.values()) list.sort((a, b) => a.localeCompare(b))
+  for (const list of webMap.values()) list.sort((a, b) => a.localeCompare(b))
+  const fwVersions = Array.from(fwSet).sort()
+  const webVersions = Array.from(webSet).sort()
+  const unionCount = new Set<string>([...fwSet, ...webSet]).size
 
   return (
     <>

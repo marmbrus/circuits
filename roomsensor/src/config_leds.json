@@ -31,5 +31,11 @@
     "num_rows": 1,
     "num_columns": 8,
     "brightness": 1
+  },
+  "a2d1": {
+    "ch1.sensor": "BTS7002",
+    "ch2.sensor": "BTS7002",
+    "ch3.sensor": "BTS7002",
+    "ch4.sensor": "BTS7002"
   }
 }

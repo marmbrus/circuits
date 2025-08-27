@@ -126,7 +126,8 @@ void MCP23008Sensor::configureFromConfig() {
                 // pull-up irrelevant for output
                 bool desired = _config_ptr->switch_state(i + 1);
                 if (_config_ptr->is_switch_state_set(i + 1)) {
-                    if (desired) olat |= (uint8_t)(1u << i); else olat &= (uint8_t)~(1u << i);
+                    // Invert drive: ON => drive LOW, OFF => drive HIGH
+                    if (desired) olat &= (uint8_t)~(1u << i); else olat |= (uint8_t)(1u << i);
                 }
             } else if (mode == config::IOConfig::PinMode::SENSOR) {
                 // Input with pull-up
@@ -167,7 +168,7 @@ void MCP23008Sensor::poll() {
             mode = _config_ptr->pin_mode(i + 1);
         }
         if (mode == config::IOConfig::PinMode::SENSOR) {
-            bool is_high = ((gpio >> i) & 0x01) != 0;
+            bool is_low = ((gpio >> i) & 0x01) == 0;
             // Update tag with pin index (1..8)
             char index_buf[4]; snprintf(index_buf, sizeof(index_buf), "%d", i + 1);
             add_tag_to_collection(_tag_collection, "index", index_buf);
@@ -176,8 +177,8 @@ void MCP23008Sensor::poll() {
             if (pname && pname[0] != '\0') {
                 add_tag_to_collection(_tag_collection, "name", pname);
             }
-            ESP_LOGI(TAG, "io%d pin%d contact %s", _io_index, i + 1, is_high ? "HIGH" : "LOW");
-            report_metric("contact", is_high ? 1.0f : 0.0f, _tag_collection);
+            ESP_LOGI(TAG, "io%d pin%d contact %s", _io_index, i + 1, is_low ? "closed" : "open");
+            report_metric("contact", is_low ? 1.0f : 0.0f, _tag_collection);
         }
     }
     _gpio_cached_last = gpio;

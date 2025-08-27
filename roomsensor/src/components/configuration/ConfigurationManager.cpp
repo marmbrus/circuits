@@ -249,7 +249,10 @@ esp_err_t ConfigurationManager::handle_update(const char* module_name, const cha
         return err;
     }
 
-    ESP_LOGI(TAG, "Config update applied: %s.%s", module_name, key);
+    {
+        const char* log_value = (value_str && value_str[0] != '\0') ? value_str : "(unset)";
+        ESP_LOGI(TAG, "Config update applied: %s.%s=%s", module_name, key, log_value);
+    }
 
     // Special handling: Only one strip may claim the DMA RMT channel at a time.
     // If dma=true is set on one LED module, clear it (unset) on all other LED modules.

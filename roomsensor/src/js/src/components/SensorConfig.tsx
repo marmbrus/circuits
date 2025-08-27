@@ -28,6 +28,12 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
     setEditorOpen(true)
   }
 
+  const openTagsEditor = () => {
+    setField({ label: 'tags', moduleName: 'tags', configName: 'area', value: config.tags.area })
+    setControl(undefined)
+    setEditorOpen(true)
+  }
+
   const publish = (moduleName: string, key: string, value: string | number | boolean) => {
     publishConfig(mac, moduleName, key, value)
   }
@@ -36,9 +42,9 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
     <Stack spacing={1} sx={{ width: '100%' }}>
       <Typography variant="subtitle2">Tags</Typography>
       <Stack direction="row" spacing={1}>
-        <Chip label={`Area: ${config.tags.area}`} size="small" onClick={() => openEditor('tags', 'area', config.tags.area, { type: 'text', label: 'Area' })} />
-        <Chip label={`Room: ${config.tags.room}`} size="small" onClick={() => openEditor('tags', 'room', config.tags.room, { type: 'text', label: 'Room' })} />
-        <Chip label={`ID: ${config.tags.id}`} size="small" onClick={() => openEditor('tags', 'id', config.tags.id, { type: 'text', label: 'ID' })} />
+        <Chip label={`Area: ${config.tags.area}`} size="small" onClick={openTagsEditor} />
+        <Chip label={`Room: ${config.tags.room}`} size="small" onClick={openTagsEditor} />
+        <Chip label={`ID: ${config.tags.id}`} size="small" onClick={openTagsEditor} />
       </Stack>
 
       <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
@@ -96,6 +102,12 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
         open={editorOpen}
         mac={mac}
         field={field}
+        fields={field?.moduleName === 'tags' ? [
+          { label: 'Area', moduleName: 'tags', configName: 'area', value: config.tags.area },
+          { label: 'Room', moduleName: 'tags', configName: 'room', value: config.tags.room },
+          { label: 'ID', moduleName: 'tags', configName: 'id', value: config.tags.id },
+        ] : undefined}
+        title={field?.moduleName === 'tags' ? 'Edit tags' : undefined}
         onClose={() => setEditorOpen(false)}
         onSubmit={publishConfig}
         control={control}

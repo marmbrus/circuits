@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography, Slider, Switch, FormControlLabel, Select, MenuItem } from '@mui/material'
 
 export type ConfigField = {
@@ -22,12 +22,15 @@ type Props = {
 	onClose: () => void
 	onSubmit: (mac: string, moduleName: string, configName: string, value: string | number | boolean) => void
 	control?: ControlSpec
+	fields?: ConfigField[]
+	title?: string
 }
 
-export default function ConfigEditor({ open, mac, field, onClose, onSubmit, control }: Props) {
+export default function ConfigEditor({ open, mac, field, onClose, onSubmit, control, fields, title }: Props) {
 	const [raw, setRaw] = useState<string>('')
 	const [num, setNum] = useState<number>(0)
 	const [bool, setBool] = useState<boolean>(false)
+	const [multiValues, setMultiValues] = useState<string[]>([])
 
 	const kind: 'string' | 'number' | 'boolean' = useMemo(() => {
 		if (!field) return 'string'
@@ -37,14 +40,26 @@ export default function ConfigEditor({ open, mac, field, onClose, onSubmit, cont
 		return 'string'
 	}, [field])
 
-	// keep local state in sync when field changes
-	useMemo(() => {
-		if (!field) return
+	// Initialize single-field values only when opening or when the field identity changes
+	const singleFieldIdentity = field ? `${field.moduleName}.${field.configName}` : ''
+	useEffect(() => {
+		if (!open || !field) return
 		const v = field.value
 		setRaw(String(v ?? ''))
 		setNum(typeof v === 'number' ? v : Number(v ?? 0))
 		setBool(typeof v === 'boolean' ? v : String(v).toLowerCase() === 'true')
-	}, [field])
+	}, [open, singleFieldIdentity])
+
+	// Initialize multi-field values only when opening or when the set of fields changes
+	const multiFieldsIdentity = (fields && fields.length > 0) ? fields.map((f) => `${f.moduleName}.${f.configName}`).join('|') : ''
+	useEffect(() => {
+		if (!open) return
+		if (fields && fields.length > 0) {
+			setMultiValues(fields.map((f) => String(f.value ?? '')))
+		} else {
+			setMultiValues([])
+		}
+	}, [open, multiFieldsIdentity])
 
 	const handleSubmit = () => {
 		if (!field) return
@@ -71,11 +86,36 @@ export default function ConfigEditor({ open, mac, field, onClose, onSubmit, cont
 		onClose()
 	}
 
+	const handleSubmitMulti = () => {
+		if (!fields || fields.length === 0) return
+		fields.forEach((f, idx) => {
+			const v = multiValues[idx]
+			onSubmit(mac, f.moduleName, f.configName, v)
+		})
+		onClose()
+	}
+
 	return (
 		<Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-			<DialogTitle>Edit configuration</DialogTitle>
+			<DialogTitle>{title || 'Edit configuration'}</DialogTitle>
 			<DialogContent>
-				{field ? (
+				{fields && fields.length > 0 ? (
+					<Stack spacing={2} sx={{ mt: 1 }}>
+						{fields.map((f, idx) => (
+							<TextField
+								key={`${f.moduleName}.${f.configName}`}
+								label={f.label || `${f.moduleName}.${f.configName}`}
+								value={multiValues[idx] ?? ''}
+								onChange={(e) => {
+									const next = [...multiValues]
+									next[idx] = e.target.value
+									setMultiValues(next)
+								}}
+								fullWidth
+							/>
+						))}
+					</Stack>
+				) : field ? (
 					<Stack spacing={2} sx={{ mt: 1 }}>
 						<Typography variant="body2" color="text.secondary">{field.moduleName} / {field.configName}</Typography>
 						{/* Control override */}
@@ -133,7 +173,11 @@ export default function ConfigEditor({ open, mac, field, onClose, onSubmit, cont
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={onClose}>Cancel</Button>
-				<Button onClick={handleSubmit} variant="contained">Save</Button>
+				{fields && fields.length > 0 ? (
+					<Button onClick={handleSubmitMulti} variant="contained">Save</Button>
+				) : (
+					<Button onClick={handleSubmit} variant="contained">Save</Button>
+				)}
 			</DialogActions>
 		</Dialog>
 	)

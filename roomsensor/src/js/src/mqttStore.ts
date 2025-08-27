@@ -7,6 +7,7 @@ export type UseSensorsResult = {
   connectionStatus: 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'closed' | 'error'
   lastError?: string
   publishConfig: (mac: string, moduleName: string, configName: string, value: string | number | boolean) => void
+  deleteRetainedForSensor: (mac: string) => void
 }
 
 // Development-only fallback endpoints; in production we fetch from the device
@@ -88,6 +89,9 @@ class MqttManager {
   public lastError: string | undefined
   public version = 0
 
+  // Track retained topics received per sensor MAC to enable deletion
+  private retainedTopicsByMac = new Map<string, Set<string>>()
+
   private listeners = new Set<() => void>()
   private readonly debugLevel = getDebugLevel()
 
@@ -95,6 +99,24 @@ class MqttManager {
     if (this.debugLevel > 0) {
       // eslint-disable-next-line no-console
       console.debug('[MQTT]', ...args)
+    }
+  }
+
+  private isSensorRetainedDataEmpty(s: SensorState): boolean {
+    // Ignore metrics and logs; only consider retained-derived fields
+    return !s.config && !s.ip && !s.deviceStatus && !s.otaStatus && !s.deviceBoot && !s.i2c
+  }
+
+  private deleteSensorIfEmpty(mac: string) {
+    const s = this.sensors.get(mac)
+    if (!s) return
+    if (this.isSensorRetainedDataEmpty(s)) {
+      this.sensors.delete(mac)
+      this.retainedTopicsByMac.delete(mac)
+      this.notify()
+      this.dlog('Deleted sensor due to no retained data', mac)
+    } else {
+      this.notify()
     }
   }
 
@@ -175,7 +197,7 @@ class MqttManager {
       })
     })
 
-    c.on('message', (topic, payload) => {
+    c.on('message', (topic, payload, packet) => {
       if (this.debugLevel > 0) {
         try {
           const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
@@ -194,7 +216,7 @@ class MqttManager {
         }
       }
       try {
-        this.handleMessage(topic.toString(), payload)
+        this.handleMessage(topic.toString(), payload, Boolean((packet as any)?.retain))
       } catch (e) {
         this.setError(`message handler error: ${(e as Error).message}`)
         this.dlog('Message handler error', (e as Error).message)
@@ -267,11 +289,21 @@ class MqttManager {
     })()
   }
 
-  private handleMessage(topic: string, payload: Uint8Array | string) {
+  private handleMessage(topic: string, payload: Uint8Array | string, isRetained?: boolean) {
     const parts = topic.split('/')
     if (parts.length < 3 || parts[0] !== 'sensor') return
     const mac = parts[1].toLowerCase()
     const category = parts[2]
+
+    // Record retained topics so they can be deleted later
+    if (isRetained) {
+      let set = this.retainedTopicsByMac.get(mac)
+      if (!set) {
+        set = new Set<string>()
+        this.retainedTopicsByMac.set(mac, set)
+      }
+      set.add(topic)
+    }
     // Logs: sensor/$mac/logs/$level -> plain text with ANSI escapes
     if (category === 'logs' && parts.length >= 4) {
       try {
@@ -294,8 +326,15 @@ class MqttManager {
     if (category === 'config' && parts[3] === 'current') {
       try {
         const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
-        const cfg = JSON.parse(text)
         const s = this.ensureSensor(mac)
+        if (text.trim().length === 0) {
+          s.config = undefined
+          s.pendingConfig = false
+          this.dlog('Cleared config/current for', mac)
+          this.deleteSensorIfEmpty(mac)
+          return
+        }
+        const cfg = JSON.parse(text)
         s.config = cfg
         s.pendingConfig = false
         this.notify()
@@ -325,6 +364,12 @@ class MqttManager {
       try {
         const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
         const s = this.ensureSensor(mac)
+        if (text.trim().length === 0) {
+          s.ip = undefined
+          this.dlog('Cleared ip for', mac)
+          this.deleteSensorIfEmpty(mac)
+          return
+        }
         s.ip = text
         this.notify()
         this.dlog('Updated ip for', mac, text)
@@ -338,8 +383,15 @@ class MqttManager {
     if (category === 'device' && parts[3] === 'status') {
       try {
         const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
-        const obj = JSON.parse(text) as Record<string, unknown>
         const s = this.ensureSensor(mac)
+        if (text.trim().length === 0) {
+          s.deviceStatus = undefined
+          s.deviceStatusTs = undefined
+          this.dlog('Cleared device status for', mac)
+          this.deleteSensorIfEmpty(mac)
+          return
+        }
+        const obj = JSON.parse(text) as Record<string, unknown>
         s.deviceStatus = obj
         s.deviceStatusTs = Date.now()
         this.notify()
@@ -354,8 +406,15 @@ class MqttManager {
     if (category === 'device' && parts[3] === 'ota') {
       try {
         const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
-        const obj = JSON.parse(text) as Record<string, unknown>
         const s = this.ensureSensor(mac)
+        if (text.trim().length === 0) {
+          s.otaStatus = undefined
+          s.otaStatusTs = undefined
+          this.dlog('Cleared OTA status for', mac)
+          this.deleteSensorIfEmpty(mac)
+          return
+        }
+        const obj = JSON.parse(text) as Record<string, unknown>
         s.otaStatus = obj
         s.otaStatusTs = Date.now()
         this.notify()
@@ -370,8 +429,14 @@ class MqttManager {
     if (category === 'device' && parts[3] === 'i2c') {
       try {
         const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
-        const obj = JSON.parse(text) as { ts?: string; sensors?: Array<{ addr: string; driver?: string; index?: number; module?: string }> }
         const s = this.ensureSensor(mac)
+        if (text.trim().length === 0) {
+          s.i2c = undefined
+          this.dlog('Cleared I2C inventory for', mac)
+          this.deleteSensorIfEmpty(mac)
+          return
+        }
+        const obj = JSON.parse(text) as { ts?: string; sensors?: Array<{ addr: string; driver?: string; index?: number; module?: string }> }
         s.i2c = { ts: obj.ts, devices: obj.sensors || [] }
         this.notify()
         this.dlog('I2C inventory updated for', mac)
@@ -385,8 +450,15 @@ class MqttManager {
     if (category === 'device' && parts[3] === 'boot') {
       try {
         const text = typeof payload === 'string' ? payload : new TextDecoder().decode(payload)
-        const obj = JSON.parse(text) as Record<string, unknown>
         const s = this.ensureSensor(mac)
+        if (text.trim().length === 0) {
+          s.deviceBoot = undefined
+          s.deviceBootTs = undefined
+          this.dlog('Cleared boot info for', mac)
+          this.deleteSensorIfEmpty(mac)
+          return
+        }
+        const obj = JSON.parse(text) as Record<string, unknown>
         s.deviceBoot = obj
         s.deviceBootTs = Date.now()
         this.notify()
@@ -415,6 +487,23 @@ class MqttManager {
     }
   }
 
+  deleteRetainedForSensor = (mac: string) => {
+    if (!this.client) return
+    const key = mac.toLowerCase()
+    const topics = this.retainedTopicsByMac.get(key)
+    if (!topics || topics.size === 0) return
+    for (const t of topics) {
+      try {
+        this.client.publish(t, '', { retain: true, qos: 0 })
+        this.dlog('Delete retained', t)
+      } catch (e) {
+        this.setError((e as Error).message)
+        this.dlog('Delete retained error', (e as Error).message)
+      }
+    }
+    this.retainedTopicsByMac.delete(key)
+  }
+
   private static randomId = Math.random().toString(16).slice(2)
 }
 
@@ -440,6 +529,7 @@ export function useSensors(): UseSensorsResult {
     connectionStatus: status,
     lastError,
     publishConfig: manager.publishConfig,
+    deleteRetainedForSensor: manager.deleteRetainedForSensor,
   }
 }
 

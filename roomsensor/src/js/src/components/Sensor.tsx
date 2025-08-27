@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, Chip, CircularProgress, Dialog, DialogCo
 import AnsiText from './AnsiText'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import { useEffect, useMemo, useState } from 'react'
 import type { SensorState } from '../types'
 import { useSensors } from '../mqttStore'
@@ -15,7 +16,7 @@ type Props = {
 
 export default function Sensor({ sensor }: Props) {
 	const cfg = sensor.config
-	const { publishConfig } = useSensors()
+	const { publishConfig, deleteRetainedForSensor } = useSensors()
 	const id = cfg?.tags.id ?? sensor.mac
 	const macShort = sensor.mac.slice(-4)
 	const ip = sensor.ip
@@ -69,7 +70,7 @@ export default function Sensor({ sensor }: Props) {
 		}
 	}
 	return (
-		<Card variant="outlined">
+		<Card variant="outlined" sx={{ maxWidth: { xs: 360, sm: 420, md: 480 }, mx: 'auto' }}>
 			<CardHeader
 				sx={{ pb: 0.5 }}
 				title={
@@ -82,6 +83,11 @@ export default function Sensor({ sensor }: Props) {
 							<Tooltip title={copied ? 'Copied' : 'Copy MAC'}>
 								<IconButton size="small" onClick={handleCopy} aria-label="copy mac">
 									<ContentCopyIcon fontSize="inherit" />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Delete retained topics">
+								<IconButton size="small" onClick={() => deleteRetainedForSensor(sensor.mac)} aria-label="delete retained">
+									<DeleteOutlineIcon fontSize="inherit" />
 								</IconButton>
 							</Tooltip>
 						</Stack>
