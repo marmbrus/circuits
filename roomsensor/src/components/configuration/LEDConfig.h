@@ -24,7 +24,9 @@ public:
         RAINBOW,
         LIFE,
         CHASE,
-        POSITION
+        POSITION,
+        CLOCK,
+        CALENDAR
     };
 
     // Supported LED chips for internal use

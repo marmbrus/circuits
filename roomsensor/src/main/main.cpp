@@ -18,6 +18,8 @@
 #include "gpio.h"
 #include "filesystem.h"
 #include "netlog.h"
+#include <time.h>
+#include <stdlib.h>
 
 static const char* TAG = "main";
 
@@ -38,6 +40,10 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "ConfigurationManager initialization failed: %s", esp_err_to_name(cfg_err));
     }
     
+    // Configure timezone for localtime() use (Pacific Time with DST rules)
+    setenv("TZ", "PST8PDT,M3.2.0/2,M11.1.0/2", 1);
+    tzset();
+
     // Initialize LEDs manager
     static leds::LEDManager led_manager;
     if (led_manager.init(cfg) != ESP_OK) {

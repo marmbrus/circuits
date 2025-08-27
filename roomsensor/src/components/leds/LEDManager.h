@@ -7,9 +7,11 @@
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <string>
 
 namespace config { class ConfigurationManager; class LEDConfig; }
 namespace leds { class LEDStrip; class LEDPattern; enum class LEDChip : int; }
+namespace leds { class PowerManager; }
 
 namespace leds {
 
@@ -56,6 +58,9 @@ private:
     config::ConfigurationManager* cfg_manager_ = nullptr; // not owned
     std::vector<std::unique_ptr<LEDStrip>> strips_;
     std::vector<std::unique_ptr<LEDPattern>> patterns_; // 1:1 with strips_
+    std::vector<std::unique_ptr<PowerManager>> power_mgrs_; // 1:1 with strips_
+    std::vector<std::vector<uint8_t>> prev_frames_rgba_; // rows*cols*4 per strip
+    std::vector<bool> last_power_enabled_; // track power pin state to log transitions
     // Track layout used for each strip to detect when grid mapping changes
     std::vector<config::LEDConfig::Layout> last_layouts_;
     // Track last applied pattern to avoid reinstalling the same type repeatedly

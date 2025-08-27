@@ -1,5 +1,6 @@
-import { Box, Chip, Stack, Typography, Slider } from '@mui/material'
+import { Box, Chip, Stack, Typography, Slider, Accordion, AccordionSummary, AccordionDetails, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
 import { Box as MuiBox } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ControlSpec } from './ConfigEditor'
 
@@ -68,6 +69,11 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
   publish?: (moduleName: string, key: string, value: string | number | boolean) => void
 }) {
   // Create slider handlers for each property
+  const [patternValue, setPatternValue] = useState((('pattern' in led && led.pattern) ? led.pattern : 'OFF') as string)
+  useEffect(() => {
+    setPatternValue((('pattern' in led && led.pattern) ? led.pattern : 'OFF') as string)
+  }, [led.pattern])
+
   const brightnessSlider = useSliderValue(
     ('brightness' in led && led.brightness !== undefined) ? led.brightness : 100,
     (value) => publish ? publish(ledKey, 'brightness', value) : onEdit(ledKey, 'brightness', value)
@@ -101,30 +107,25 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
   return (
     <Box sx={{ border: '1px solid', borderColor: 'divider', p: 0.75, borderRadius: 1 }}>
       <Typography variant="body2" fontWeight={600} sx={{ mb: 0.25 }}>{ledKey}</Typography>
-      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-        {'chip' in led && (
-          <Chip
-            label={`Chip: ${led.chip}`}
-            size="small"
-            onClick={() => onEdit(ledKey, 'chip', led.chip, { type: 'select', options: ['WS2812', 'SK6812', 'WS2814', 'FLIPDOT'], label: 'Chip' })}
-          />
-        )}
-        <Chip
-          label={`Pattern: ${'pattern' in led ? led.pattern : 'OFF'}`}
-          size="small"
-          onClick={() => onEdit(ledKey, 'pattern', ('pattern' in led ? led.pattern : 'OFF'), { type: 'select', options: ['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION'], label: 'Pattern' })}
-        />
-        {'dataGPIO' in led && <Chip label={`Data: ${led.dataGPIO}`} size="small" onClick={() => onEdit(ledKey, 'dataGPIO', led.dataGPIO, { type: 'number', label: 'Data GPIO' })} />}                
-        {'enabledGPIO' in led && <Chip label={`Enable: ${led.enabledGPIO}`} size="small" onClick={() => onEdit(ledKey, 'enabledGPIO', led.enabledGPIO, { type: 'number', label: 'Enable GPIO' })} />}
-        {'num_columns' in led && <Chip label={`Cols: ${led.num_columns}`} size="small" onClick={() => onEdit(ledKey, 'num_columns', led.num_columns, { type: 'number', label: 'Columns' })} />}
-        {'num_rows' in led && <Chip label={`Rows: ${led.num_rows}`} size="small" onClick={() => onEdit(ledKey, 'num_rows', led.num_rows, { type: 'number', label: 'Rows' })} />}
-        {'layout' in led && (
-          <Chip
-            label={`Layout: ${led.layout}`}
-            size="small"
-            onClick={() => onEdit(ledKey, 'layout', led.layout, { type: 'select', options: ['ROW_MAJOR','SERPENTINE_ROW','COLUMN_MAJOR','FLIPDOT_GRID'], label: 'Layout' })}
-          />
-        )}
+      <Stack spacing={0.75} sx={{ mb: 0.5 }}>
+        <FormControl size="small" fullWidth>
+          <InputLabel id={`${ledKey}-pattern-label`}>Pattern</InputLabel>
+          <Select
+            labelId={`${ledKey}-pattern-label`}
+            label="Pattern"
+            value={patternValue}
+            onChange={(e) => {
+              const v = e.target.value as string
+              setPatternValue(v)
+              if (publish) publish(ledKey, 'pattern', v)
+              else onEdit(ledKey, 'pattern', v)
+            }}
+          >
+            {['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION','CLOCK','CALENDAR'].map((opt) => (
+              <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Stack>
       <Stack spacing={0.75} sx={{ mt: 0.5 }}>
         <Box>
@@ -202,6 +203,33 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
           </Box>
         )}
       </Stack>
+      <Accordion disableGutters sx={{ mt: 0.75 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="caption" fontWeight={600}>Hardware</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {'chip' in led && (
+              <Chip
+                label={`Chip: ${led.chip}`}
+                size="small"
+                onClick={() => onEdit(ledKey, 'chip', led.chip, { type: 'select', options: ['WS2812', 'SK6812', 'WS2814', 'FLIPDOT'], label: 'Chip' })}
+              />
+            )}
+            {'dataGPIO' in led && <Chip label={`Data: ${led.dataGPIO}`} size="small" onClick={() => onEdit(ledKey, 'dataGPIO', led.dataGPIO, { type: 'number', label: 'Data GPIO' })} />}
+            {'enabledGPIO' in led && <Chip label={`Enable: ${led.enabledGPIO}`} size="small" onClick={() => onEdit(ledKey, 'enabledGPIO', led.enabledGPIO, { type: 'number', label: 'Enable GPIO' })} />}
+            {'num_columns' in led && <Chip label={`Cols: ${led.num_columns}`} size="small" onClick={() => onEdit(ledKey, 'num_columns', led.num_columns, { type: 'number', label: 'Columns' })} />}
+            {'num_rows' in led && <Chip label={`Rows: ${led.num_rows}`} size="small" onClick={() => onEdit(ledKey, 'num_rows', led.num_rows, { type: 'number', label: 'Rows' })} />}
+            {'layout' in led && (
+              <Chip
+                label={`Layout: ${led.layout}`}
+                size="small"
+                onClick={() => onEdit(ledKey, 'layout', led.layout, { type: 'select', options: ['ROW_MAJOR','SERPENTINE_ROW','COLUMN_MAJOR','FLIPDOT_GRID'], label: 'Layout' })}
+              />
+            )}
+          </Stack>
+        </AccordionDetails>
+      </Accordion>
     </Box>
   )
 }

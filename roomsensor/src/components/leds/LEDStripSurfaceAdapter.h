@@ -75,12 +75,14 @@ public:
     }
 
     bool flush_if_dirty(uint64_t now_us, uint64_t max_quiescent_us) override {
-        (void)now_us; (void)max_quiescent_us;
-        if (!dirty_) return false;
-        // Enable power if any pixel is non-black; otherwise disable
-        bool any_on = false;
-        for (size_t i = 0; i < shadow_rgba_.size(); ++i) { if (shadow_rgba_[i] != 0) { any_on = true; break; } }
-        set_power_enabled(any_on);
+        (void)now_us;
+        if (!dirty_) {
+            if (max_quiescent_us == 0) {
+                // Force a transmit even if not marked dirty
+                return surface_->flush();
+            }
+            return false;
+        }
         bool ok = surface_->flush();
         if (ok) dirty_ = false;
         return ok;

@@ -18,6 +18,10 @@
 #include "GameOfLifePattern.h"
 #include "ChasePattern.h"
 #include "PositionTestPattern.h"
+#include "ClockPattern.h"
+#include "CalendarPattern.h"
+#include "PowerManager.h"
+// Calendar pattern forward include added later
 #include "ConfigurationManager.h"
 #include "LEDConfig.h"
 #include "esp_timer.h"
@@ -54,6 +58,8 @@ static const char* pattern_name_for_config(config::LEDConfig::Pattern p) {
         case P::CHASE: return "CHASE";
         case P::LIFE: return "LIFE";
         case P::POSITION: return "POSITION";
+        case P::CLOCK: return "CLOCK";
+        case P::CALENDAR: return "CALENDAR";
         case P::INVALID: default: return "OFF";
     }
 }
@@ -78,9 +84,12 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     std::vector<LEDConfig*> active = cfg_manager.active_leds();
     strips_.clear();
     patterns_.clear();
+    power_mgrs_.clear();
+    prev_frames_rgba_.clear();
     last_layouts_.clear();
     last_patterns_.clear();
     frames_tx_counts_.assign(active.size(), 0);
+    last_power_enabled_.assign(active.size(), false);
     strips_.reserve(active.size());
     patterns_.reserve(active.size());
 
@@ -186,6 +195,10 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
         // Prime hardware with a clear frame to establish known state
         s->clear();
         s->flush_if_dirty(esp_timer_get_time(), 0);
+        // Install power manager by chip type
+        if (chip == LEDChip::FLIPDOT) power_mgrs_.push_back(std::unique_ptr<PowerManager>(new FlipDotPower()));
+        else power_mgrs_.push_back(std::unique_ptr<PowerManager>(new LedPower()));
+        prev_frames_rgba_.push_back(std::vector<uint8_t>(rows * cols * 4, 0));
         strips_.push_back(std::move(s));
         patterns_.push_back(create_pattern_from_config(*c));
         last_layouts_.push_back(c->layout_enum());
@@ -228,6 +241,8 @@ std::unique_ptr<LEDPattern> LEDManager::create_pattern_from_config(const config:
         case P::CHASE: p.reset(new ChasePattern()); break;
         case P::LIFE: p.reset(new GameOfLifePattern()); break;
         case P::POSITION: p.reset(new PositionTestPattern()); break;
+        case P::CLOCK: p.reset(new ClockPattern()); break;
+        case P::CALENDAR: p.reset(new CalendarPattern()); break;
         case P::INVALID: default: p.reset(new OffPattern()); break;
     }
     return p;
@@ -264,6 +279,35 @@ void LEDManager::run_update_loop() {
             LEDPattern* p = (i < patterns_.size()) ? patterns_[i].get() : nullptr;
             if (!s) continue;
             if (!s->is_transmitting() && p) p->update(*s, now);
+
+            // Power + refresh policy
+            if (i < power_mgrs_.size()) {
+                // Build current frame view from strip's shadow via get_pixel
+                size_t rows = s->rows(), cols = s->cols();
+                std::vector<uint8_t> current(rows * cols * 4, 0);
+                for (size_t idx = 0; idx < rows * cols; ++idx) {
+                    uint8_t r=0,g=0,b=0,w=0; s->get_pixel(idx, r, g, b, w);
+                    size_t off = idx * 4; current[off]=r; current[off+1]=g; current[off+2]=b; current[off+3]=w;
+                }
+                FrameView cur{current.data(), rows, cols};
+                FrameView prev{prev_frames_rgba_[i].data(), rows, cols};
+                bool should_refresh = power_mgrs_[i]->on_frame(cur, prev, now);
+                // Apply power state; log transitions
+                if (s->has_enable_pin()) {
+                    bool new_state = power_mgrs_[i]->power_enabled();
+                    if (i >= last_power_enabled_.size()) last_power_enabled_.resize(i+1, false);
+                    if (new_state != last_power_enabled_[i]) {
+                        ESP_LOGI(TAG, "LED power %s on strip %u", new_state ? "ENABLED" : "DISABLED", (unsigned)i);
+                        last_power_enabled_[i] = new_state;
+                    }
+                    s->set_power_enabled(new_state);
+                }
+                // Decide refresh
+                if (should_refresh) s->flush_if_dirty(now, 0); // force transmit if enabled
+                // Save current as previous
+                prev_frames_rgba_[i].swap(current);
+            }
+
             if (s->flush_if_dirty(now)) {
                 if (i < frames_tx_counts_.size()) frames_tx_counts_[i]++;
             }
@@ -305,12 +349,14 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
         patterns_[idx] = create_pattern_from_config(cfg);
         pat = patterns_[idx].get();
         if (pat) {
-            // Apply all dynamic knobs regardless of pattern type; patterns may ignore what they don't use
+            // Apply dynamic knobs; avoid forcing colors to black if not set in config
             pat->set_speed_percent(cfg.has_speed() ? cfg.speed() : 50);
-            pat->set_solid_color(cfg.has_r() ? cfg.r() : 0,
-                                 cfg.has_g() ? cfg.g() : 0,
-                                 cfg.has_b() ? cfg.b() : 0,
-                                 cfg.has_w() ? cfg.w() : 0);
+            if (cfg.has_r() || cfg.has_g() || cfg.has_b() || cfg.has_w()) {
+                pat->set_solid_color(cfg.has_r() ? cfg.r() : 0,
+                                     cfg.has_g() ? cfg.g() : 0,
+                                     cfg.has_b() ? cfg.b() : 0,
+                                     cfg.has_w() ? cfg.w() : 0);
+            }
             if (cfg.has_brightness()) pat->set_brightness_percent(cfg.brightness());
             if (cfg.has_start()) pat->set_start_string(cfg.start().c_str());
             pat->reset(*strip, now_us);
@@ -323,10 +369,12 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
     } else if (pat) {
         // Apply runtime knobs
         pat->set_speed_percent(cfg.has_speed() ? cfg.speed() : 50);
-        pat->set_solid_color(cfg.has_r() ? cfg.r() : 0,
-                             cfg.has_g() ? cfg.g() : 0,
-                             cfg.has_b() ? cfg.b() : 0,
-                             cfg.has_w() ? cfg.w() : 0);
+        if (cfg.has_r() || cfg.has_g() || cfg.has_b() || cfg.has_w()) {
+            pat->set_solid_color(cfg.has_r() ? cfg.r() : 0,
+                                 cfg.has_g() ? cfg.g() : 0,
+                                 cfg.has_b() ? cfg.b() : 0,
+                                 cfg.has_w() ? cfg.w() : 0);
+        }
         if (cfg.has_brightness()) pat->set_brightness_percent(cfg.brightness());
         if (cfg.has_start()) pat->set_start_string(cfg.start().c_str());
         // Special case: POSITION should react immediately to R/G changes
