@@ -251,7 +251,7 @@ void ADS1115Sensor::poll() {
 				report_metric("kpa", kpa, _channel_tags[ch]);
 			} else if (sensor_str == "BTS7002") {
 				const float sense_resistance_ohms = 1500.0f;
-				const float kILIS = 5000.0f; // default ratio, can be made configurable later
+				const float kILIS = 22900.0f * 2.0f;
 				float i_is_amps = volts / sense_resistance_ohms;
 				float i_load_amps = i_is_amps * kILIS;
 				report_metric("amps", i_load_amps, _channel_tags[ch]);
