@@ -9,6 +9,7 @@
 #include "cmd_wifi.h"
 #include "cmd_nvs.h"
 #include "cmd_system.h"
+#include "gpio.h"
 
 static const char* TAG_CONSOLE = "console";
 
@@ -52,6 +53,7 @@ void initialize_console(void)
     register_system();
     register_nvs();
     register_wifi();
+    register_gpio();
 
     const char* prompt = LOG_COLOR_I "esp32> " LOG_RESET_COLOR;
     ESP_LOGI(TAG_CONSOLE, "Console initialized. Type 'help' to list commands.");
