@@ -91,7 +91,7 @@ bool TAS5825MSensor::init(i2c_master_bus_handle_t bus_handle) {
 	if (!chk(writeReg(TAS5825M_REG_GPIO2_SEL, TAS5825M_GPIO_FUNC_WARNZ), "gpio2 sel")) return false;
 
 	// Volume and auto-mute
-	if (!chk(writeReg(TAS5825M_REG_DIG_VOL, 100), "dig vol")) return false;
+	if (!chk(writeReg(TAS5825M_REG_DIG_VOL, 150), "dig vol")) return false;
 	if (!chk(writeReg(TAS5825M_REG_AUTO_MUTE_CTRL, 0x00), "auto mute ctrl")) return false;
 
 	// Routing
@@ -111,7 +111,48 @@ bool TAS5825MSensor::init(i2c_master_bus_handle_t bus_handle) {
 }
 
 void TAS5825MSensor::poll() {
-	// No periodic work yet
+	if (!_initialized) return;
+
+	uint8_t clk = 0, fs_mon = 0, bck_mon = 0, pwr = 0, f1 = 0, f2 = 0, warn = 0;
+	if (readReg(TAS5825M_REG_CLKDET_STATUS, clk) == ESP_OK) {
+		ESP_LOGI(TAG_TAS, "CLKDET_STATUS=0x%02X%s%s%s%s%s%s",
+				 clk,
+				 (clk & 0x01) ? " FS_ERR" : "",
+				 (clk & 0x02) ? " SCLK_INV" : "",
+				 (clk & 0x04) ? " SCLK_MISS" : "",
+				 (clk & 0x08) ? " PLL_UNLOCK" : "",
+				 (clk & 0x10) ? " PLL_OVR" : "",
+				 (clk & 0x20) ? " SCLK_OVR" : "");
+	}
+
+	if (readReg(TAS5825M_REG_FS_MON, fs_mon) == ESP_OK) {
+		uint8_t fs_code = fs_mon & 0x0F;
+		const char *fs_str = "Unknown";
+		switch (fs_code) {
+			case 0x09: fs_str = "48kHz"; break;
+			case 0x0B: fs_str = "96kHz"; break;
+			case 0x0D: fs_str = "192kHz"; break;
+			case 0x08: fs_str = "44.1kHz"; break;
+			case 0x00: fs_str = "FS_ERROR"; break;
+			default: break;
+		}
+		ESP_LOGI(TAG_TAS, "FS_MON=0x%02X (fs=%s)", fs_mon, fs_str);
+	}
+
+	if (readReg(TAS5825M_REG_BCK_MON, bck_mon) == ESP_OK && readReg(TAS5825M_REG_FS_MON, fs_mon) == ESP_OK) {
+		uint16_t bck_ratio = ((fs_mon & 0x30) << 4) | bck_mon;
+		ESP_LOGI(TAG_TAS, "BCK_MON=0x%02X (ratio=%u)", bck_mon, (unsigned)bck_ratio);
+	}
+
+	if (readReg(TAS5825M_REG_POWER_STATE, pwr) == ESP_OK) {
+		ESP_LOGI(TAG_TAS, "POWER_STATE=0x%02X", pwr);
+	}
+
+	if (readReg(TAS5825M_REG_GLOBAL_FAULT1, f1) == ESP_OK &&
+		readReg(TAS5825M_REG_GLOBAL_FAULT2, f2) == ESP_OK &&
+		readReg(TAS5825M_REG_WARNING, warn) == ESP_OK) {
+		ESP_LOGI(TAG_TAS, "FAULT1=0x%02X FAULT2=0x%02X WARN=0x%02X", f1, f2, warn);
+	}
 }
 
 bool TAS5825MSensor::isInitialized() const { return _initialized; }

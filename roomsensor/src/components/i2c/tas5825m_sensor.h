@@ -39,6 +39,8 @@
 #define TAS5825M_REG_GPIO1_SEL          0x62
 #define TAS5825M_REG_GPIO2_SEL          0x63
 #define TAS5825M_REG_CLKDET_STATUS      0x39
+#define TAS5825M_REG_FS_MON              0x37
+#define TAS5825M_REG_BCK_MON             0x38
 #define TAS5825M_REG_GLOBAL_FAULT1      0x71
 #define TAS5825M_REG_GLOBAL_FAULT2      0x72
 #define TAS5825M_REG_WARNING            0x73
