@@ -97,7 +97,38 @@ static void pipeline_event_task(void *arg) {
 	audio_event_iface_msg_t msg;
 	while (true) {
 		if (audio_event_iface_listen(s_evt, &msg, portMAX_DELAY) != ESP_OK) {
+			ESP_LOGW(TAG, "evt: listen error");
 			continue;
+		}
+		const char *src_tag = NULL;
+		if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source) {
+			src_tag = audio_element_get_tag((audio_element_handle_t)msg.source);
+		}
+		ESP_LOGI(TAG, "evt: src=%p tag=%s type=%d cmd=%d data=%p len=%d",
+			msg.source,
+			src_tag ? src_tag : "(null)",
+			(int)msg.source_type,
+			(int)msg.cmd,
+			msg.data,
+			(int)msg.data_len);
+		if (msg.source_type == AUDIO_ELEMENT_TYPE_ELEMENT && msg.source) {
+			audio_element_state_t el_state = audio_element_get_state((audio_element_handle_t)msg.source);
+			ESP_LOGI(TAG, "evt: element_state=%d", (int)el_state);
+		}
+		if (msg.cmd == AEL_MSG_CMD_REPORT_STATUS) {
+			ESP_LOGI(TAG, "evt: report_status value=%d", (int)(intptr_t)msg.data);
+		}
+		if (msg.cmd == AEL_MSG_CMD_STOP) {
+			ESP_LOGI(TAG, "evt: stop requested by %s", src_tag ? src_tag : "(unknown)");
+		}
+		if (msg.cmd == AEL_MSG_CMD_FINISH) {
+			ESP_LOGI(TAG, "evt: finish reported by %s", src_tag ? src_tag : "(unknown)");
+		}
+		if (msg.source == (void *)s_http_stream) {
+			ESP_LOGI(TAG, "evt: http_stream event cmd=%d", (int)msg.cmd);
+		}
+		if (msg.source == (void *)s_raw_stream) {
+			ESP_LOGI(TAG, "evt: raw_stream event cmd=%d", (int)msg.cmd);
 		}
 		if (msg.source == (void *)s_mp3_decoder && msg.cmd == AEL_MSG_CMD_REPORT_MUSIC_INFO) {
 			audio_element_info_t info = {};
@@ -109,6 +140,7 @@ static void pipeline_event_task(void *arg) {
 			i2s_channel_disable(s_tx_chan);
 			i2s_channel_reconfig_std_clock(s_tx_chan, &clk);
 			i2s_channel_enable(s_tx_chan);
+			ESP_LOGI(TAG, "I2S clock reconfigured to %d Hz", (int)info.sample_rates);
 		}
 	}
 }
@@ -247,9 +279,9 @@ void audio_component_init(void) {
 	esp_log_level_set("AUDIO_ELEMENT", ESP_LOG_DEBUG);
 	esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
 	esp_log_level_set("I2S_STREAM", ESP_LOG_DEBUG);
-	esp_log_level_set("MP3_DECODER", ESP_LOG_INFO);
-	esp_log_level_set("HTTP_STREAM", ESP_LOG_INFO);
-	esp_log_level_set("I2S", ESP_LOG_INFO);          // IDF driver
+	esp_log_level_set("MP3_DECODER", ESP_LOG_DEBUG);
+	esp_log_level_set("HTTP_STREAM", ESP_LOG_DEBUG);
+	esp_log_level_set("I2S", ESP_LOG_DEBUG);          // IDF driver
 
 	// IDF I2S STD TX setup (44100 Hz, 16-bit, stereo)
 	i2s_chan_config_t chan_cfg = {

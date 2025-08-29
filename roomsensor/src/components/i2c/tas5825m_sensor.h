@@ -84,4 +84,10 @@ private:
 	uint8_t _i2c_addr;
 	bool _initialized{false};
 	int32_t _last_volume{-1};
+	// Change-tracking for reduced logging noise
+	bool _poll_logged_once{false};
+	uint8_t _last_clk{0xFF};
+	uint8_t _last_fs_mon{0xFF};
+	uint16_t _last_bclk_per_lrclk_ratio{0xFFFF};
+	uint8_t _last_power_state{0xFF};
 };

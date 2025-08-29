@@ -116,15 +116,20 @@ void TAS5825MSensor::poll() {
 	if (!_initialized) return;
 
 	uint8_t clk = 0, fs_mon = 0, bck_mon = 0, pwr = 0, f1 = 0, f2 = 0, warn = 0;
+	bool first = !_poll_logged_once;
+
 	if (readReg(TAS5825M_REG_CLKDET_STATUS, clk) == ESP_OK) {
-		ESP_LOGI(TAG_TAS, "CLKDET_STATUS=0x%02X%s%s%s%s%s%s",
-				 clk,
-				 (clk & 0x01) ? " Sampling rate invalid (FS error)" : "",
-				 (clk & 0x02) ? " Serial clock ratio invalid" : "",
-				 (clk & 0x04) ? " Serial clock missing" : "",
-				 (clk & 0x08) ? " PLL locked" : " PLL unlocked",
-				 (clk & 0x10) ? " PLL overrate" : "",
-				 (clk & 0x20) ? " Serial clock over/under rate" : "");
+		if (first || clk != _last_clk) {
+			ESP_LOGI(TAG_TAS, "CLKDET_STATUS=0x%02X%s%s%s%s%s%s",
+					 clk,
+					 (clk & 0x01) ? " Sampling rate invalid (FS error)" : "",
+					 (clk & 0x02) ? " Serial clock ratio invalid" : "",
+					 (clk & 0x04) ? " Serial clock missing" : "",
+					 (clk & 0x08) ? " PLL locked" : " PLL unlocked",
+					 (clk & 0x10) ? " PLL overrate" : "",
+					 (clk & 0x20) ? " Serial clock over/under rate" : "");
+			_last_clk = clk;
+		}
 	}
 
 	if (readReg(TAS5825M_REG_FS_MON, fs_mon) == ESP_OK) {
@@ -138,12 +143,18 @@ void TAS5825MSensor::poll() {
 			case 0x00: fs_str = "FS_ERROR"; break;
 			default: break;
 		}
-		ESP_LOGI(TAG_TAS, "FS_MON=0x%02X (sample_rate=%s)", fs_mon, fs_str);
+		if (first || fs_mon != _last_fs_mon) {
+			ESP_LOGI(TAG_TAS, "FS_MON=0x%02X (sample_rate=%s)", fs_mon, fs_str);
+			_last_fs_mon = fs_mon;
+		}
 	}
 
 	if (readReg(TAS5825M_REG_BCK_MON, bck_mon) == ESP_OK && readReg(TAS5825M_REG_FS_MON, fs_mon) == ESP_OK) {
 		uint16_t bclk_per_lrclk_ratio = ((fs_mon & 0x30) << 4) | bck_mon;
-		ESP_LOGI(TAG_TAS, "BCK_MON=0x%02X (bclk_per_lrclk_ratio=%u)", bck_mon, (unsigned)bclk_per_lrclk_ratio);
+		if (first || bclk_per_lrclk_ratio != _last_bclk_per_lrclk_ratio) {
+			ESP_LOGI(TAG_TAS, "BCK_MON=0x%02X (bclk_per_lrclk_ratio=%u)", bck_mon, (unsigned)bclk_per_lrclk_ratio);
+			_last_bclk_per_lrclk_ratio = bclk_per_lrclk_ratio;
+		}
 	}
 
 	if (readReg(TAS5825M_REG_POWER_STATE, pwr) == ESP_OK) {
@@ -155,37 +166,44 @@ void TAS5825MSensor::poll() {
 			case 0x03: state_str = "Play"; break;
 			default: state_str = "Reserved"; break;
 		}
-		ESP_LOGI(TAG_TAS, "POWER_STATE=0x%02X (%s)", pwr, state_str);
+		if (first || pwr != _last_power_state) {
+			ESP_LOGI(TAG_TAS, "POWER_STATE=0x%02X (%s)", pwr, state_str);
+			_last_power_state = pwr;
+		}
 	}
 
 	if (readReg(TAS5825M_REG_GLOBAL_FAULT1, f1) == ESP_OK &&
 		readReg(TAS5825M_REG_GLOBAL_FAULT2, f2) == ESP_OK &&
 		readReg(TAS5825M_REG_WARNING, warn) == ESP_OK) {
-		ESP_LOGI(TAG_TAS, "GLOBAL_FAULT1=0x%02X%s%s%s%s%s%s",
-			f1,
-			(f1 & 0x80) ? " OTP CRC error" : "",
-			(f1 & 0x40) ? " BQ write error" : "",
-			(f1 & 0x20) ? " EEPROM load error" : "",
-			(f1 & 0x04) ? " Clock fault (latched)" : "",
-			(f1 & 0x02) ? " PVDD over-voltage" : "",
-			(f1 & 0x01) ? " PVDD under-voltage" : "");
-
-		ESP_LOGI(TAG_TAS, "GLOBAL_FAULT2=0x%02X%s%s%s",
-			f2,
-			(f2 & 0x04) ? " Right channel overcurrent fault (cycle-by-cycle)" : "",
-			(f2 & 0x02) ? " Left channel overcurrent fault (cycle-by-cycle)" : "",
-			(f2 & 0x01) ? " Over-temperature shutdown" : "");
-
-		ESP_LOGI(TAG_TAS, "WARNING=0x%02X%s%s%s%s%s%s",
-			warn,
-			(warn & 0x20) ? " Left channel overcurrent warning (cycle-by-cycle)" : "",
-			(warn & 0x10) ? " Right channel overcurrent warning (cycle-by-cycle)" : "",
-			(warn & 0x08) ? " Over-temperature warning level 4 (146°C)" : "",
-			(warn & 0x04) ? " Over-temperature warning level 3 (134°C)" : "",
-			(warn & 0x02) ? " Over-temperature warning level 2 (122°C)" : "",
-			(warn & 0x01) ? " Over-temperature warning level 1 (112°C)" : "");
-
 		if (f1 || f2 || warn) {
+			std::string detail;
+			auto add = [&](const char *s) {
+				if (!detail.empty()) detail += ", ";
+				detail += s;
+			};
+			// GLOBAL_FAULT1 flags
+			if (f1 & 0x80) add("OTP CRC error");
+			if (f1 & 0x40) add("BQ write error");
+			if (f1 & 0x20) add("EEPROM load error");
+			if (f1 & 0x04) add("Clock fault (latched)");
+			if (f1 & 0x02) add("PVDD over-voltage");
+			if (f1 & 0x01) add("PVDD under-voltage");
+			// GLOBAL_FAULT2 flags
+			if (f2 & 0x04) add("Right channel overcurrent fault (cycle-by-cycle)");
+			if (f2 & 0x02) add("Left channel overcurrent fault (cycle-by-cycle)");
+			if (f2 & 0x01) add("Over-temperature shutdown");
+			// WARNING flags
+			if (warn & 0x20) add("Left channel overcurrent warning (cycle-by-cycle)");
+			if (warn & 0x10) add("Right channel overcurrent warning (cycle-by-cycle)");
+			if (warn & 0x08) add("Over-temperature warning level 4 (146°C)");
+			if (warn & 0x04) add("Over-temperature warning level 3 (134°C)");
+			if (warn & 0x02) add("Over-temperature warning level 2 (122°C)");
+			if (warn & 0x01) add("Over-temperature warning level 1 (112°C)");
+			if (!detail.empty()) {
+				ESP_LOGW(TAG_TAS, "FAULTS: F1=0x%02X F2=0x%02X WARN=0x%02X: %s", f1, f2, warn, detail.c_str());
+			} else {
+				ESP_LOGW(TAG_TAS, "FAULTS: F1=0x%02X F2=0x%02X WARN=0x%02X", f1, f2, warn);
+			}
 			if (writeReg(TAS5825M_REG_FAULT_CLEAR, 0x80) == ESP_OK) {
 				ESP_LOGI(TAG_TAS, "Cleared fault and warning latches (FAULT_CLEAR=0x80)");
 			} else {
@@ -208,6 +226,8 @@ void TAS5825MSensor::poll() {
 			}
 		}
 	}
+
+	_poll_logged_once = true;
 }
 
 bool TAS5825MSensor::isInitialized() const { return _initialized; }
