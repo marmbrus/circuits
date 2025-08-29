@@ -76,8 +76,8 @@ bool TAS5825MSensor::init(i2c_master_bus_handle_t bus_handle) {
 	if (!chk(writeReg(TAS5825M_REG_DEVICE_CTRL2, TAS5825M_STATE_DEEP_SLEEP), "device ctrl2 deep sleep")) return false;
 	vTaskDelay(pdMS_TO_TICKS(5));
 
-	// I2S: 16-bit I2S format
-	if (!chk(writeReg(TAS5825M_REG_SAP_CTRL1, 0x00), "sap ctrl1")) return false;
+	// I2S: Left-Justified (MSB-justified), 16-bit.
+	if (!chk(writeReg(TAS5825M_REG_SAP_CTRL1, 0x30), "sap ctrl1")) return false;
 
 	// HiZ
 	if (!chk(writeReg(TAS5825M_REG_DEVICE_CTRL2, TAS5825M_STATE_HIZ), "device ctrl2 hiz")) return false;
