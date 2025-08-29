@@ -3,6 +3,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/i2c_master.h"
+#include "ConfigurationManager.h"
+#include "SpeakerConfig.h"
 
 static const char *TAG_TAS = "TAS5825M";
 
@@ -117,12 +119,12 @@ void TAS5825MSensor::poll() {
 	if (readReg(TAS5825M_REG_CLKDET_STATUS, clk) == ESP_OK) {
 		ESP_LOGI(TAG_TAS, "CLKDET_STATUS=0x%02X%s%s%s%s%s%s",
 				 clk,
-				 (clk & 0x01) ? " FS_ERR" : "",
-				 (clk & 0x02) ? " SCLK_INV" : "",
-				 (clk & 0x04) ? " SCLK_MISS" : "",
-				 (clk & 0x08) ? " PLL_UNLOCK" : "",
-				 (clk & 0x10) ? " PLL_OVR" : "",
-				 (clk & 0x20) ? " SCLK_OVR" : "");
+				 (clk & 0x01) ? " Sampling rate invalid (FS error)" : "",
+				 (clk & 0x02) ? " Serial clock ratio invalid" : "",
+				 (clk & 0x04) ? " Serial clock missing" : "",
+				 (clk & 0x08) ? " PLL locked" : " PLL unlocked",
+				 (clk & 0x10) ? " PLL overrate" : "",
+				 (clk & 0x20) ? " Serial clock over/under rate" : "");
 	}
 
 	if (readReg(TAS5825M_REG_FS_MON, fs_mon) == ESP_OK) {
@@ -136,22 +138,75 @@ void TAS5825MSensor::poll() {
 			case 0x00: fs_str = "FS_ERROR"; break;
 			default: break;
 		}
-		ESP_LOGI(TAG_TAS, "FS_MON=0x%02X (fs=%s)", fs_mon, fs_str);
+		ESP_LOGI(TAG_TAS, "FS_MON=0x%02X (sample_rate=%s)", fs_mon, fs_str);
 	}
 
 	if (readReg(TAS5825M_REG_BCK_MON, bck_mon) == ESP_OK && readReg(TAS5825M_REG_FS_MON, fs_mon) == ESP_OK) {
-		uint16_t bck_ratio = ((fs_mon & 0x30) << 4) | bck_mon;
-		ESP_LOGI(TAG_TAS, "BCK_MON=0x%02X (ratio=%u)", bck_mon, (unsigned)bck_ratio);
+		uint16_t bclk_per_lrclk_ratio = ((fs_mon & 0x30) << 4) | bck_mon;
+		ESP_LOGI(TAG_TAS, "BCK_MON=0x%02X (bclk_per_lrclk_ratio=%u)", bck_mon, (unsigned)bclk_per_lrclk_ratio);
 	}
 
 	if (readReg(TAS5825M_REG_POWER_STATE, pwr) == ESP_OK) {
-		ESP_LOGI(TAG_TAS, "POWER_STATE=0x%02X", pwr);
+		const char *state_str = "Reserved";
+		switch (pwr & 0xFF) {
+			case 0x00: state_str = "Deep sleep"; break;
+			case 0x01: state_str = "Sleep"; break;
+			case 0x02: state_str = "HIZ"; break;
+			case 0x03: state_str = "Play"; break;
+			default: state_str = "Reserved"; break;
+		}
+		ESP_LOGI(TAG_TAS, "POWER_STATE=0x%02X (%s)", pwr, state_str);
 	}
 
 	if (readReg(TAS5825M_REG_GLOBAL_FAULT1, f1) == ESP_OK &&
 		readReg(TAS5825M_REG_GLOBAL_FAULT2, f2) == ESP_OK &&
 		readReg(TAS5825M_REG_WARNING, warn) == ESP_OK) {
-		ESP_LOGI(TAG_TAS, "FAULT1=0x%02X FAULT2=0x%02X WARN=0x%02X", f1, f2, warn);
+		ESP_LOGI(TAG_TAS, "GLOBAL_FAULT1=0x%02X%s%s%s%s%s%s",
+			f1,
+			(f1 & 0x80) ? " OTP CRC error" : "",
+			(f1 & 0x40) ? " BQ write error" : "",
+			(f1 & 0x20) ? " EEPROM load error" : "",
+			(f1 & 0x04) ? " Clock fault (latched)" : "",
+			(f1 & 0x02) ? " PVDD over-voltage" : "",
+			(f1 & 0x01) ? " PVDD under-voltage" : "");
+
+		ESP_LOGI(TAG_TAS, "GLOBAL_FAULT2=0x%02X%s%s%s",
+			f2,
+			(f2 & 0x04) ? " Right channel overcurrent fault (cycle-by-cycle)" : "",
+			(f2 & 0x02) ? " Left channel overcurrent fault (cycle-by-cycle)" : "",
+			(f2 & 0x01) ? " Over-temperature shutdown" : "");
+
+		ESP_LOGI(TAG_TAS, "WARNING=0x%02X%s%s%s%s%s%s",
+			warn,
+			(warn & 0x20) ? " Left channel overcurrent warning (cycle-by-cycle)" : "",
+			(warn & 0x10) ? " Right channel overcurrent warning (cycle-by-cycle)" : "",
+			(warn & 0x08) ? " Over-temperature warning level 4 (146°C)" : "",
+			(warn & 0x04) ? " Over-temperature warning level 3 (134°C)" : "",
+			(warn & 0x02) ? " Over-temperature warning level 2 (122°C)" : "",
+			(warn & 0x01) ? " Over-temperature warning level 1 (112°C)" : "");
+
+		if (f1 || f2 || warn) {
+			if (writeReg(TAS5825M_REG_FAULT_CLEAR, 0x80) == ESP_OK) {
+				ESP_LOGI(TAG_TAS, "Cleared fault and warning latches (FAULT_CLEAR=0x80)");
+			} else {
+				ESP_LOGW(TAG_TAS, "Failed to clear fault latches");
+			}
+		}
+	}
+
+	// Apply volume configuration if present (0-255 scale expected)
+	{
+		auto &sp = config::GetConfigurationManager().speaker();
+		if (sp.has_volume()) {
+			int v = sp.volume();
+			if (v < 0) v = 0;
+			if (v > 255) v = 255;
+			if (v != _last_volume) {
+				_last_volume = v;
+				writeReg(TAS5825M_REG_DIG_VOL, (uint8_t)v);
+				ESP_LOGI(TAG_TAS, "Set volume 0x%02X", (unsigned)v);
+			}
+		}
 	}
 }
 

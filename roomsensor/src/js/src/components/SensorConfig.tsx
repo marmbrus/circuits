@@ -7,6 +7,7 @@ import ConfigEditor, { type ConfigField, type ControlSpec } from './ConfigEditor
 import LEDConfigSection from './LEDConfigSection'
 import A2DConfigSection from './A2DConfigSection'
 import IOConfigSection from './IOConfigSection'
+import SpeakerConfig from './SpeakerConfig'
 
 
 type Props = {
@@ -97,6 +98,19 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
           </Accordion>
         </Fragment>
       ) : null}
+
+      { (config as any).speaker ? (
+        <Fragment>
+          <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+              <Typography variant="subtitle2">Speaker</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <SpeakerConfig config={config as any} onEdit={openEditor} publish={publish} />
+            </AccordionDetails>
+          </Accordion>
+        </Fragment>
+      ) : null }
 
       <ConfigEditor
         open={editorOpen}

@@ -27,6 +27,14 @@ public:
 	uint32_t sclk() const { return sclk_gpio_; }
 	uint32_t lrclk() const { return lrclk_gpio_; }
 
+	// Dynamic playback controls (non-persistent)
+	bool has_sine() const { return sine_set_; }
+	int32_t sine_hz() const { return sine_hz_; }
+	bool has_url() const { return url_set_; }
+	const std::string& url() const { return url_; }
+	bool has_volume() const { return volume_set_; }
+	int32_t volume() const { return volume_; }
+
 private:
 	std::vector<ConfigurationValueDescriptor> descriptors_;
 	uint32_t sdin_gpio_ = 0;
@@ -35,6 +43,11 @@ private:
 	bool sdin_set_ = false;
 	bool sclk_set_ = false;
 	bool lrclk_set_ = false;
+
+	// Non-persistent runtime controls
+	int32_t sine_hz_ = 0; bool sine_set_ = false;
+	std::string url_; bool url_set_ = false;
+	int32_t volume_ = -1; bool volume_set_ = false;
 };
 
 } // namespace config

@@ -83,4 +83,5 @@ private:
 
 	uint8_t _i2c_addr;
 	bool _initialized{false};
+	int32_t _last_volume{-1};
 };
