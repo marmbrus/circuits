@@ -1,8 +1,9 @@
-import { Card, CardContent, CardHeader, Chip, CircularProgress, Dialog, DialogContent, DialogTitle, IconButton, Link, Stack, Tooltip, Typography, Accordion, AccordionSummary, AccordionDetails, Box, Collapse, FormControl, InputLabel, MenuItem, Select } from '@mui/material'
+import { Card, CardContent, CardHeader, Chip, CircularProgress, Dialog, DialogContent, DialogTitle, IconButton, Link, Stack, Tooltip, Typography, Accordion, AccordionSummary, AccordionDetails, Box, Collapse, FormControl, InputLabel, MenuItem, Select, Button } from '@mui/material'
 import AnsiText from './AnsiText'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import ClearIcon from '@mui/icons-material/Clear'
 import { useEffect, useMemo, useState } from 'react'
 import type { SensorState } from '../types'
 import { useSensors } from '../mqttStore'
@@ -12,11 +13,15 @@ import FriendlyDuration, { formatDuration } from './FriendlyDuration'
 
 type Props = {
 	sensor: SensorState
+	forceExpanded?: boolean
+	onExpandedChange?: (expanded: boolean) => void
+	forceLogsExpanded?: boolean
+	onLogsExpandedChange?: (expanded: boolean) => void
 }
 
-export default function Sensor({ sensor }: Props) {
+export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceLogsExpanded, onLogsExpandedChange }: Props) {
 	const cfg = sensor.config
-	const { publishConfig, deleteRetainedForSensor } = useSensors()
+	const { publishConfig, deleteRetainedForSensor, clearSensorLogs } = useSensors()
 	const id = cfg?.tags.id ?? sensor.mac
 	const macShort = sensor.mac.slice(-4)
 	const ip = sensor.ip
@@ -26,8 +31,10 @@ export default function Sensor({ sensor }: Props) {
 	const [i2cOpen, setI2cOpen] = useState<{ open: boolean; device?: any } >({ open: false })
 	const [metricOpen, setMetricOpen] = useState<{ open: boolean; data?: any }>({ open: false })
 	const [bootOpen, setBootOpen] = useState(false)
-	const [expanded, setExpanded] = useState(false)
-  const [logsExpanded, setLogsExpanded] = useState(false)
+	const [internalExpanded, setInternalExpanded] = useState(false)
+	const expanded = forceExpanded ?? internalExpanded
+  const [internalLogsExpanded, setInternalLogsExpanded] = useState(false)
+	const logsExpanded = forceLogsExpanded ?? internalLogsExpanded
 
 	const [nowMs, setNowMs] = useState<number>(Date.now())
 	useEffect(() => {
@@ -112,7 +119,13 @@ export default function Sensor({ sensor }: Props) {
 						</Box>
 						<IconButton
 							size="small"
-							onClick={() => setExpanded((v) => !v)}
+							onClick={() => {
+								const newExpanded = !expanded
+								if (forceExpanded === undefined) {
+									setInternalExpanded(newExpanded)
+								}
+								onExpandedChange?.(newExpanded)
+							}}
 							aria-label={expanded ? 'collapse' : 'expand'}
 							sx={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: (theme) => (theme as any).transitions?.create?.('transform') || 'transform 150ms ease' }}
 						>
@@ -220,7 +233,13 @@ export default function Sensor({ sensor }: Props) {
 							</Stack>
 						</AccordionDetails>
 					</Accordion>
-          <Accordion disableGutters elevation={0} expanded={logsExpanded} onChange={() => setLogsExpanded(v => !v)} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
+          <Accordion disableGutters elevation={0} expanded={logsExpanded} onChange={(_, isExpanded) => {
+							const newLogsExpanded = isExpanded
+							if (forceLogsExpanded === undefined) {
+								setInternalLogsExpanded(newLogsExpanded)
+							}
+							onLogsExpandedChange?.(newLogsExpanded)
+						}} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography variant="subtitle2">Logs</Typography>
@@ -273,6 +292,17 @@ export default function Sensor({ sensor }: Props) {
                     </FormControl>
                   )
                 })()}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  startIcon={<ClearIcon />}
+                  onClick={() => clearSensorLogs(sensor.mac)}
+                  disabled={!sensor.logs || sensor.logs.length === 0}
+                  sx={{ minWidth: 'auto' }}
+                >
+                  Clear
+                </Button>
               </Stack>
               <Box sx={{ maxHeight: 240, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1, p: 1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace', fontSize: 12 }}>
                 {(sensor.logs || []).slice(-500).map((entry, idx) => (

@@ -8,6 +8,7 @@ export type UseSensorsResult = {
   lastError?: string
   publishConfig: (mac: string, moduleName: string, configName: string, value: string | number | boolean) => void
   deleteRetainedForSensor: (mac: string) => void
+  clearSensorLogs: (mac: string) => void
 }
 
 // Development-only fallback endpoints; in production we fetch from the device
@@ -79,9 +80,7 @@ function getDebugLevel(): number {
 class MqttManager {
   private client: MqttClient | null = null
   private connecting = false
-  private attemptIndex = 0
-  private probeTimeout: number | undefined
-  private endpoints: string[] = []
+  private brokerUrl: string | null = null
   private initStarted = false
 
   public sensors: SensorsMap = new Map()
@@ -122,8 +121,8 @@ class MqttManager {
 
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener)
-    // Initialize endpoints and then ensure connection is started
-    this.initializeEndpointsIfNeeded()
+    // Initialize broker URL and start connection
+    this.initializeBrokerIfNeeded()
     // Notify initial state
     listener()
     return () => this.listeners.delete(listener)
@@ -156,29 +155,16 @@ class MqttManager {
   }
 
   private connectIfNeeded() {
-    if (this.client || this.connecting) return
-    if (this.endpoints.length === 0) return
+    if (this.client || this.connecting || !this.brokerUrl) return
+    
     this.connecting = true
-    this.attemptIndex = 0
     this.setStatus('connecting')
-    this.tryConnectNext()
-  }
+    this.dlog('Connecting to', this.brokerUrl)
 
-  private tryConnectNext() {
-    if (this.attemptIndex >= this.endpoints.length) {
-      this.connecting = false
-      this.setStatus('error')
-      this.setError('All websocket endpoints failed')
-      this.dlog('All websocket endpoints failed')
-      return
-    }
-    const url = this.endpoints[this.attemptIndex++]
-    this.dlog('Connecting to', url)
-
-    const c = mqtt.connect(url, {
+    const c = mqtt.connect(this.brokerUrl, {
       clientId: `roomsensor-ui-${MqttManager.randomId}`,
       clean: true,
-      reconnectPeriod: 0,
+      reconnectPeriod: 5000, // Enable automatic reconnection every 5 seconds
       protocolVersion: 4,
     })
     this.client = c
@@ -186,6 +172,7 @@ class MqttManager {
     c.on('connect', (packet) => {
       this.connecting = false
       this.setStatus('connected')
+      this.setError(undefined) // Clear any previous errors
       this.dlog('Connected', packet)
       c.subscribe('sensor/#', (err) => {
         if (err) {
@@ -223,54 +210,48 @@ class MqttManager {
       }
     })
 
-    c.on('reconnect', () => { this.setStatus('reconnecting'); this.dlog('Reconnect...') })
-    c.on('close', () => { this.setStatus('closed'); this.dlog('Closed') })
-    c.on('error', (err) => { this.setError(err.message); this.dlog('Error', err.message) })
+    c.on('reconnect', () => { 
+      this.setStatus('reconnecting') 
+      this.dlog('Reconnecting...') 
+    })
+    
+    c.on('close', () => { 
+      this.setStatus('closed')
+      this.dlog('Connection closed')
+    })
+    
+    c.on('error', (err) => { 
+      this.setError(err.message)
+      this.dlog('Connection error:', err.message)
+    })
 
     // Low-level packet tracing
     c.on('packetsend', (pkt) => this.dlog('Packet send', (pkt as any)?.cmd))
     c.on('packetreceive', (pkt) => { if ((pkt as any)?.cmd !== 'publish') this.dlog('Packet recv', (pkt as any)?.cmd) })
-
-    // Probe timeout to advance endpoints if initial connect fails silently
-    // @ts-expect-error DOM lib typing
-    this.probeTimeout = setTimeout(() => {
-      if (this.status !== 'connected' && this.client === c) {
-        this.dlog('Connect timeout; ending and trying next')
-        try { c.end(true) } catch { /* noop */ }
-        this.client = null
-        this.setStatus('connecting')
-        this.tryConnectNext()
-      }
-    }, 2000)
-
-    c.on('connect', () => { if (this.probeTimeout) clearTimeout(this.probeTimeout) })
-    c.on('close', () => { if (this.status === 'connected' && this.probeTimeout) clearTimeout(this.probeTimeout) })
   }
 
-  private initializeEndpointsIfNeeded() {
+  private initializeBrokerIfNeeded() {
     if (this.initStarted) return
     this.initStarted = true
     const qpOverride = getWsOverrideFromQuery()
+    
     // Statically gate dev path so the production fetch code is not even present in dev builds
     /* eslint-disable no-constant-condition */
     if (import.meta.env.DEV) {
-      const eps: string[] = []
-      if (qpOverride) eps.push(qpOverride)
-      else eps.push(...DEV_WS_ENDPOINTS)
-      this.endpoints = eps
-      this.dlog('DEV mode endpoints:', this.endpoints)
+      this.brokerUrl = qpOverride || DEV_WS_ENDPOINTS[0]
+      this.dlog('DEV mode broker URL:', this.brokerUrl)
       this.connectIfNeeded()
       return
     }
+    
     // Production: fetch from device HTTP server
     this.setStatus('connecting')
     ;(async () => {
       try {
         // If override provided, use it directly in prod as well
         if (qpOverride) {
-          const ws = qpOverride
-          this.endpoints = [ws]
-          this.dlog('Using override endpoint:', this.endpoints)
+          this.brokerUrl = qpOverride
+          this.dlog('Using override broker URL:', this.brokerUrl)
           this.connectIfNeeded()
           return
         }
@@ -280,8 +261,8 @@ class MqttManager {
         const broker = String(obj?.mqtt_broker || '')
         const ws = deriveWsUrlFromBrokerUri(broker)
         if (!ws) throw new Error('invalid mqtt_broker in mqttconfig')
-        this.endpoints = [ws]
-        this.dlog('Fetched endpoints:', this.endpoints)
+        this.brokerUrl = ws
+        this.dlog('Fetched broker URL:', this.brokerUrl)
         this.connectIfNeeded()
       } catch (e: any) {
         this.setError(`mqttconfig fetch failed: ${e?.message || e}`)
@@ -504,6 +485,15 @@ class MqttManager {
     this.retainedTopicsByMac.delete(key)
   }
 
+  clearSensorLogs = (mac: string) => {
+    const sensor = this.sensors.get(mac.toLowerCase())
+    if (sensor) {
+      sensor.logs = []
+      this.notify() // Trigger re-render to update UI
+      this.dlog('Cleared logs for sensor', mac)
+    }
+  }
+
   private static randomId = Math.random().toString(16).slice(2)
 }
 
@@ -530,6 +520,7 @@ export function useSensors(): UseSensorsResult {
     lastError,
     publishConfig: manager.publishConfig,
     deleteRetainedForSensor: manager.deleteRetainedForSensor,
+    clearSensorLogs: manager.clearSensorLogs,
   }
 }
 
