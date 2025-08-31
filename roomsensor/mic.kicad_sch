@@ -1,12 +1,14 @@
 (kicad_sch
-	(version 20231120)
+	(version 20250114)
 	(generator "eeschema")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(uuid "83c725e7-5617-43da-92c3-6fb03d99f019")
 	(paper "A4")
 	(lib_symbols
 		(symbol "Device:C"
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
 				(offset 0.254)
 			)
@@ -79,7 +81,7 @@
 			(symbol "C_0_1"
 				(polyline
 					(pts
-						(xy -2.032 -0.762) (xy 2.032 -0.762)
+						(xy -2.032 0.762) (xy 2.032 0.762)
 					)
 					(stroke
 						(width 0.508)
@@ -91,7 +93,7 @@
 				)
 				(polyline
 					(pts
-						(xy -2.032 0.762) (xy 2.032 0.762)
+						(xy -2.032 -0.762) (xy 2.032 -0.762)
 					)
 					(stroke
 						(width 0.508)
@@ -140,6 +142,7 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "easyeda2kicad:ICS-43434_C5656610"
 			(exclude_from_sim no)
@@ -210,24 +213,6 @@
 					)
 				)
 				(pin unspecified line
-					(at 10.16 0 180)
-					(length 2.54)
-					(name "WS"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
 					(at -10.16 0 0)
 					(length 2.54)
 					(name "LR"
@@ -238,6 +223,24 @@
 						)
 					)
 					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 0 10.16 270)
+					(length 2.54)
+					(name "VDD"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -282,16 +285,16 @@
 					)
 				)
 				(pin unspecified line
-					(at 0 10.16 270)
+					(at 10.16 0 180)
 					(length 2.54)
-					(name "VDD"
+					(name "WS"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "5"
+					(number "1"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -318,12 +321,17 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "power:GND"
 			(power)
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
-				(offset 0) hide)
+				(offset 0)
+				(hide yes)
+			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -414,6 +422,7 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 	)
 	(junction
@@ -613,7 +622,6 @@
 	)
 	(label "I2S.WS"
 		(at 60.96 46.99 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -624,7 +632,6 @@
 	)
 	(label "I2S.SD"
 		(at 60.96 50.8 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -635,7 +642,6 @@
 	)
 	(label "I2S.SCK"
 		(at 60.96 43.18 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -647,7 +653,6 @@
 	(hierarchical_label "I2S{SCK,WS,SD}"
 		(shape input)
 		(at 73.66 40.64 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -659,7 +664,6 @@
 	(hierarchical_label "3v3"
 		(shape input)
 		(at 25.4 33.02 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -678,7 +682,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0d435ed2-996d-489a-9897-0135b6f25519")
-		(property "Reference" "C1001"
+		(property "Reference" "C21"
 			(at 34.29 35.5599 0)
 			(effects
 				(font
@@ -750,7 +754,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/c4514872-6898-4930-85b8-95c1964554a5"
-					(reference "C1001")
+					(reference "C21")
 					(unit 1)
 				)
 			)
@@ -765,7 +769,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "4b161d8a-7677-48d9-ab84-cb1f58f20e66")
-		(property "Reference" "U1001"
+		(property "Reference" "U7"
 			(at 51.054 25.654 0)
 			(effects
 				(font
@@ -838,7 +842,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/c4514872-6898-4930-85b8-95c1964554a5"
-					(reference "U1001")
+					(reference "U7")
 					(unit 1)
 				)
 			)
@@ -854,7 +858,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a9748f01-b984-4328-8d6e-912365c0e972")
-		(property "Reference" "#PWR01001"
+		(property "Reference" "#PWR014"
 			(at 50.8 68.58 0)
 			(effects
 				(font
@@ -904,7 +908,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/c4514872-6898-4930-85b8-95c1964554a5"
-					(reference "#PWR01001")
+					(reference "#PWR014")
 					(unit 1)
 				)
 			)

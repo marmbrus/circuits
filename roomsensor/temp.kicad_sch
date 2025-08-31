@@ -1,12 +1,14 @@
 (kicad_sch
-	(version 20231120)
+	(version 20250114)
 	(generator "eeschema")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(uuid "c70702b6-57e6-4b02-ab96-845834a6beba")
 	(paper "A4")
 	(lib_symbols
 		(symbol "Device:R"
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
 				(offset 0)
 			)
@@ -125,6 +127,7 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "easyeda2kicad:SM03B-SRSS-TB(LF)(SN)(P)"
 			(exclude_from_sim no)
@@ -260,24 +263,6 @@
 					)
 				)
 				(pin unspecified line
-					(at 5.08 -7.62 90)
-					(length 2.54)
-					(name "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin unspecified line
 					(at 5.08 7.62 270)
 					(length 2.54)
 					(name "5"
@@ -295,13 +280,36 @@
 						)
 					)
 				)
+				(pin unspecified line
+					(at 5.08 -7.62 90)
+					(length 2.54)
+					(name "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "power:GND"
 			(power)
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
-				(offset 0) hide)
+				(offset 0)
+				(hide yes)
+			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -392,6 +400,7 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 	)
 	(junction
@@ -489,7 +498,6 @@
 	(hierarchical_label "3v3"
 		(shape input)
 		(at 38.1 25.4 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -501,7 +509,6 @@
 	(hierarchical_label "temp"
 		(shape input)
 		(at 38.1 36.83 180)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -520,7 +527,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "22e5e8d5-ba22-467c-b568-89f985cd2372")
-		(property "Reference" "R1301"
+		(property "Reference" "R14"
 			(at 45.72 29.2099 0)
 			(effects
 				(font
@@ -574,7 +581,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3b00346c-fbb8-429e-b3cf-6f4ae8b7689d"
-					(reference "R1301")
+					(reference "R14")
 					(unit 1)
 				)
 			)
@@ -590,7 +597,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "bb964168-cdf9-4cb5-89aa-cabffb12ae71")
-		(property "Reference" "U1301"
+		(property "Reference" "U9"
 			(at 77.47 24.1299 0)
 			(effects
 				(font
@@ -662,7 +669,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3b00346c-fbb8-429e-b3cf-6f4ae8b7689d"
-					(reference "U1301")
+					(reference "U9")
 					(unit 1)
 				)
 			)
@@ -678,7 +685,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "f3243614-50b2-479a-9449-e089d78debad")
-		(property "Reference" "#PWR01301"
+		(property "Reference" "#PWR017"
 			(at 57.15 22.86 0)
 			(effects
 				(font
@@ -729,7 +736,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3b00346c-fbb8-429e-b3cf-6f4ae8b7689d"
-					(reference "#PWR01301")
+					(reference "#PWR017")
 					(unit 1)
 				)
 			)

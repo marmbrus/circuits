@@ -1,12 +1,14 @@
 (kicad_sch
-	(version 20231120)
+	(version 20250114)
 	(generator "eeschema")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(uuid "48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa")
 	(paper "A4")
 	(lib_symbols
 		(symbol "Device:C_Polarized"
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
 				(offset 0.254)
 			)
@@ -162,11 +164,16 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "Mechanical:MountingHole_Pad"
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
-				(offset 1.016) hide)
+				(offset 1.016)
+				(hide yes)
+			)
 			(exclude_from_sim yes)
 			(in_bom no)
 			(on_board yes)
@@ -264,11 +271,16 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "easyeda2kicad:LabeledTestPoint"
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
-				(offset 0.762) hide)
+				(offset 0.762)
+				(hide yes)
+			)
 			(exclude_from_sim no)
 			(in_bom no)
 			(on_board yes)
@@ -376,12 +388,17 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "power:+5V"
 			(power)
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
-				(offset 0) hide)
+				(offset 0)
+				(hide yes)
+			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -453,7 +470,7 @@
 				)
 				(polyline
 					(pts
-						(xy 0 0) (xy 0 2.54)
+						(xy 0 2.54) (xy 0.762 1.27)
 					)
 					(stroke
 						(width 0)
@@ -465,7 +482,7 @@
 				)
 				(polyline
 					(pts
-						(xy 0 2.54) (xy 0.762 1.27)
+						(xy 0 0) (xy 0 2.54)
 					)
 					(stroke
 						(width 0)
@@ -496,12 +513,17 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "power:GND"
 			(power)
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
-				(offset 0) hide)
+				(offset 0)
+				(hide yes)
+			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -592,6 +614,7 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 	)
 	(junction
@@ -619,16 +642,16 @@
 		(uuid "1e888867-ca88-49c3-86ba-0265a9cef0de")
 	)
 	(junction
-		(at 66.04 99.06)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "21ccb2f4-328e-48e9-bf26-134e086eb8bb")
-	)
-	(junction
 		(at 138.43 85.09)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "2898b649-5470-42cd-a611-c6f69dea14f1")
+	)
+	(junction
+		(at 55.88 91.44)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "3a32aa77-cd8a-421e-9c66-c3f58c13c6e9")
 	)
 	(junction
 		(at 129.54 107.95)
@@ -727,18 +750,6 @@
 		(uuid "c55919a3-6ac9-450f-aa81-2dfae2eb9884")
 	)
 	(junction
-		(at 66.04 91.44)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "c6b29b8a-4b34-480f-b3c1-fc32621d7b9d")
-	)
-	(junction
-		(at 53.34 91.44)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "ec49eedb-5029-4d87-9bb9-96b8818375b4")
-	)
-	(junction
 		(at 48.26 43.18)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -770,7 +781,7 @@
 	)
 	(wire
 		(pts
-			(xy 66.04 99.06) (xy 66.04 104.14)
+			(xy 55.88 99.06) (xy 55.88 101.6)
 		)
 		(stroke
 			(width 0)
@@ -857,16 +868,6 @@
 			(type default)
 		)
 		(uuid "183a2012-58ef-43b3-b8b5-997630c325ae")
-	)
-	(wire
-		(pts
-			(xy 104.14 91.44) (xy 66.04 91.44)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1d13a5a5-efa8-49b2-a85b-ebf0ac98af71")
 	)
 	(bus
 		(pts
@@ -970,7 +971,7 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 91.44) (xy 48.26 91.44)
+			(xy 48.26 91.44) (xy 55.88 91.44)
 		)
 		(stroke
 			(width 0)
@@ -1050,13 +1051,13 @@
 	)
 	(wire
 		(pts
-			(xy 66.04 91.44) (xy 53.34 91.44)
+			(xy 55.88 91.44) (xy 104.14 91.44)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "63cad4fd-bb45-4a14-b5cb-331092343a3a")
+		(uuid "6663d1b3-140b-4d15-b63d-6276a6119c4f")
 	)
 	(wire
 		(pts
@@ -1500,16 +1501,6 @@
 	)
 	(wire
 		(pts
-			(xy 53.34 99.06) (xy 66.04 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "eebae57b-04bb-4aeb-aa1b-c4c35c02027a")
-	)
-	(wire
-		(pts
 			(xy 147.32 107.95) (xy 129.54 107.95)
 		)
 		(stroke
@@ -1568,7 +1559,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0325a0b8-2210-4cdc-86a1-e76bf2e14386")
-		(property "Reference" "#PWR0101"
+		(property "Reference" "#PWR03"
 			(at 144.78 195.58 0)
 			(effects
 				(font
@@ -1618,7 +1609,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "#PWR0101")
+					(reference "#PWR03")
 					(unit 1)
 				)
 			)
@@ -1634,7 +1625,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "0f57cabd-d884-42b7-816e-143fba90b086")
-		(property "Reference" "H103"
+		(property "Reference" "H3"
 			(at 134.62 184.1499 0)
 			(effects
 				(font
@@ -1685,7 +1676,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "H103")
+					(reference "H3")
 					(unit 1)
 				)
 			)
@@ -1701,7 +1692,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "5972f5b5-0b60-4f89-90b9-adfc05d12f2f")
-		(property "Reference" "H104"
+		(property "Reference" "H4"
 			(at 157.48 184.1499 0)
 			(effects
 				(font
@@ -1752,7 +1743,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "H104")
+					(reference "H4")
 					(unit 1)
 				)
 			)
@@ -1760,16 +1751,16 @@
 	)
 	(symbol
 		(lib_id "Device:C_Polarized")
-		(at 53.34 95.25 0)
+		(at 55.88 95.25 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "71bd85a9-84aa-4300-a583-0ef5b869c377")
-		(property "Reference" "C101"
-			(at 57.15 93.0909 0)
+		(uuid "5b7b374c-391b-439b-ac69-3ca350d4feef")
+		(property "Reference" "C2"
+			(at 59.69 93.0909 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1777,8 +1768,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "22uF"
-			(at 57.15 95.6309 0)
+		(property "Value" "47uF"
+			(at 59.69 95.6309 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1786,8 +1777,8 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_Elec_5x5.8"
-			(at 54.3052 99.06 0)
+		(property "Footprint" "Capacitor_SMD:CP_Elec_6.3x5.9"
+			(at 56.8452 99.06 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1795,8 +1786,8 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "~"
-			(at 53.34 95.25 0)
+		(property "Datasheet" "https://lcsc.com/product-detail/Solid-Polymer-Electrolytic-Capacitor_PANASONIC-35SVPK47M_C264034.html"
+			(at 55.88 95.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1805,7 +1796,7 @@
 			)
 		)
 		(property "Description" "Polarized capacitor"
-			(at 53.34 95.25 0)
+			(at 55.88 95.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1813,17 +1804,8 @@
 				(hide yes)
 			)
 		)
-		(property "Label" ""
-			(at 53.34 95.25 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C336246"
-			(at 53.34 95.25 0)
+		(property "LCSC Part" "C264034"
+			(at 55.88 95.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1832,103 +1814,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "ef70272d-54e6-404c-8b89-a9e7697e66f9")
+			(uuid "46841c82-3714-4c12-ac90-b00e68affcea")
 		)
 		(pin "2"
-			(uuid "c3e9731c-b6a1-4d93-95f6-8511f904f060")
+			(uuid "1ba2e311-8fb2-49fb-8df5-794248d203af")
 		)
 		(instances
-			(project "roomsensor"
+			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "C101")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C_Polarized")
-		(at 66.04 95.25 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c089b0dc-4700-40d7-95a7-b0b6f155f016")
-		(property "Reference" "C102"
-			(at 69.85 93.0909 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "22uF"
-			(at 69.85 95.6309 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_Elec_5x5.8"
-			(at 67.0052 99.06 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 66.04 95.25 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Polarized capacitor"
-			(at 66.04 95.25 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Label" ""
-			(at 66.04 95.25 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "LCSC Part" "C336246"
-			(at 66.04 95.25 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "2d0f43a9-2142-4acf-88f6-4fb39288de2a")
-		)
-		(pin "2"
-			(uuid "8a507dbb-61c2-4288-ab44-0dcf83708ead")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "C102")
+					(reference "C2")
 					(unit 1)
 				)
 			)
@@ -1944,7 +1838,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c628f6d8-69dd-40ea-8d77-fd01fc5df618")
-		(property "Reference" "H102"
+		(property "Reference" "H2"
 			(at 111.76 184.1499 0)
 			(effects
 				(font
@@ -1995,7 +1889,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "H102")
+					(reference "H2")
 					(unit 1)
 				)
 			)
@@ -2011,7 +1905,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d368db2e-08ee-4c5f-bf9c-046c4714cb8b")
-		(property "Reference" "#PWR0102"
+		(property "Reference" "#PWR01"
 			(at 50.8 46.99 0)
 			(effects
 				(font
@@ -2061,7 +1955,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "#PWR0102")
+					(reference "#PWR01")
 					(unit 1)
 				)
 			)
@@ -2077,7 +1971,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "ea9e10bf-6ce1-4d32-956a-32c59d7f0f1d")
-		(property "Reference" "TP102"
+		(property "Reference" "TP2"
 			(at 86.36 36.322 0)
 			(effects
 				(font
@@ -2137,7 +2031,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP102")
+					(reference "TP2")
 					(unit 1)
 				)
 			)
@@ -2153,7 +2047,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "ecc88111-7ad8-4416-9178-9ba3c59b0af2")
-		(property "Reference" "H101"
+		(property "Reference" "H1"
 			(at 88.9 184.1499 0)
 			(effects
 				(font
@@ -2204,7 +2098,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "H101")
+					(reference "H1")
 					(unit 1)
 				)
 			)
@@ -2220,7 +2114,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "eee0d4fa-d122-40b0-87a5-1790f73297df")
-		(property "Reference" "TP101"
+		(property "Reference" "TP1"
 			(at 54.61 36.322 0)
 			(effects
 				(font
@@ -2275,12 +2169,12 @@
 			)
 		)
 		(pin "1"
-			(uuid "adaac989-3a6a-4327-bfd8-9f5dbdbc6bd8")
+			(uuid "adaac989-3a6a-4327-bfd8-9f5dbdbc6bd9")
 		)
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP101")
+					(reference "TP1")
 					(unit 1)
 				)
 			)
@@ -2288,7 +2182,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 66.04 104.14 0)
+		(at 55.88 101.6 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -2296,8 +2190,8 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "fc8322a3-ac07-4661-ad6e-283323705244")
-		(property "Reference" "#PWR0103"
-			(at 66.04 110.49 0)
+		(property "Reference" "#PWR02"
+			(at 55.88 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2306,7 +2200,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 66.04 109.22 0)
+			(at 55.88 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2314,7 +2208,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 66.04 104.14 0)
+			(at 55.88 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2323,7 +2217,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 66.04 104.14 0)
+			(at 55.88 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2332,7 +2226,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 66.04 104.14 0)
+			(at 55.88 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -2346,7 +2240,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "#PWR0103")
+					(reference "#PWR02")
 					(unit 1)
 				)
 			)
@@ -2355,6 +2249,10 @@
 	(sheet
 		(at 147.32 144.78)
 		(size 16.51 18.415)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2384,33 +2282,33 @@
 		)
 		(pin "I2C{SDA,SCL}" input
 			(at 147.32 152.4 180)
+			(uuid "477285a7-edf1-4760-8a7a-c2f7698aa12b")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "477285a7-edf1-4760-8a7a-c2f7698aa12b")
 		)
 		(pin "3v3" input
 			(at 156.21 144.78 90)
+			(uuid "d6f65256-d51d-48cd-8597-812336a85150")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "d6f65256-d51d-48cd-8597-812336a85150")
 		)
 		(pin "INT" input
 			(at 147.32 158.75 180)
+			(uuid "2614e23b-daa6-4a22-933a-96c7e40d5b1c")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "2614e23b-daa6-4a22-933a-96c7e40d5b1c")
 		)
 		(instances
 			(project "roomsensor"
@@ -2423,6 +2321,10 @@
 	(sheet
 		(at 180.34 72.39)
 		(size 21.59 16.51)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2452,23 +2354,23 @@
 		)
 		(pin "I2C{SDA,SCL}" input
 			(at 180.34 85.09 180)
+			(uuid "bcb04899-2a4c-466c-8429-7a74e7a16c75")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "bcb04899-2a4c-466c-8429-7a74e7a16c75")
 		)
 		(pin "3v3" input
 			(at 190.5 72.39 90)
+			(uuid "a872c1bc-4585-4520-b6c1-04b94a99d7ff")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "a872c1bc-4585-4520-b6c1-04b94a99d7ff")
 		)
 		(instances
 			(project "roomsensor"
@@ -2481,6 +2383,10 @@
 	(sheet
 		(at 63.5 35.56)
 		(size 20.32 13.97)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2510,23 +2416,23 @@
 		)
 		(pin "VIN" input
 			(at 63.5 43.18 180)
+			(uuid "e286fc44-6919-42bf-961a-5bba36d31366")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "e286fc44-6919-42bf-961a-5bba36d31366")
 		)
 		(pin "VOUT" input
 			(at 83.82 43.18 0)
+			(uuid "c55a4b5b-1871-4e1a-8e72-89ac8783e082")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "c55a4b5b-1871-4e1a-8e72-89ac8783e082")
 		)
 		(instances
 			(project "roomsensor"
@@ -2539,6 +2445,10 @@
 	(sheet
 		(at 181.61 27.94)
 		(size 22.86 15.24)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2568,23 +2478,23 @@
 		)
 		(pin "temp" input
 			(at 181.61 34.29 180)
+			(uuid "980ad7d2-70e3-47f4-b4de-92941a50fe2c")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "980ad7d2-70e3-47f4-b4de-92941a50fe2c")
 		)
 		(pin "3v3" input
 			(at 194.31 27.94 90)
+			(uuid "4086f207-d409-413b-95c5-91dd8c4d0384")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "4086f207-d409-413b-95c5-91dd8c4d0384")
 		)
 		(instances
 			(project "roomsensor"
@@ -2597,6 +2507,10 @@
 	(sheet
 		(at 147.32 119.38)
 		(size 16.51 17.145)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2626,33 +2540,33 @@
 		)
 		(pin "VCC" input
 			(at 147.32 130.81 180)
+			(uuid "d1995da1-658a-4d20-a97f-cb458515a792")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "d1995da1-658a-4d20-a97f-cb458515a792")
 		)
 		(pin "3V3" input
 			(at 154.94 119.38 90)
+			(uuid "5dd6dd5e-79e3-43b5-9b81-f7e63f7f3179")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "5dd6dd5e-79e3-43b5-9b81-f7e63f7f3179")
 		)
 		(pin "I2C{SDA,SCL}" input
 			(at 147.32 125.73 180)
+			(uuid "03d30f26-7ca8-4451-ad7f-fa466c388bc3")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "03d30f26-7ca8-4451-ad7f-fa466c388bc3")
 		)
 		(instances
 			(project "roomsensor"
@@ -2665,6 +2579,10 @@
 	(sheet
 		(at 101.6 33.02)
 		(size 27.94 38.1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2694,83 +2612,83 @@
 		)
 		(pin "3v3" input
 			(at 101.6 43.18 180)
+			(uuid "e5299d84-1491-4f85-92b4-20a577d362ad")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "e5299d84-1491-4f85-92b4-20a577d362ad")
 		)
 		(pin "LED" input
 			(at 101.6 49.53 180)
+			(uuid "390113f0-7a4d-410c-9220-2ce283f516ca")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "390113f0-7a4d-410c-9220-2ce283f516ca")
 		)
 		(pin "motion" input
 			(at 129.54 38.1 0)
+			(uuid "382412a6-3015-4fa0-a05e-f7f7084d11aa")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "382412a6-3015-4fa0-a05e-f7f7084d11aa")
 		)
 		(pin "I2C{SDA,SCL}" input
 			(at 129.54 63.5 0)
+			(uuid "99a50e01-93fa-4a4b-898c-1d7e174ebbde")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "99a50e01-93fa-4a4b-898c-1d7e174ebbde")
 		)
 		(pin "USB{DP,DN}" input
 			(at 101.6 64.77 180)
+			(uuid "1cadd345-ead5-4f44-b584-69337b3b2696")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "1cadd345-ead5-4f44-b584-69337b3b2696")
 		)
 		(pin "I2S{SCK,WS,SD}" input
 			(at 129.54 58.42 0)
+			(uuid "a22954bb-624f-4da8-a8a1-a7b978faa300")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "a22954bb-624f-4da8-a8a1-a7b978faa300")
 		)
 		(pin "accel" input
 			(at 129.54 68.58 0)
+			(uuid "cf5bacd0-c39f-4671-ac11-fdd6644ca8cf")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "cf5bacd0-c39f-4671-ac11-fdd6644ca8cf")
 		)
 		(pin "temp" input
 			(at 129.54 53.34 0)
+			(uuid "b5aa7ba0-1bdf-4986-a309-aaa8b693ab63")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "b5aa7ba0-1bdf-4986-a309-aaa8b693ab63")
 		)
 		(instances
 			(project "roomsensor"
@@ -2783,6 +2701,10 @@
 	(sheet
 		(at 147.32 72.39)
 		(size 20.32 16.51)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2812,23 +2734,23 @@
 		)
 		(pin "I2C{SDA, SCL}" input
 			(at 147.32 85.09 180)
+			(uuid "e0465ea2-64aa-49b9-a395-c8fb5a6af35f")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "e0465ea2-64aa-49b9-a395-c8fb5a6af35f")
 		)
 		(pin "3v3" input
 			(at 157.48 72.39 90)
+			(uuid "40044287-389a-4833-b5dc-1415d4413449")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "40044287-389a-4833-b5dc-1415d4413449")
 		)
 		(instances
 			(project "roomsensor"
@@ -2841,6 +2763,10 @@
 	(sheet
 		(at 104.14 82.55)
 		(size 20.32 12.7)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2870,23 +2796,23 @@
 		)
 		(pin "5V" input
 			(at 104.14 91.44 180)
+			(uuid "4f7b35dc-3b80-407f-bf5b-ed3c220ddd36")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "4f7b35dc-3b80-407f-bf5b-ed3c220ddd36")
 		)
 		(pin "DIN" input
 			(at 104.14 86.36 180)
+			(uuid "5ba176a2-1cb7-49ef-928b-54628a4ce9dc")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "5ba176a2-1cb7-49ef-928b-54628a4ce9dc")
 		)
 		(instances
 			(project "roomsensor"
@@ -2899,6 +2825,10 @@
 	(sheet
 		(at 147.32 96.52)
 		(size 16.51 15.24)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2928,33 +2858,33 @@
 		)
 		(pin "3V3" input
 			(at 154.94 96.52 90)
+			(uuid "ab3fed2b-f0a1-41ce-ab4f-a9ea4a01ae71")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "ab3fed2b-f0a1-41ce-ab4f-a9ea4a01ae71")
 		)
 		(pin "VCC" input
 			(at 147.32 107.95 180)
+			(uuid "dba1fce9-3d72-42b3-babd-aed7b993df4e")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "dba1fce9-3d72-42b3-babd-aed7b993df4e")
 		)
 		(pin "I2C{SDA,SCL}" input
 			(at 147.32 104.14 180)
+			(uuid "8f1c1190-cf92-45d9-9574-2107979ac7ff")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "8f1c1190-cf92-45d9-9574-2107979ac7ff")
 		)
 		(instances
 			(project "roomsensor"
@@ -2967,6 +2897,10 @@
 	(sheet
 		(at 144.78 27.94)
 		(size 22.86 15.24)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -2996,23 +2930,23 @@
 		)
 		(pin "3v3" input
 			(at 156.21 27.94 90)
+			(uuid "9551d819-460f-47f2-a8b4-48e57b9fcb24")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "9551d819-460f-47f2-a8b4-48e57b9fcb24")
 		)
 		(pin "VOUT" input
 			(at 144.78 38.1 180)
+			(uuid "742540f7-bf44-425f-8cb2-18096a39f6e9")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "742540f7-bf44-425f-8cb2-18096a39f6e9")
 		)
 		(instances
 			(project "roomsensor"
@@ -3025,6 +2959,10 @@
 	(sheet
 		(at 24.13 57.15)
 		(size 15.24 13.97)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -3054,23 +2992,23 @@
 		)
 		(pin "USB{DP,DN}" input
 			(at 39.37 64.77 0)
+			(uuid "675a4092-bb31-4336-9484-fe43b4223fba")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "675a4092-bb31-4336-9484-fe43b4223fba")
 		)
 		(pin "VUSB" input
 			(at 39.37 60.96 0)
+			(uuid "d6ef986d-8255-4b0f-b5b1-db64e472a5fd")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "d6ef986d-8255-4b0f-b5b1-db64e472a5fd")
 		)
 		(instances
 			(project "roomsensor"
@@ -3083,6 +3021,10 @@
 	(sheet
 		(at 24.13 34.29)
 		(size 15.24 13.97)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -3112,23 +3054,23 @@
 		)
 		(pin "VUSB" input
 			(at 39.37 39.37 0)
+			(uuid "75bba10a-0809-4a07-b18e-c8dc2913646d")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "75bba10a-0809-4a07-b18e-c8dc2913646d")
 		)
 		(pin "USB{DP,DN}" input
 			(at 39.37 44.45 0)
+			(uuid "3e3061e8-4662-49d7-a4ba-3352e415017b")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "3e3061e8-4662-49d7-a4ba-3352e415017b")
 		)
 		(instances
 			(project "roomsensor"
@@ -3141,6 +3083,10 @@
 	(sheet
 		(at 147.32 50.8)
 		(size 20.32 12.7)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -3170,23 +3116,23 @@
 		)
 		(pin "3v3" input
 			(at 157.48 50.8 90)
+			(uuid "f5e46ba1-5d2d-4652-a6b4-0caa011f9d63")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "f5e46ba1-5d2d-4652-a6b4-0caa011f9d63")
 		)
 		(pin "I2S{SCK,WS,SD}" input
 			(at 147.32 58.42 180)
+			(uuid "4daf1b55-14f8-4d9f-bd68-50523763b307")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "4daf1b55-14f8-4d9f-bd68-50523763b307")
 		)
 		(instances
 			(project "roomsensor"
@@ -3201,4 +3147,5 @@
 			(page "1")
 		)
 	)
+	(embedded_fonts no)
 )

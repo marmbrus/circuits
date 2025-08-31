@@ -1,12 +1,14 @@
 (kicad_sch
-	(version 20231120)
+	(version 20250114)
 	(generator "eeschema")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(uuid "d40e5c3f-89c4-4fbb-9129-b56f1fe78095")
 	(paper "A4")
 	(lib_symbols
 		(symbol "Device:C"
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
 				(offset 0.254)
 			)
@@ -79,7 +81,7 @@
 			(symbol "C_0_1"
 				(polyline
 					(pts
-						(xy -2.032 -0.762) (xy 2.032 -0.762)
+						(xy -2.032 0.762) (xy 2.032 0.762)
 					)
 					(stroke
 						(width 0.508)
@@ -91,7 +93,7 @@
 				)
 				(polyline
 					(pts
-						(xy -2.032 0.762) (xy 2.032 0.762)
+						(xy -2.032 -0.762) (xy 2.032 -0.762)
 					)
 					(stroke
 						(width 0.508)
@@ -140,9 +142,12 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "Power_Protection:USBLC6-2SC6"
-			(pin_names hide)
+			(pin_names
+				(hide yes)
+			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -225,17 +230,6 @@
 					)
 				)
 				(circle
-					(center -0.508 -4.572)
-					(radius 0.0001)
-					(stroke
-						(width 0.508)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(circle
 					(center -0.508 2.032)
 					(radius 0.0001)
 					(stroke
@@ -247,7 +241,7 @@
 					)
 				)
 				(circle
-					(center 0.508 -4.572)
+					(center -0.508 -4.572)
 					(radius 0.0001)
 					(stroke
 						(width 0.508)
@@ -259,6 +253,17 @@
 				)
 				(circle
 					(center 0.508 2.032)
+					(radius 0.0001)
+					(stroke
+						(width 0.508)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 0.508 -4.572)
 					(radius 0.0001)
 					(stroke
 						(width 0.508)
@@ -283,6 +288,18 @@
 			(symbol "USBLC6-2SC6_0_1"
 				(polyline
 					(pts
+						(xy -2.54 0) (xy 2.54 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
 						(xy -2.54 -2.54) (xy 2.54 -2.54)
 					)
 					(stroke
@@ -295,7 +312,7 @@
 				)
 				(polyline
 					(pts
-						(xy -2.54 0) (xy 2.54 0)
+						(xy -2.032 0.508) (xy -1.016 0.508) (xy -1.524 1.524) (xy -2.032 0.508)
 					)
 					(stroke
 						(width 0)
@@ -331,19 +348,7 @@
 				)
 				(polyline
 					(pts
-						(xy 1.016 -3.048) (xy 2.032 -3.048)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.016 1.524) (xy 2.032 1.524)
+						(xy -1.016 -4.064) (xy -2.032 -4.064) (xy -1.524 -3.048) (xy -1.016 -4.064)
 					)
 					(stroke
 						(width 0)
@@ -367,19 +372,8 @@
 				)
 				(polyline
 					(pts
-						(xy -2.032 0.508) (xy -1.016 0.508) (xy -1.524 1.524) (xy -2.032 0.508)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.016 -4.064) (xy -2.032 -4.064) (xy -1.524 -3.048) (xy -1.016 -4.064)
+						(xy 0 2.54) (xy -0.508 2.032) (xy 0.508 2.032) (xy 0 1.524) (xy 0 -4.064) (xy -0.508 -4.572) (xy 0.508 -4.572)
+						(xy 0 -5.08)
 					)
 					(stroke
 						(width 0)
@@ -403,7 +397,19 @@
 				)
 				(polyline
 					(pts
-						(xy 2.032 -4.064) (xy 1.016 -4.064) (xy 1.524 -3.048) (xy 2.032 -4.064)
+						(xy 1.016 1.524) (xy 2.032 1.524)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.016 -3.048) (xy 2.032 -3.048)
 					)
 					(stroke
 						(width 0)
@@ -427,8 +433,7 @@
 				)
 				(polyline
 					(pts
-						(xy 0 2.54) (xy -0.508 2.032) (xy 0.508 2.032) (xy 0 1.524) (xy 0 -4.064) (xy -0.508 -4.572) (xy 0.508 -4.572)
-						(xy 0 -5.08)
+						(xy 2.032 -4.064) (xy 1.016 -4.064) (xy 1.524 -3.048) (xy 2.032 -4.064)
 					)
 					(stroke
 						(width 0)
@@ -494,24 +499,6 @@
 					)
 				)
 				(pin passive line
-					(at 0 -7.62 90)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
 					(at -5.08 -2.54 0)
 					(length 2.54)
 					(name "I/O2"
@@ -522,24 +509,6 @@
 						)
 					)
 					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 -2.54 180)
-					(length 2.54)
-					(name "I/O2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -566,6 +535,24 @@
 					)
 				)
 				(pin passive line
+					(at 0 -7.62 90)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
 					(at 5.08 0 180)
 					(length 2.54)
 					(name "I/O1"
@@ -583,7 +570,26 @@
 						)
 					)
 				)
+				(pin passive line
+					(at 5.08 -2.54 180)
+					(length 2.54)
+					(name "I/O2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "easyeda2kicad:USB_PCB"
 			(exclude_from_sim no)
@@ -719,12 +725,17 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 		(symbol "power:GND"
 			(power)
-			(pin_numbers hide)
+			(pin_numbers
+				(hide yes)
+			)
 			(pin_names
-				(offset 0) hide)
+				(offset 0)
+				(hide yes)
+			)
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -815,6 +826,7 @@
 					)
 				)
 			)
+			(embedded_fonts no)
 		)
 	)
 	(junction
@@ -1061,7 +1073,6 @@
 	)
 	(label "USB.DP"
 		(at 144.78 111.76 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1072,7 +1083,6 @@
 	)
 	(label "USB.DN"
 		(at 144.78 109.22 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1084,7 +1094,6 @@
 	(hierarchical_label "USB{DP,DN}"
 		(shape input)
 		(at 163.83 106.68 0)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1096,7 +1105,6 @@
 	(hierarchical_label "VUSB"
 		(shape input)
 		(at 158.75 83.82 90)
-		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -1115,7 +1123,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1cfac9ac-469a-4c5d-ae54-cce96870862a")
-		(property "Reference" "U801"
+		(property "Reference" "U6"
 			(at 135.0011 101.6 0)
 			(effects
 				(font
@@ -1184,7 +1192,7 @@
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/acb10ddb-98c9-439e-a93d-9b153e35464d"
-					(reference "U801")
+					(reference "U6")
 					(unit 1)
 				)
 			)
@@ -1200,7 +1208,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2c0d2328-83bb-4aa7-b449-4f4bd5859af1")
-		(property "Reference" "C802"
+		(property "Reference" "C20"
 			(at 162.56 86.3599 0)
 			(effects
 				(font
@@ -1254,7 +1262,7 @@
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/acb10ddb-98c9-439e-a93d-9b153e35464d"
-					(reference "C802")
+					(reference "C20")
 					(unit 1)
 				)
 			)
@@ -1270,7 +1278,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "4ad8eb93-0ead-4745-ae56-bb1f7fd2b5ea")
-		(property "Reference" "#PWR0802"
+		(property "Reference" "#PWR013"
 			(at 133.35 132.08 0)
 			(effects
 				(font
@@ -1320,7 +1328,7 @@
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/acb10ddb-98c9-439e-a93d-9b153e35464d"
-					(reference "#PWR0802")
+					(reference "#PWR013")
 					(unit 1)
 				)
 			)
@@ -1336,7 +1344,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "b8a52869-cbea-471a-8564-d72a5f513e27")
-		(property "Reference" "C801"
+		(property "Reference" "C19"
 			(at 146.05 86.3599 0)
 			(effects
 				(font
@@ -1390,7 +1398,7 @@
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/acb10ddb-98c9-439e-a93d-9b153e35464d"
-					(reference "C801")
+					(reference "C19")
 					(unit 1)
 				)
 			)
@@ -1406,7 +1414,7 @@
 		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "e31b1b9c-4e12-4bf4-900d-05b1b3d2d7ad")
-		(property "Reference" "U802"
+		(property "Reference" "U5"
 			(at 113.03 101.6 0)
 			(effects
 				(font
@@ -1464,7 +1472,7 @@
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/acb10ddb-98c9-439e-a93d-9b153e35464d"
-					(reference "U802")
+					(reference "U5")
 					(unit 1)
 				)
 			)
