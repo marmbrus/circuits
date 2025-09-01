@@ -79,9 +79,9 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 	return (
 		<Card variant="outlined" sx={{ maxWidth: { xs: 360, sm: 420, md: 480 }, mx: 'auto' }}>
 			<CardHeader
-				sx={{ pb: 0.5 }}
+				sx={{ py: 0.5, overflow: 'visible', '& .MuiCardHeader-action': { alignSelf: 'center', mt: 0, mr: 0 } }}
 				title={
-					<Stack direction="row" spacing={1} alignItems="baseline" sx={{ minHeight: 28 }}>
+					<Stack direction="row" spacing={1} alignItems="baseline" sx={{ minHeight: 36 }}>
 						<Typography variant="h6">{id}</Typography>
 						<Stack direction="row" alignItems="center" spacing={0.5}>
 							<Tooltip title={sensor.mac} placement="top">

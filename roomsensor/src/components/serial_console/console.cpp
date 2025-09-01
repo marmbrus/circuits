@@ -10,6 +10,8 @@
 #include "cmd_nvs.h"
 #include "cmd_system.h"
 #include "gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 static const char* TAG_CONSOLE = "console";
 
@@ -30,7 +32,7 @@ static void configure_stdio_uart(void)
     esp_vfs_dev_uart_use_driver(UART_NUM_0);
 }
 
-void initialize_console(void)
+static void console_task(void *arg)
 {
     configure_stdio_uart();
 
@@ -77,6 +79,29 @@ void initialize_console(void)
             printf("Internal error: 0x%x\n", err);
         }
         linenoiseFree(line);
+    }
+}
+
+void initialize_console(void)
+{
+    static TaskHandle_t s_console_task = NULL;
+    if (s_console_task != NULL) {
+        ESP_LOGI(TAG_CONSOLE, "Console already running");
+        return;
+    }
+
+    const uint32_t stack_size_words = 8192; // generous stack for linenoise and command handlers
+    BaseType_t ok = xTaskCreatePinnedToCore(
+        console_task,
+        "console",
+        stack_size_words,
+        NULL,
+        tskIDLE_PRIORITY + 1,
+        &s_console_task,
+        tskNO_AFFINITY
+    );
+    if (ok != pdPASS) {
+        ESP_LOGE(TAG_CONSOLE, "Failed to create console task");
     }
 }
 

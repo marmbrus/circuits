@@ -18,6 +18,8 @@
 #include "gpio.h"
 #include "filesystem.h"
 #include "netlog.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <time.h>
 #include <stdlib.h>
 
@@ -49,6 +51,9 @@ extern "C" void app_main(void)
     if (led_manager.init(cfg) != ESP_OK) {
         ESP_LOGE(TAG, "LEDManager initialization failed");
     }
+
+    // Initialize interactive console BEFORE WiFi to allow early interaction
+    initialize_console();
 
     // Initialize WiFi and MQTT
     wifi_mqtt_init();
@@ -129,6 +134,8 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG, "OTA system initialized successfully");
     }
 
-    // Initialize interactive console
-    initialize_console();
+    // Idle loop to keep app_main task alive while yielding CPU
+    while (true) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }

@@ -13,9 +13,9 @@ namespace font6x6 {
 void draw_glyph(LEDStrip& strip, char ch, size_t top_row, size_t left_col,
                 uint8_t r, uint8_t g, uint8_t b, uint8_t w);
 
-// Render a null-terminated string starting at (top_row,left_col), advancing
-// by 8 columns per glyph (6 pixels width + 1px left/right margin). Returns
-// the next column after the rendered text.
+// Render a null-terminated string starting at (top_row,left_col). Advances by
+// 8 columns per glyph when there is room for a full 8x8 cell; otherwise trims
+// the outer margin and still advances by 8 to maintain spacing.
 size_t draw_text(LEDStrip& strip, const char* text, size_t top_row, size_t left_col,
                  uint8_t r, uint8_t g, uint8_t b, uint8_t w);
 

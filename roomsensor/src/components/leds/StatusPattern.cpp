@@ -1,5 +1,10 @@
 #include "StatusPattern.h"
 #include "LEDStrip.h"
+#include "font6x6.h"
+#include "esp_mac.h"
+#include "esp_netif.h"
+#include "esp_netif_ip_addr.h"
+#include <cstdio>
 #include <cmath>
 
 namespace leds {
@@ -74,33 +79,72 @@ void StatusPattern::update(LEDStrip& strip, uint64_t now_us) {
             break;
         }
         case FULLY_CONNECTED: {
-            // One-shot white ripple (RGB) from center over ~5 seconds, fading to off
+            // One-shot white ripple (RGB) from center over ~5 seconds, then show ID/IP one char per second
             if (connect_anim_start_us_ == 0) connect_anim_start_us_ = now_us;
             uint64_t dt_us = now_us - connect_anim_start_us_;
-            float duration_ms = 5000.0f; // 5 seconds
+            const float duration_ms = 5000.0f; // 5 seconds
+            const uint64_t duration_us = (uint64_t)(duration_ms * 1000.0f);
             float dt_ms = dt_us / 1000.0f;
             float progress = fminf(1.0f, dt_ms / duration_ms);
-            float center_r = (rows - 1) * 0.5f;
-            float center_c = (cols - 1) * 0.5f;
-            float max_radius = hypotf(center_r, center_c) + 1.0f;
-            float radius = progress * max_radius;
-            float thickness = 1.2f;
-            float amplitude = 180.0f * (1.0f - progress); // fade as it expands
 
-            for (size_t r = 0; r < rows; ++r) {
-                for (size_t c = 0; c < cols; ++c) {
-                    float dr = (float)r - center_r;
-                    float dc = (float)c - center_c;
-                    float d = sqrtf(dr*dr + dc*dc);
-                    float band = 1.0f - fminf(1.0f, fabsf(d - radius) / thickness);
-                    if (band > 0.0f) {
-                        uint8_t v = clamp_u8((int)(band * amplitude));
-                        size_t idx = strip.index_for_row_col(r, c);
-                        strip.set_pixel(idx, v, v, v, 0); // use RGB so it works on WS2812 and SK6812
+            if (dt_us < duration_us) {
+                float center_r = (rows - 1) * 0.5f;
+                float center_c = (cols - 1) * 0.5f;
+                float max_radius = hypotf(center_r, center_c) + 1.0f;
+                float radius = progress * max_radius;
+                float thickness = 1.2f;
+                float amplitude = 180.0f * (1.0f - progress); // fade as it expands
+
+                for (size_t r = 0; r < rows; ++r) {
+                    for (size_t c = 0; c < cols; ++c) {
+                        float dr = (float)r - center_r;
+                        float dc = (float)c - center_c;
+                        float d = sqrtf(dr*dr + dc*dc);
+                        float band = 1.0f - fminf(1.0f, fabsf(d - radius) / thickness);
+                        if (band > 0.0f) {
+                            uint8_t v = clamp_u8((int)(band * amplitude));
+                            size_t idx = strip.index_for_row_col(r, c);
+                            strip.set_pixel(idx, v, v, v, 0); // use RGB so it works on WS2812 and SK6812
+                        }
+                    }
+                }
+            } else {
+                // After completion, render MAC (last 4 hex) followed by IP, one glyph per second
+                char mac4[5] = {0};
+                uint8_t mac[6] = {0};
+                if (esp_read_mac(mac, ESP_MAC_WIFI_STA) == ESP_OK) {
+                    // Uppercase last two bytes
+                    (void)snprintf(mac4, sizeof(mac4), "%02X%02X", mac[4], mac[5]);
+                }
+
+                char ip_str[16] = {0};
+                esp_netif_ip_info_t ip_info = {};
+                esp_netif_t* sta = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+                if (sta && esp_netif_get_ip_info(sta, &ip_info) == ESP_OK) {
+                    (void)snprintf(ip_str, sizeof(ip_str), IPSTR, IP2STR(&ip_info.ip));
+                } else {
+                    // Fallback
+                    (void)snprintf(ip_str, sizeof(ip_str), "0.0.0.0");
+                }
+
+                char seq[64] = {0};
+                (void)snprintf(seq, sizeof(seq), "%s %s", mac4, ip_str);
+                size_t len = 0; while (seq[len] != '\0' && len < sizeof(seq)) ++len;
+                if (len > 0) {
+                    uint64_t text_start_us = connect_anim_start_us_ + duration_us;
+                    uint64_t elapsed_us = (now_us > text_start_us) ? (now_us - text_start_us) : 0;
+                    uint64_t step = elapsed_us / 1000000ULL; // one char per second
+                    if (step < len) {
+                        size_t idx = static_cast<size_t>(step);
+                        // Center within the matrix if possible
+                        size_t top_row = (rows > 8) ? ((rows - 8) / 2) : 0;
+                        size_t left_col = (cols > 8) ? ((cols - 8) / 2) : 0;
+                        // Lower overall brightness for readability on matrix
+                        uint8_t r = 20, g = 20, b = 20, w = 0;
+                        leds::font6x6::draw_glyph(strip, seq[idx], top_row, left_col, r, g, b, w);
                     }
                 }
             }
-            // After completion, keep lights off
             break;
         }
         case MQTT_ERROR_STATE: {

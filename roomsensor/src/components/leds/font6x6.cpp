@@ -25,7 +25,8 @@ static inline void draw_row(LEDStrip& s, const char* pattern,
         if (ch == '*') {
             put_pixel(s, row, left + static_cast<size_t>(i), r, g, b, w);
         } else if (ch == '-') {
-            put_pixel(s, row, left + static_cast<size_t>(i), r / 4u, g / 4u, b / 4u, w / 4u);
+            // Make anti-aliased pixels significantly dimmer for readability
+            put_pixel(s, row, left + static_cast<size_t>(i), r / 16u, g / 16u, b / 16u, w / 16u);
         }
     }
 }
@@ -183,8 +184,11 @@ void draw_glyph(LEDStrip& strip, char ch, size_t top_row, size_t left_col,
     }
     if (!gph) return;
 
-    size_t base_r = top_row + 1;
-    size_t base_c = left_col + 1;
+    // Auto-trim the outer 1px margin if there isn't enough room for an 8x8 cell
+    bool fits_with_margin = (strip.rows() >= top_row + 8) && (strip.cols() >= left_col + 8);
+    size_t margin = fits_with_margin ? 1u : 0u;
+    size_t base_r = top_row + margin;
+    size_t base_c = left_col + margin;
     for (int i = 0; i < 6; ++i) {
         const char* row = gph->rows[i];
         if (!row || row[0] == '\0') continue;

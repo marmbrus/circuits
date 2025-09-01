@@ -128,6 +128,9 @@ void MCP23008Sensor::configureFromConfig() {
                 if (_config_ptr->is_switch_state_set(i + 1)) {
                     // Invert drive: ON => drive LOW, OFF => drive HIGH
                     if (desired) olat &= (uint8_t)~(1u << i); else olat |= (uint8_t)(1u << i);
+                } else {
+                    // Default to OFF when unspecified: drive HIGH
+                    olat |= (uint8_t)(1u << i);
                 }
             } else if (mode == config::IOConfig::PinMode::SENSOR) {
                 // Input with pull-up

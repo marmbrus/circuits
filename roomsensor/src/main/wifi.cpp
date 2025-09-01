@@ -42,6 +42,7 @@ static volatile bool s_time_synced = false;
 
 static void wifi_init_sta(void);
 static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+static void mqtt_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 static const char* wifi_reason_to_name(int reason);
 static const char* wifi_event_to_name(int32_t event_id);
 static const char* ip_event_to_name(int32_t event_id);
@@ -144,7 +145,7 @@ void wifi_mqtt_init(void)
     if (have_broker) {
         mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
         if (mqtt_client) {
-            esp_mqtt_client_register_event(mqtt_client, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, event_handler, NULL);
+            esp_mqtt_client_register_event(mqtt_client, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
         } else {
             ESP_LOGE(TAG, "Failed to init MQTT client");
         }
@@ -197,7 +198,6 @@ static void initialize_sntp(void) {
 static void event_handler(void* arg, esp_event_base_t event_base,
                          int32_t event_id, void* event_data)
 {
-    static uint32_t mqtt_error_count = 0;
     static bool mqtt_started = false;
 
     // Handle WiFi events
@@ -254,7 +254,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
                 } else {
                     ESP_LOGW(TAG, "WiFi disconnected: reason=%d:%s (no detail)", reason, wifi_reason_to_name(reason));
                 }
-                mqtt_error_count = 0; // Reset error count on disconnect
 
                 // Treat authentication/handshake related reasons as fatal until credentials are fixed
                 bool auth_or_handshake_fail =
@@ -296,7 +295,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     // Handle IP events
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ESP_LOGI(TAG, "IP event: %s (%ld)", ip_event_to_name(event_id), (long)event_id);
-        mqtt_error_count = 0;
+        // reset any WiFi backoff state on IP acquisition
         system_state = WIFI_CONNECTED_MQTT_CONNECTING;
         // Reset WiFi retry backoff on successful IP acquisition
         s_retry_delay_ms = 1000;
@@ -332,106 +331,105 @@ static void event_handler(void* arg, esp_event_base_t event_base,
             system_state = WIFI_CONNECTED_MQTT_CONNECTING;
         }
     }
-    // Handle MQTT events (this handler is also registered with esp-mqtt)
     else {
-        // This section handles all MQTT events
-        esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
-        esp_mqtt_event_id_t mqtt_event = (esp_mqtt_event_id_t)event->event_id;
-        ESP_LOGD(TAG, "MQTT event: %s (%d)", mqtt_event_to_name(mqtt_event), (int)mqtt_event);
+        // Unhandled event base; ignore to avoid miscasting event_data
+        ESP_LOGD(TAG, "Ignoring non-WIFI/IP event in wifi handler");
+    }
+}
 
-        // First check WiFi state - don't process MQTT errors if WiFi is disconnected
-        bool wifi_connected = false;
+static void mqtt_event_handler(void* arg, esp_event_base_t event_base,
+                         int32_t event_id, void* event_data)
+{
+    (void)arg;
+    (void)event_base;
+    // This section handles all MQTT events
+    esp_mqtt_event_handle_t event = (esp_mqtt_event_handle_t)event_data;
+    esp_mqtt_event_id_t mqtt_event = (esp_mqtt_event_id_t)event->event_id;
+    ESP_LOGD(TAG, "MQTT event: %s (%d)", mqtt_event_to_name(mqtt_event), (int)mqtt_event);
+
+    // First check WiFi state - don't process MQTT errors if WiFi is disconnected
+    bool wifi_connected = false;
+    {
+        wifi_ap_record_t ap_info;
+        wifi_connected = (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK);
+    }
+
+    // Process MQTT events based on event type
+    if (mqtt_event == MQTT_EVENT_CONNECTED) {
+        ESP_LOGI(TAG, "MQTT Connected");
+        // Reset error count on a successful connect
+        // Note: use a local static in wifi handler; here we just update state
+        system_state = FULLY_CONNECTED;
+
+        // Publish telemetry (boot + location/connected)
+        telemetry_report_connected();
+
+        // Subscribe to configuration updates for this device
         {
-            wifi_ap_record_t ap_info;
-            wifi_connected = (esp_wifi_sta_get_ap_info(&ap_info) == ESP_OK);
-        }
-
-        // Process MQTT events based on event type
-        if (mqtt_event == MQTT_EVENT_CONNECTED) {
-            ESP_LOGI(TAG, "MQTT Connected");
-            mqtt_error_count = 0;
-            system_state = FULLY_CONNECTED;
-
-            // Publish telemetry (boot + location/connected)
-            telemetry_report_connected();
-            
-            // OTA will poll system readiness; no direct OTA calls here
-
-            // Subscribe to configuration updates for this device
-            {
-                using namespace config;
-                auto& mgr = GetConfigurationManager();
-                std::string topic = mgr.get_mqtt_subscription_topic();
-                int msg_id = esp_mqtt_client_subscribe(mqtt_client, topic.c_str(), 1);
-                ESP_LOGI(TAG, "Subscribed to config topic %s (msg_id=%d)", topic.c_str(), msg_id);
-            }
-
-            // Publish current configuration now that we're connected
-            {
-                using namespace config;
-                auto& mgr = GetConfigurationManager();
-                mgr.publish_full_configuration();
-            }
-        }
-        else if (mqtt_event == MQTT_EVENT_DISCONNECTED) {
-            ESP_LOGI(TAG, "MQTT Disconnected");
-
-            if (!wifi_connected) {
-                // WiFi is actually disconnected but we haven't received the WiFi event yet
-                // Update the state to be consistent
-                ESP_LOGI(TAG, "WiFi appears to be disconnected, updating state");
-                system_state = WIFI_CONNECTING;
-            } else if (system_state == FULLY_CONNECTED) {
-                // Normal MQTT disconnection while WiFi is still connected
-                system_state = WIFI_CONNECTED_MQTT_CONNECTING;
-            }
-
-            mqtt_error_count = 0; // Reset error count on disconnect
-        }
-        else if (mqtt_event == MQTT_EVENT_PUBLISHED) {
-            // QoS1 PUBACK received for a publish we initiated
-            if (s_boot_pub_msg_id >= 0 && event->msg_id == s_boot_pub_msg_id) {
-                s_boot_pub_acked = true;
-                s_boot_pub_msg_id = -1;
-                if (s_boot_pub_sem) {
-                    xSemaphoreGive(s_boot_pub_sem);
-                }
-                ESP_LOGI(TAG, "Boot/device publish acknowledged by broker");
-            }
-        }
-        else if (mqtt_event == MQTT_EVENT_ERROR) {
-            ESP_LOGW(TAG, "MQTT Error");
-
-            // Only count MQTT errors when we're actually connected to WiFi
-            // Ignore MQTT errors when WiFi is disconnected - they're expected
-            if (!wifi_connected) {
-                // MQTT errors during WiFi disconnect are expected and should be ignored
-                ESP_LOGI(TAG, "Ignoring MQTT error during WiFi disconnect state");
-            }
-            else if (system_state == WIFI_CONNECTED_MQTT_CONNECTING ||
-                     system_state == FULLY_CONNECTED) {
-                // Only count errors when in an appropriate state
-                mqtt_error_count++;
-                ESP_LOGI(TAG, "MQTT Error count: %lu/3", (unsigned long)mqtt_error_count);
-
-                if (mqtt_error_count >= 3) {
-                    system_state = MQTT_ERROR_STATE;
-                    mqtt_error_count = 0;
-                    // LED state handled by LEDManager patterns
-                }
-            }
-        }
-        else if (mqtt_event == MQTT_EVENT_DATA) {
-            // Forward potential config updates to ConfigurationManager
             using namespace config;
             auto& mgr = GetConfigurationManager();
-            // Event provides topic and data not null-terminated
-            std::string topic(event->topic, event->topic_len);
-            std::string payload(event->data, event->data_len);
-            mgr.handle_mqtt_message(topic.c_str(), payload.c_str());
+            std::string topic = mgr.get_mqtt_subscription_topic();
+            int msg_id = esp_mqtt_client_subscribe(mqtt_client, topic.c_str(), 1);
+            ESP_LOGI(TAG, "Subscribed to config topic %s (msg_id=%d)", topic.c_str(), msg_id);
         }
-        // Other MQTT events are not used in this application
+
+        // Publish current configuration now that we're connected
+        {
+            using namespace config;
+            auto& mgr = GetConfigurationManager();
+            mgr.publish_full_configuration();
+        }
     }
+    else if (mqtt_event == MQTT_EVENT_DISCONNECTED) {
+        ESP_LOGI(TAG, "MQTT Disconnected");
+
+        if (!wifi_connected) {
+            // WiFi is actually disconnected but we haven't received the WiFi event yet
+            // Update the state to be consistent
+            ESP_LOGI(TAG, "WiFi appears to be disconnected, updating state");
+            system_state = WIFI_CONNECTING;
+        } else if (system_state == FULLY_CONNECTED) {
+            // Normal MQTT disconnection while WiFi is still connected
+            system_state = WIFI_CONNECTED_MQTT_CONNECTING;
+        }
+    }
+    else if (mqtt_event == MQTT_EVENT_PUBLISHED) {
+        // QoS1 PUBACK received for a publish we initiated
+        if (s_boot_pub_msg_id >= 0 && event->msg_id == s_boot_pub_msg_id) {
+            s_boot_pub_acked = true;
+            s_boot_pub_msg_id = -1;
+            if (s_boot_pub_sem) {
+                xSemaphoreGive(s_boot_pub_sem);
+            }
+            ESP_LOGI(TAG, "Boot/device publish acknowledged by broker");
+        }
+    }
+    else if (mqtt_event == MQTT_EVENT_ERROR) {
+        ESP_LOGW(TAG, "MQTT Error");
+        // Only count MQTT errors when we're actually connected to WiFi
+        if (!wifi_connected) {
+            ESP_LOGI(TAG, "Ignoring MQTT error during WiFi disconnect state");
+        } else if (system_state == WIFI_CONNECTED_MQTT_CONNECTING ||
+                   system_state == FULLY_CONNECTED) {
+            static uint32_t mqtt_error_count_local = 0;
+            mqtt_error_count_local++;
+            ESP_LOGI(TAG, "MQTT Error count: %lu/3", (unsigned long)mqtt_error_count_local);
+            if (mqtt_error_count_local >= 3) {
+                system_state = MQTT_ERROR_STATE;
+                mqtt_error_count_local = 0;
+            }
+        }
+    }
+    else if (mqtt_event == MQTT_EVENT_DATA) {
+        // Forward potential config updates to ConfigurationManager
+        using namespace config;
+        auto& mgr = GetConfigurationManager();
+        // Event provides topic and data not null-terminated
+        std::string topic(event->topic, event->topic_len);
+        std::string payload(event->data, event->data_len);
+        mgr.handle_mqtt_message(topic.c_str(), payload.c_str());
+    }
+    // Other MQTT events are not used in this application
 }
 
 static void wifi_init_sta(void)
@@ -454,6 +452,7 @@ static void wifi_init_sta(void)
 
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
+    esp_event_handler_instance_t instance_lost_ip;
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
                                                       ESP_EVENT_ANY_ID,
                                                       &event_handler,
@@ -464,6 +463,11 @@ static void wifi_init_sta(void)
                                                       &event_handler,
                                                       NULL,
                                                       &instance_got_ip));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                      IP_EVENT_STA_LOST_IP,
+                                                      &event_handler,
+                                                      NULL,
+                                                      &instance_lost_ip));
 
     // Initialize only the STA config part explicitly to avoid warnings
     wifi_config_t wifi_config = {};

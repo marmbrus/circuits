@@ -23,7 +23,7 @@ idf_component_register(
         # Adapter (header-only)
         
     INCLUDE_DIRS "."
-    REQUIRES json freertos configuration espressif__led_strip esp_timer
+    REQUIRES json freertos configuration espressif__led_strip esp_timer esp_netif
     PRIV_REQUIRES esp_driver_gpio
 )
 
