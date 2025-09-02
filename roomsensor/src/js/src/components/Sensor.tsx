@@ -77,9 +77,9 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 		}
 	}
 	return (
-		<Card variant="outlined" sx={{ maxWidth: { xs: 360, sm: 420, md: 480 }, mx: 'auto' }}>
+		<Card variant="outlined" sx={{ maxWidth: { xs: 360, sm: 420, md: 480 }, mx: 'auto', overflow: 'visible' }}>
 			<CardHeader
-				sx={{ py: 0.5, overflow: 'visible', '& .MuiCardHeader-action': { alignSelf: 'center', mt: 0, mr: 0 } }}
+				sx={{ py: 0.5, pr: 2, overflow: 'visible', '& .MuiCardHeader-content': { overflow: 'hidden', minWidth: 0 }, '& .MuiCardHeader-action': { alignSelf: 'center', mt: 0, mr: 0, flexShrink: 0 } }}
 				title={
 					<Stack direction="row" spacing={1} alignItems="baseline" sx={{ minHeight: 36 }}>
 						<Typography variant="h6">{id}</Typography>
@@ -127,7 +127,9 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 								onExpandedChange?.(newExpanded)
 							}}
 							aria-label={expanded ? 'collapse' : 'expand'}
-							sx={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: (theme) => (theme as any).transitions?.create?.('transform') || 'transform 150ms ease' }}
+							disableRipple
+							disableFocusRipple
+							sx={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: (theme) => (theme as any).transitions?.create?.('transform') || 'transform 150ms ease', '&:focus-visible': { outline: 'none' } }}
 						>
 							<ExpandMoreIcon fontSize="inherit" />
 						</IconButton>
@@ -180,8 +182,8 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 								publishConfig={publishConfig}
 								presentA2DModules={presentA2D}
 								presentIOModules={presentIO}
-						/>
-					)}
+							/>
+						)}
 					{sensor.i2c && sensor.i2c.devices?.length ? (
 						<Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
 							<AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
@@ -233,86 +235,86 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 							</Stack>
 						</AccordionDetails>
 					</Accordion>
-          <Accordion disableGutters elevation={0} expanded={logsExpanded} onChange={(_, isExpanded) => {
-							const newLogsExpanded = isExpanded
-							if (forceLogsExpanded === undefined) {
-								setInternalLogsExpanded(newLogsExpanded)
-							}
-							onLogsExpandedChange?.(newLogsExpanded)
-						}} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="subtitle2">Logs</Typography>
-                {(() => {
-                  const order = ['error','warn','info','debug','verbose']
-                  const counts: Record<string, number> = {}
-                  for (const e of (sensor.logs || [])) {
-                    const lvl = String(e.level || '').toLowerCase()
-                    counts[lvl] = (counts[lvl] || 0) + 1
-                  }
-                  const colorFor = (lvl: string): 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' => {
-                    switch (lvl) {
-                      case 'error': return 'error'
-                      case 'warn': return 'warning'
-                      case 'info': return 'info'
-                      default: return 'default'
-                    }
-                  }
-                  return order.filter(l => (counts[l] || 0) > 0).map(l => (
-                    <Chip key={l} label={String(counts[l])} size="small" color={colorFor(l)} />
-                  ))
-                })()}
-              </Stack>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                {(() => {
-                  const current = Number(sensor.config?.wifi?.loglevel ?? 2)
-                  const levels = [
-                    { label: 'none', value: 0 },
-                    { label: 'error', value: 1 },
-                    { label: 'warn', value: 2 },
-                    { label: 'info', value: 3 },
-                    { label: 'debug', value: 4 },
-                    { label: 'verbose', value: 5 },
-                  ]
-                  return (
-                    <FormControl size="small" sx={{ minWidth: 140 }}>
-                      <InputLabel id={`loglevel-${sensor.mac}`}>Level</InputLabel>
-                      <Select
-                        labelId={`loglevel-${sensor.mac}`}
-                        label="Level"
-                        value={current}
-                        onChange={(e) => publishConfig(sensor.mac, 'wifi', 'loglevel', Number(e.target.value))}
-                      >
-                        {levels.map((l) => (
-                          <MenuItem key={l.value} value={l.value}>{l.label}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )
-                })()}
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="warning"
-                  startIcon={<ClearIcon />}
-                  onClick={() => clearSensorLogs(sensor.mac)}
-                  disabled={!sensor.logs || sensor.logs.length === 0}
-                  sx={{ minWidth: 'auto' }}
-                >
-                  Clear
-                </Button>
-              </Stack>
-              <Box sx={{ maxHeight: 240, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1, p: 1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace', fontSize: 12 }}>
-                {(sensor.logs || []).slice(-500).map((entry, idx) => (
-                  <div key={idx} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                    <AnsiText text={entry.message} />
-                  </div>
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
+					<Accordion disableGutters elevation={0} expanded={logsExpanded} onChange={(_, isExpanded) => {
+						const newLogsExpanded = isExpanded
+						if (forceLogsExpanded === undefined) {
+							setInternalLogsExpanded(newLogsExpanded)
+						}
+						onLogsExpandedChange?.(newLogsExpanded)
+					}} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
+						<AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+							<Stack direction="row" spacing={1} alignItems="center">
+								<Typography variant="subtitle2">Logs</Typography>
+								{(() => {
+									const order = ['error','warn','info','debug','verbose']
+									const counts: Record<string, number> = {}
+									for (const e of (sensor.logs || [])) {
+										const lvl = String(e.level || '').toLowerCase()
+										counts[lvl] = (counts[lvl] || 0) + 1
+									}
+									const colorFor = (lvl: string): 'default' | 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' => {
+										switch (lvl) {
+											case 'error': return 'error'
+											case 'warn': return 'warning'
+											case 'info': return 'info'
+											default: return 'default'
+										}
+									}
+									return order.filter(l => (counts[l] || 0) > 0).map(l => (
+										<Chip key={l} label={String(counts[l])} size="small" color={colorFor(l)} />
+									))
+								})()}
+							</Stack>
+						</AccordionSummary>
+						<AccordionDetails>
+							<Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+								{(() => {
+									const current = Number(sensor.config?.wifi?.loglevel ?? 2)
+									const levels = [
+										{ label: 'none', value: 0 },
+										{ label: 'error', value: 1 },
+										{ label: 'warn', value: 2 },
+										{ label: 'info', value: 3 },
+										{ label: 'debug', value: 4 },
+										{ label: 'verbose', value: 5 },
+									]
+									return (
+										<FormControl size="small" sx={{ minWidth: 140 }}>
+											<InputLabel id={`loglevel-${sensor.mac}`}>Level</InputLabel>
+											<Select
+												labelId={`loglevel-${sensor.mac}`}
+												label="Level"
+												value={current}
+												onChange={(e) => publishConfig(sensor.mac, 'wifi', 'loglevel', Number(e.target.value))}
+											>
+												{levels.map((l) => (
+													<MenuItem key={l.value} value={l.value}>{l.label}</MenuItem>
+												))}
+											</Select>
+										</FormControl>
+									)
+								})()}
+								<Button
+									size="small"
+									variant="outlined"
+									color="warning"
+									startIcon={<ClearIcon />}
+									onClick={() => clearSensorLogs(sensor.mac)}
+									disabled={!sensor.logs || sensor.logs.length === 0}
+									sx={{ minWidth: 'auto' }}
+								>
+									Clear
+								</Button>
+							</Stack>
+							<Box sx={{ maxHeight: 240, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1, p: 1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace', fontSize: 12 }}>
+								{(sensor.logs || []).slice(-500).map((entry, idx) => (
+									<div key={idx} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+										<AnsiText text={entry.message} />
+									</div>
+								))}
+							</Box>
+						</AccordionDetails>
+					</Accordion>
 				</Stack>
 			</CardContent>
 			</Collapse>

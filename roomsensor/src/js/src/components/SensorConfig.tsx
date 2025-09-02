@@ -47,11 +47,11 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
         <Chip label={`ID: ${config.tags.id}`} size="small" onClick={openTagsEditor} />
       </Stack>
 
-      <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+      <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'visible', '&:before': { display: 'none' } }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 }, '&.Mui-focusVisible': { backgroundColor: 'transparent' } }}>
           <Typography variant="subtitle2">WiFi</Typography>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ position: 'relative', zIndex: 1 }}>
           <Stack direction="row" spacing={1}>
             <Chip label={`SSID: ${config.wifi.ssid}`} size="small" />
             <Chip label={`Broker: ${config.wifi.mqtt_broker}`} size="small" />
@@ -61,11 +61,11 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
 
       {Object.keys(config).some((k) => k.startsWith('led')) && (
         <Fragment>
-          <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+          <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'visible', '&:before': { display: 'none' } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 }, '&.Mui-focusVisible': { backgroundColor: 'transparent' } }}>
               <Typography variant="subtitle2">LEDs</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ position: 'relative', zIndex: 1 }}>
               <LEDConfigSection config={config as any} onEdit={openEditor} publish={publish} />
             </AccordionDetails>
           </Accordion>
@@ -74,11 +74,11 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
 
       {presentA2DModules.length > 0 ? (
         <Fragment>
-          <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+          <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'visible', '&:before': { display: 'none' } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 }, '&.Mui-focusVisible': { backgroundColor: 'transparent' } }}>
               <Typography variant="subtitle2">A2D Configuration</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ position: 'relative', zIndex: 1 }}>
               <A2DConfigSection modules={presentA2DModules} config={config as any} onEdit={openEditor} />
             </AccordionDetails>
           </Accordion>
@@ -87,11 +87,11 @@ export default function SensorConfigView({ mac, config, publishConfig, presentA2
 
       {presentIOModules.length > 0 ? (
         <Fragment>
-          <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+          <Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', overflow: 'visible', '&:before': { display: 'none' } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 }, '&.Mui-focusVisible': { backgroundColor: 'transparent' } }}>
               <Typography variant="subtitle2">IO Configuration</Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ position: 'relative', zIndex: 1 }}>
               <IOConfigSection modules={presentIOModules} config={config as any} onEdit={openEditor} publish={publish} />
             </AccordionDetails>
           </Accordion>

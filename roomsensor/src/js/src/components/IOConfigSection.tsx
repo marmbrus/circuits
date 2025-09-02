@@ -32,7 +32,7 @@ export default function IOConfigSection({ modules, config, onEdit, publish }: Pr
                   const sw = io[switchKey]
                   const pname = io[nameKey]
                   return (
-                    <Stack key={pinKey} direction="row" spacing={0.75} alignItems="center" flexWrap="nowrap" useFlexGap sx={{ overflowX: 'auto' }}>
+                    <Stack key={pinKey} direction="row" spacing={0.75} alignItems="center" flexWrap="nowrap" useFlexGap sx={{ overflowX: 'auto', pr: 1 }}>
                       <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>pin{idx}</Typography>
                       <Chip label={`name: ${pname ?? '(unset)'}`} size="small" onClick={(e) => { (e.currentTarget as HTMLDivElement).blur?.(); onEdit(mod, nameKey, pname ?? '', { type: 'text', label: nameKey }) }} />
                       <Chip label={`mode: ${mode ?? '(unset)'}`} size="small" onClick={(e) => { (e.currentTarget as HTMLDivElement).blur?.(); onEdit(mod, pinKey, mode ?? '', { type: 'select', options: pinModes, label: pinKey }) }} />
