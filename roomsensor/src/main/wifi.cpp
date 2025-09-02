@@ -391,6 +391,18 @@ static void mqtt_event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "Subscribed to config topic %s (msg_id=%d)", topic.c_str(), msg_id);
         }
 
+        // Subscribe to restart topic for this device: sensor/<mac>/device/restart
+        {
+            const uint8_t* mac = get_device_mac();
+            char mac_nosep[13];
+            snprintf(mac_nosep, sizeof(mac_nosep), "%02x%02x%02x%02x%02x%02x",
+                     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+            char restart_topic[64];
+            snprintf(restart_topic, sizeof(restart_topic), "sensor/%s/device/restart", mac_nosep);
+            int msg_id = esp_mqtt_client_subscribe(mqtt_client, restart_topic, 1);
+            ESP_LOGI(TAG, "Subscribed to restart topic %s (msg_id=%d)", restart_topic, msg_id);
+        }
+
         // Publish current configuration now that we're connected
         {
             using namespace config;
@@ -439,12 +451,28 @@ static void mqtt_event_handler(void* arg, esp_event_base_t event_base,
         }
     }
     else if (mqtt_event == MQTT_EVENT_DATA) {
-        // Forward potential config updates to ConfigurationManager
-        using namespace config;
-        auto& mgr = GetConfigurationManager();
         // Event provides topic and data not null-terminated
         std::string topic(event->topic, event->topic_len);
         std::string payload(event->data, event->data_len);
+
+        // Check for restart command topic: sensor/<mac>/device/restart
+        {
+            const uint8_t* mac = get_device_mac();
+            char mac_nosep[13];
+            snprintf(mac_nosep, sizeof(mac_nosep), "%02x%02x%02x%02x%02x%02x",
+                     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+            char restart_topic[64];
+            snprintf(restart_topic, sizeof(restart_topic), "sensor/%s/device/restart", mac_nosep);
+            if (topic == restart_topic) {
+                ESP_LOGW(TAG, "MQTT restart command received, restarting device now");
+                esp_restart();
+                return;
+            }
+        }
+
+        // Forward potential config updates to ConfigurationManager
+        using namespace config;
+        auto& mgr = GetConfigurationManager();
         mgr.handle_mqtt_message(topic.c_str(), payload.c_str());
     }
     // Other MQTT events are not used in this application

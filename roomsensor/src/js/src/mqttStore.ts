@@ -9,6 +9,7 @@ export type UseSensorsResult = {
   publishConfig: (mac: string, moduleName: string, configName: string, value: string | number | boolean) => void
   deleteRetainedForSensor: (mac: string) => void
   clearSensorLogs: (mac: string) => void
+  restartSensor: (mac: string) => void
 }
 
 // Development-only fallback endpoints; in production we fetch from the device
@@ -468,6 +469,18 @@ class MqttManager {
     }
   }
 
+  restartSensor = (mac: string) => {
+    if (!this.client) return
+    const topic = `sensor/${mac.toLowerCase()}/device/restart`
+    try {
+      this.client.publish(topic, '')
+      this.dlog('Publish', topic, '(restart)')
+    } catch (e) {
+      this.setError((e as Error).message)
+      this.dlog('Publish error', (e as Error).message)
+    }
+  }
+
   deleteRetainedForSensor = (mac: string) => {
     if (!this.client) return
     const key = mac.toLowerCase()
@@ -521,6 +534,7 @@ export function useSensors(): UseSensorsResult {
     publishConfig: manager.publishConfig,
     deleteRetainedForSensor: manager.deleteRetainedForSensor,
     clearSensorLogs: manager.clearSensorLogs,
+    restartSensor: manager.restartSensor,
   }
 }
 

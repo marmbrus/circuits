@@ -3,6 +3,7 @@ import AnsiText from './AnsiText'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import RestartAltIcon from '@mui/icons-material/RestartAlt'
 import ClearIcon from '@mui/icons-material/Clear'
 import { useEffect, useMemo, useState } from 'react'
 import type { SensorState } from '../types'
@@ -21,7 +22,7 @@ type Props = {
 
 export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceLogsExpanded, onLogsExpandedChange }: Props) {
 	const cfg = sensor.config
-	const { publishConfig, deleteRetainedForSensor, clearSensorLogs } = useSensors()
+	const { publishConfig, deleteRetainedForSensor, clearSensorLogs, restartSensor } = useSensors()
 	const id = cfg?.tags.id ?? sensor.mac
 	const macShort = sensor.mac.slice(-4)
 	const ip = sensor.ip
@@ -95,6 +96,11 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 							<Tooltip title="Delete retained topics">
 								<IconButton size="small" onClick={() => deleteRetainedForSensor(sensor.mac)} aria-label="delete retained">
 									<DeleteOutlineIcon fontSize="inherit" />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Restart device">
+								<IconButton size="small" onClick={() => restartSensor(sensor.mac)} aria-label="restart">
+									<RestartAltIcon fontSize="inherit" />
 								</IconButton>
 							</Tooltip>
 						</Stack>
@@ -306,7 +312,7 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 									Clear
 								</Button>
 							</Stack>
-							<Box sx={{ maxHeight: 240, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1, p: 1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace', fontSize: 12 }}>
+							<Box sx={{ maxHeight: 240, overflow: 'auto', bgcolor: 'background.paper', borderRadius: 1, p: 1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace', fontSize: 12 }}>
 								{(sensor.logs || []).slice(-500).map((entry, idx) => (
 									<div key={idx} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
 										<AnsiText text={entry.message} />
@@ -365,5 +371,6 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 		</Card>
 	)
 }
+
 
 
