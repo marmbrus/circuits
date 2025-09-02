@@ -154,6 +154,7 @@ esp_err_t telemetry_configure_lwt(esp_mqtt_client_config_t* mqtt_cfg) {
     snprintf(lwt_topic, sizeof(lwt_topic), "sensor/%s/device/connected", mac_nosep);
 
     const char* lwt_message = "{\"connected\":false}";
+    // Configure LWT using ESP-IDF v5.3 nested session.last_will fields
     mqtt_cfg->session.last_will.topic = strdup(lwt_topic);
     mqtt_cfg->session.last_will.msg = (const char*)strdup(lwt_message);
     mqtt_cfg->session.last_will.msg_len = strlen(lwt_message);
@@ -175,17 +176,6 @@ static void boot_publish_task_entry(void* arg) {
 
     publish_device_info(include_ts);
 
-    // Publish connected true retained to sensor/$mac/device/connected
-    {
-        char mac_nosep[13] = {0};
-        format_mac_nosep_lower(mac_nosep, sizeof(mac_nosep));
-        char topic[128];
-        snprintf(topic, sizeof(topic), "sensor/%s/device/connected", mac_nosep);
-
-        const char* connected_payload = "{\"connected\":true}";
-        publish_to_topic(topic, connected_payload, 1, 1);
-    }
-
     // Start status task once
     if (s_status_task == nullptr) {
         BaseType_t ok = xTaskCreatePinnedToCore(&status_task_entry, "status-pub", 4096, nullptr, tskIDLE_PRIORITY + 1, &s_status_task, tskNO_AFFINITY);
@@ -206,13 +196,6 @@ void telemetry_report_connected(void) {
             s_boot_task = nullptr;
             // Fallback: publish synchronously without timestamp wait
             publish_device_info(false);
-            // Also publish connected true retained
-            char mac_nosep[13] = {0};
-            format_mac_nosep_lower(mac_nosep, sizeof(mac_nosep));
-            char topic[128];
-            snprintf(topic, sizeof(topic), "sensor/%s/device/connected", mac_nosep);
-            const char* connected_payload = "{\"connected\":true}";
-            publish_to_topic(topic, connected_payload, 1, 1);
         }
     }
 }

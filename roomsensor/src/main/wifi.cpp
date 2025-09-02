@@ -361,6 +361,24 @@ static void mqtt_event_handler(void* arg, esp_event_base_t event_base,
         // Note: use a local static in wifi handler; here we just update state
         system_state = FULLY_CONNECTED;
 
+        // Immediately publish retained connected=true so LWT false is overridden
+        {
+            char topic[128];
+            const uint8_t* mac = get_device_mac();
+            char mac_nosep[13];
+            snprintf(mac_nosep, sizeof(mac_nosep), "%02x%02x%02x%02x%02x%02x",
+                     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+            snprintf(topic, sizeof(topic), "sensor/%s/device/connected", mac_nosep);
+            const char* payload = "{\"connected\":true}";
+            ESP_LOGI(TAG, "Publishing retained connected=true to %s", topic);
+            int msg_id = esp_mqtt_client_publish(mqtt_client, topic, payload, 0, 1, 1);
+            if (msg_id < 0) {
+                ESP_LOGE(TAG, "Direct MQTT publish failed for %s, err=%d", topic, msg_id);
+            } else {
+                ESP_LOGI(TAG, "Direct MQTT publish ok (msg_id=%d)", msg_id);
+            }
+        }
+
         // Publish telemetry (boot + location/connected)
         telemetry_report_connected();
 

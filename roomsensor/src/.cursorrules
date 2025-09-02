@@ -4,6 +4,4 @@ Be sure the reference the documentation specific version of the ESP-IDF when you
 Shell setup command (run this once when you create a new terminal): . ~/esp/v5.3/esp-idf/export.sh
 Build command: idf.py build
 
-You want to avoid the "." setup command everytime because its not on whitelist. Instead run that once and use idf.py directly after that for every other build.
-
 Always build to make sure you don't have any errors.
