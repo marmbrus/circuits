@@ -77,6 +77,9 @@ public:
     const std::string& start() const { return start_; }
     bool has_dma() const { return dma_set_; }
     bool dma() const { return dma_; }
+    // Optional user-provided display name
+    bool has_display_name() const { return name_set_; }
+    const std::string& display_name() const { return display_name_; }
 
 private:
     // Parse from external string representation to internal enum. Returns INVALID on failure.
@@ -100,6 +103,8 @@ private:
     int num_rows_ = 1;
     std::string layout_ = "ROW_MAJOR";
     Layout layout_enum_ = Layout::ROW_MAJOR;
+    // Optional persisted display name
+    bool name_set_ = false; std::string display_name_;
 
     // Non-persisted runtime fields (loaded from NVS if present)
     bool pattern_set_ = false;

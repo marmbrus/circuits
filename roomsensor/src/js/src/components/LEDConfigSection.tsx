@@ -108,7 +108,7 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
     <Accordion disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' }, borderRadius: 1 }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ width: '100%' }}>
-          <Typography variant="subtitle2">{ledKey}</Typography>
+          <Typography variant="subtitle2">{ledKey}{('name' in led && led.name) ? ` — ${led.name}` : ''}</Typography>
           <Chip label={`Pattern: ${patternValue}`} size="small" />
         </Stack>
       </AccordionSummary>
@@ -223,6 +223,11 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                     onClick={() => onEdit(ledKey, 'chip', led.chip, { type: 'select', options: ['WS2812', 'SK6812', 'WS2814', 'FLIPDOT'], label: 'Chip' })}
                   />
                 )}
+                <Chip
+                  label={`Name: ${led.name || '(none)'}`}
+                  size="small"
+                  onClick={() => onEdit(ledKey, 'name', led.name || '', { type: 'text', label: 'Name' })}
+                />
                 {'dataGPIO' in led && <Chip label={`Data: ${led.dataGPIO}`} size="small" onClick={() => onEdit(ledKey, 'dataGPIO', led.dataGPIO, { type: 'number', label: 'Data GPIO' })} />}
                 {'enabledGPIO' in led && <Chip label={`Enable: ${led.enabledGPIO}`} size="small" onClick={() => onEdit(ledKey, 'enabledGPIO', led.enabledGPIO, { type: 'number', label: 'Enable GPIO' })} />}
                 {'num_columns' in led && <Chip label={`Cols: ${led.num_columns}`} size="small" onClick={() => onEdit(ledKey, 'num_columns', led.num_columns, { type: 'number', label: 'Columns' })} />}

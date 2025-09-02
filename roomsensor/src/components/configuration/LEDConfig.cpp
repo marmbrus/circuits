@@ -12,6 +12,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     descriptors_.push_back({"num_columns", ConfigValueType::I32, "1", true});
     descriptors_.push_back({"num_rows", ConfigValueType::I32, "1", true});
     descriptors_.push_back({"layout", ConfigValueType::String, "ROW_MAJOR", true});
+    descriptors_.push_back({"name", ConfigValueType::String, nullptr, true});
 
     // Non-persisted runtime values (still declared so they can be updated and optionally loaded once)
     // NOTE: The following keys are intentionally NOT persisted to avoid flash wear from frequent updates:
@@ -145,6 +146,16 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         layout_ = layout_to_string(parsed);
         return ESP_OK;
     }
+    if (strcmp(key, "name") == 0) {
+        if (value_str == nullptr || *value_str == '\0') {
+            display_name_.clear();
+            name_set_ = false;
+            return ESP_OK;
+        }
+        display_name_ = value_str;
+        name_set_ = true;
+        return ESP_OK;
+    }
 
     // Non-persisted
     if (strcmp(key, "pattern") == 0) {
@@ -215,6 +226,7 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     cJSON_AddNumberToObject(obj, "num_columns", num_columns_);
     cJSON_AddNumberToObject(obj, "num_rows", num_rows_);
     cJSON_AddStringToObject(obj, "layout", layout_.c_str());
+    if (name_set_) cJSON_AddStringToObject(obj, "name", display_name_.c_str());
 
     // Non-persisted runtime fields (include only if set)
     if (pattern_set_) cJSON_AddStringToObject(obj, "pattern", pattern_.c_str());
