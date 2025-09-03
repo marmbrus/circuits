@@ -1,6 +1,7 @@
 #pragma once
 
 #include "i2c_master_ext.h"
+#include "esp_timer.h"
 #include <string>
 
 /**
@@ -116,4 +117,15 @@ public:
 protected:
     i2c_master_bus_handle_t _bus_handle; ///< Handle to the I2C master bus
     i2c_master_dev_handle_t _dev_handle; ///< Handle to the I2C device
+    // Shared warm-up configuration for all I2C sensors
+    // Avoid reporting metrics for this duration after sensor initialization
+    static constexpr uint32_t I2C_SENSOR_WARMUP_MS = 3 * 60 * 1000; // 3 minutes
+    unsigned long long _init_time_ms = 0; ///< Time in ms when the sensor finished init
+
+    // Helper exposed to derived classes: returns true when within the warm-up window
+    bool is_warming_up() const {
+        if (_init_time_ms == 0) return true;
+        unsigned long long now_ms = static_cast<unsigned long long>(esp_timer_get_time() / 1000);
+        return (now_ms - _init_time_ms) < I2C_SENSOR_WARMUP_MS;
+    }
 }; 

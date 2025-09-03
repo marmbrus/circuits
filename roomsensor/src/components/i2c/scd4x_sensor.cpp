@@ -1,6 +1,7 @@
 #include "scd4x_sensor.h"
 #include "esp_log.h"
 #include <string.h>
+#include "esp_timer.h"
 
 static const char *TAG = "SCD4xSensor";
 
@@ -121,6 +122,7 @@ bool SCD4xSensor::init(i2c_master_bus_handle_t bus_handle) {
 
     _initialized = true;
     ESP_LOGI(TAG, "SCD4x sensor initialized successfully");
+    _init_time_ms = (unsigned long long)(esp_timer_get_time() / 1000);
 
     return true;
 }
@@ -175,6 +177,10 @@ void SCD4xSensor::poll() {
     static const char* METRIC_TEMPERATURE  = "temperature_f";
     static const char* METRIC_HUMIDITY     = "humidity";
 
+    // Respect shared warm-up: skip reporting for first I2C_SENSOR_WARMUP_MS
+    if (is_warming_up()) {
+        return;
+    }
     report_metric(METRIC_CO2, _co2, _tag_collection);
     report_metric(METRIC_TEMPERATURE, getTemperatureFahrenheit(), _tag_collection);
     report_metric(METRIC_HUMIDITY, _humidity, _tag_collection);

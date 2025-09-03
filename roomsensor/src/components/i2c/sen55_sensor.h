@@ -200,4 +200,7 @@ private:
     bool _humidity_valid;      ///< Whether humidity reading is valid
 
     int _startup_readings_count; // Counter for startup readings to suppress initial warnings
+
+    // Warming-up tagging
+    int _warmup_remaining = 10; // number of polls to tag as warming_up
 };

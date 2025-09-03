@@ -2,8 +2,15 @@
 #include "esp_log.h"
 #include <string.h>
 #include "communication.h" // Add include for metrics reporting
+#include "esp_timer.h"
 
 static const char *TAG = "BME280Sensor";
+
+// BME280 register addresses used for diagnostics
+static constexpr uint8_t REG_STATUS      = 0xF3;
+static constexpr uint8_t REG_CTRL_HUM    = 0xF2;
+static constexpr uint8_t REG_CTRL_MEAS   = 0xF4;
+static constexpr uint8_t REG_CONFIG_REG  = 0xF5;
 
 BME280Sensor::BME280Sensor() :
     I2CSensor(nullptr),
@@ -37,13 +44,14 @@ bool BME280Sensor::isInitialized() const {
 }
 
 esp_err_t BME280Sensor::readRegister(uint8_t reg, uint8_t *data, size_t len) {
-    // Allow reading chip ID and calibration registers during initialization
-    bool is_calibration_reg = (reg == REG_CHIP_ID) ||
-                              ((reg >= REG_CALIB_T1_LSB) && (reg <= REG_CALIB_T1_LSB + 26)) ||
-                              ((reg >= REG_CALIB_H1) && (reg <= REG_CALIB_H1 + 1)) ||
-                              ((reg >= REG_CALIB_H2_LSB) && (reg <= REG_CALIB_H2_LSB + 7));
+    // Allow reading key registers during initialization (before _initialized becomes true)
+    bool is_init_allowed_reg = (reg == REG_CHIP_ID) ||
+                               (reg == REG_STATUS) ||
+                               ((reg >= REG_CALIB_T1_LSB) && (reg <= REG_CALIB_T1_LSB + 26)) ||
+                               ((reg >= REG_CALIB_H1) && (reg <= REG_CALIB_H1 + 1)) ||
+                               ((reg >= REG_CALIB_H2_LSB) && (reg <= REG_CALIB_H2_LSB + 7));
 
-    if (!_initialized && !is_calibration_reg) {
+    if (!_initialized && !is_init_allowed_reg) {
         ESP_LOGW(TAG, "Sensor not initialized, cannot read register 0x%02x", reg);
         return ESP_ERR_INVALID_STATE;
     }
@@ -129,8 +137,21 @@ bool BME280Sensor::init(i2c_master_bus_handle_t bus_handle) {
         return false;
     }
 
-    // Wait for reset to complete
-    vTaskDelay(pdMS_TO_TICKS(10));
+    // Wait for reset to complete and NVM copy (STATUS.im_update=0)
+    // Datasheet recommends polling the status register until NVM copying is done.
+    {
+        const uint32_t timeout_ms = 50;
+        uint32_t waited = 0;
+        while (waited < timeout_ms) {
+            uint8_t status = 0xFF;
+            if (readRegister(REG_STATUS, &status, 1) == ESP_OK) {
+                bool im_update = (status & 0x01) != 0; // bit0
+                if (!im_update) break;
+            }
+            vTaskDelay(pdMS_TO_TICKS(2));
+            waited += 2;
+        }
+    }
 
     // Read calibration data
     ret = readCalibrationData();
@@ -139,18 +160,19 @@ bool BME280Sensor::init(i2c_master_bus_handle_t bus_handle) {
         return false;
     }
 
-    // Set humidity oversampling to x1
-    ret = writeRegister(REG_CTRL_HUM, OSRS_X1);
+    // Put device into sleep while configuring
+    // Prepare CTRL_MEAS with desired oversampling but MODE=00 (sleep)
+    uint8_t ctrl_meas_sleep = (OSRS_X1 << 5) | (OSRS_X1 << 2) | 0x00; // sleep mode
+    ret = writeRegister(REG_CTRL_MEAS, ctrl_meas_sleep);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to set humidity oversampling: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to enter sleep/config mode: %s", esp_err_to_name(ret));
         return false;
     }
 
-    // Set temperature and pressure oversampling to x1 and set to normal mode
-    uint8_t meas_reg = (OSRS_X1 << 5) | (OSRS_X1 << 2) | MODE_NORMAL;
-    ret = writeRegister(REG_CTRL_MEAS, meas_reg);
+    // Set humidity oversampling to x1 (must be written before CTRL_MEAS)
+    ret = writeRegister(REG_CTRL_HUM, OSRS_X1);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to set measurement control: %s", esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to set humidity oversampling: %s", esp_err_to_name(ret));
         return false;
     }
 
@@ -162,8 +184,17 @@ bool BME280Sensor::init(i2c_master_bus_handle_t bus_handle) {
         return false;
     }
 
+    // Finally, enable normal mode to start measuring
+    uint8_t ctrl_meas_normal = (OSRS_X1 << 5) | (OSRS_X1 << 2) | MODE_NORMAL;
+    ret = writeRegister(REG_CTRL_MEAS, ctrl_meas_normal);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to set measurement control (normal mode): %s", esp_err_to_name(ret));
+        return false;
+    }
+
     _initialized = true;
     ESP_LOGI(TAG, "BME280 sensor initialized successfully");
+    _init_time_ms = (unsigned long long)(esp_timer_get_time() / 1000);
 
     // Create and populate tag collection
     _tag_collection = create_tag_collection();
@@ -198,12 +229,43 @@ void BME280Sensor::poll() {
     esp_err_t ret = readRawData();
     if (ret != ESP_OK) {
         ESP_LOGW(TAG, "Failed to read sensor data: %s", esp_err_to_name(ret));
+        // Dump key status/control registers to aid debugging
+        uint8_t st=0, ch=0, cm=0, cfg=0, id=0;
+        readRegister(REG_STATUS, &st, 1);
+        readRegister(REG_CTRL_HUM, &ch, 1);
+        readRegister(REG_CTRL_MEAS, &cm, 1);
+        readRegister(REG_CONFIG_REG, &cfg, 1);
+        readRegister(REG_CHIP_ID, &id, 1);
+        ESP_LOGW(TAG, "Regs: STATUS=0x%02X CTRL_HUM=0x%02X CTRL_MEAS=0x%02X CONFIG=0x%02X CHIP_ID=0x%02X",
+                 st, ch, cm, cfg, id);
+        return;
+    }
+
+    // Validate readings; handle the "all zeros" failure explicitly
+    static int s_bad_count = 0;
+    if (_temperature == 0.0f && _pressure == 0.0f && _humidity == 0.0f) {
+        uint8_t st=0, ch=0, cm=0, cfg=0, id=0;
+        readRegister(REG_STATUS, &st, 1);
+        readRegister(REG_CTRL_HUM, &ch, 1);
+        readRegister(REG_CTRL_MEAS, &cm, 1);
+        readRegister(REG_CONFIG_REG, &cfg, 1);
+        readRegister(REG_CHIP_ID, &id, 1);
+        ESP_LOGE(TAG, "All-zero readings detected: T=0 P=0 H=0 | STATUS=0x%02X CTRL_HUM=0x%02X CTRL_MEAS=0x%02X CONFIG=0x%02X CHIP_ID=0x%02X",
+                 st, ch, cm, cfg, id);
         return;
     }
 
     // Print sensor readings at INFO level so they're visible in normal operation
     ESP_LOGI(TAG, "Temperature=%.2f°C (%.2f°F), Pressure=%.2fhPa, Humidity=%.2f%%",
              _temperature, getTemperatureFahrenheit(), _pressure, _humidity);
+
+    // Remove subjective range checks; rely on explicit failure modes and status dumps only
+    (void)s_bad_count; // kept for future non-subjective detectors (e.g., stuck-value detection)
+
+    // Respect shared warm-up: skip reporting for first I2C_SENSOR_WARMUP_MS
+    if (is_warming_up()) {
+        return;
+    }
 
     // Report temperature metric
     static const char* METRIC_TEMPERATURE = "temperature_f";

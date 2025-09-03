@@ -1,6 +1,8 @@
 #include "sen55_sensor.h"
 #include "esp_log.h"
 #include <string.h>
+#include "esp_timer.h"
+#include <math.h>
 
 static const char *TAG = "SEN55Sensor";
 
@@ -121,10 +123,7 @@ bool SEN55Sensor::init(i2c_master_bus_handle_t bus_handle) {
     _initialized = true;
     ESP_LOGI(TAG, "SEN55 sensor initialized successfully");
 
-    // Initial reading - allow time for first measurement
-    // According to Sensirion, first reading is available after 1 second
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    poll();
+    _init_time_ms = (unsigned long long)(esp_timer_get_time() / 1000);
 
     return true;
 }
@@ -137,7 +136,12 @@ void SEN55Sensor::poll() {
 
     esp_err_t ret = readMeasurement();
     if (ret != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to read sensor data: %s", esp_err_to_name(ret));
+        static int s_not_ready_count = 0;
+        s_not_ready_count++;
+        if (s_not_ready_count >= 3) {
+            ESP_LOGW(TAG, "SEN55 not ready or read failed x3: %s", esp_err_to_name(ret));
+            s_not_ready_count = 0;
+        }
         return;
     }
 
@@ -168,8 +172,12 @@ void SEN55Sensor::poll() {
     report_metric(METRIC_PM10, _pm10, _tag_collection);
     report_metric(METRIC_VOC, _voc, _tag_collection);
     report_metric(METRIC_NOX, _nox, _tag_collection);
-    report_metric(METRIC_TEMPERATURE, getTemperatureFahrenheit(), _tag_collection); // Report in Fahrenheit
-    report_metric(METRIC_HUMIDITY, _humidity, _tag_collection);
+
+    // Respect shared warm-up: skip reporting RH/T for first I2C_SENSOR_WARMUP_MS
+    if (!is_warming_up()) {
+        report_metric(METRIC_TEMPERATURE, getTemperatureFahrenheit(), _tag_collection); // Report in Fahrenheit
+        report_metric(METRIC_HUMIDITY, _humidity, _tag_collection);
+    }
 }
 
 esp_err_t SEN55Sensor::sendCommand(uint16_t command) {
@@ -260,21 +268,20 @@ esp_err_t SEN55Sensor::readMeasurement() {
     // Step 5: Parse measurement data according to Sensirion embedded-i2c-sen5x library
     // Reference: sen5x_i2c.c in the Sensirion GitHub repo
 
-    // Mass Concentration PM1.0 [μg/m³]
-    uint16_t pm1p0 = (uint16_t)((data[0] << 8) | data[1]);
-    _pm1 = pm1p0 / 10.0f;
-
-    // Mass Concentration PM2.5 [μg/m³]
-    uint16_t pm2p5 = (uint16_t)((data[3] << 8) | data[4]);
-    _pm2_5 = pm2p5 / 10.0f;
-
-    // Mass Concentration PM4.0 [μg/m³]
-    uint16_t pm4p0 = (uint16_t)((data[6] << 8) | data[7]);
-    _pm4 = pm4p0 / 10.0f;
-
-    // Mass Concentration PM10.0 [μg/m³]
+    // Mass Concentration PMx [μg/m³]
+    uint16_t pm1p0  = (uint16_t)((data[0] << 8) | data[1]);
+    uint16_t pm2p5  = (uint16_t)((data[3] << 8) | data[4]);
+    uint16_t pm4p0  = (uint16_t)((data[6] << 8) | data[7]);
     uint16_t pm10p0 = (uint16_t)((data[9] << 8) | data[10]);
-    _pm10 = pm10p0 / 10.0f;
+    bool pm_invalid = (pm1p0 == 0xFFFF) || (pm2p5 == 0xFFFF) || (pm4p0 == 0xFFFF) || (pm10p0 == 0xFFFF);
+    if (pm_invalid) {
+        // Not ready: avoid 6553.5 artifacts
+        return ESP_ERR_INVALID_STATE;
+    }
+    _pm1   = pm1p0 / 10.0f;
+    _pm2_5 = pm2p5 / 10.0f;
+    _pm4   = pm4p0 / 10.0f;
+    _pm10  = pm10p0 / 10.0f;
 
     // Temperature [°C] - CORRECT SCALING FROM SENSIRION LIBRARY
     int16_t tempRaw = (int16_t)((data[12] << 8) | data[13]);
