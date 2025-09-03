@@ -153,7 +153,16 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 							onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setStatusOpen(true) }}
 						/>
 						<Chip
-							label={`ota: ${String((sensor.otaStatus as any)?.status || 'unknown')}`}
+							label={(() => {
+								const o = (sensor.otaStatus as any) || {}
+								const statusStr = String(o.status || 'unknown')
+								const norm = statusStr.toLowerCase().replace(/[^a-z]/g, '')
+								if (norm === 'uptodate') {
+									const ver = String(o.firmware_local_version || o.web_local_version || '')
+									if (ver) return `ota: ${ver.slice(0, 7)}`
+								}
+								return `ota: ${statusStr}`
+							})()}
 							size="small"
 							variant="outlined"
 							onClick={(e) => { (e.currentTarget as HTMLElement).blur(); setOtaOpen(true) }}

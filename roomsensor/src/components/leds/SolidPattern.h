@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LEDPattern.h"
+#include <cstddef>
 
 namespace leds {
 
@@ -18,12 +19,19 @@ public:
         if (brightness_percent > 100) brightness_percent = 100;
         brightness_percent_ = brightness_percent;
     }
+    void set_speed_percent(int speed_percent) override {
+        if (speed_percent < 0) speed_percent = 0;
+        if (speed_percent > 100) speed_percent = 100;
+        speed_percent_ = speed_percent; // 0=no move, 100=advance every update
+    }
 
 private:
     bool color_set_ = false;
     uint8_t r_ = 0, g_ = 0, b_ = 0, w_ = 0;
     int brightness_percent_ = 100;
-    uint64_t pwm_anchor_us_ = 0;
+    int speed_percent_ = 100; // 0..100
+    uint64_t last_advance_us_ = 0;
+    size_t chase_offset_ = 0;
 };
 
 } // namespace leds
