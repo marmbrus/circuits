@@ -79,7 +79,6 @@ private:
     // - Ensure a forced refresh at least every ~10s to recover from transient glitches
     uint32_t update_interval_us_ = 5'000; // default cadence; pattern may skip if transmitting
 
-    // (deprecated) config poll fields removed in favor of generation-based reconciliation
 
     // Per-strip frame counters for periodic telemetry
     std::vector<uint32_t> frames_tx_counts_;

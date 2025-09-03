@@ -37,9 +37,20 @@ static const char* TAG = "LEDManager";
 LEDManager::LEDManager() = default;
 LEDManager::~LEDManager() = default;
 
-// Use config::LEDConfig::Chip directly throughout; no local enum mapping
 
-// Pattern names are owned by pattern classes; avoid translating enums here
+// Helper to apply common runtime knobs to a pattern from config
+static inline void apply_runtime_knobs(leds::LEDPattern& pat, const config::LEDConfig& cfg) {
+    pat.set_speed_percent(cfg.has_speed() ? cfg.speed() : 50);
+    if (cfg.has_r() || cfg.has_g() || cfg.has_b() || cfg.has_w()) {
+        pat.set_solid_color(cfg.has_r() ? cfg.r() : 0,
+                            cfg.has_g() ? cfg.g() : 0,
+                            cfg.has_b() ? cfg.b() : 0,
+                            cfg.has_w() ? cfg.w() : 0);
+    }
+    if (cfg.has_brightness()) pat.set_brightness_percent(cfg.brightness());
+    if (cfg.has_start()) pat.set_start_string(cfg.start().c_str());
+}
+
 
 esp_err_t LEDManager::init(config::ConfigurationManager& cfg_manager) {
     cfg_manager_ = &cfg_manager;
@@ -189,7 +200,6 @@ std::unique_ptr<LEDStrip> LEDManager::create_strip(const config::LEDConfig& cfg,
     return s;
 }
 
-// For initial implementation, return nullptr; concrete patterns will be added in a later step.
 std::unique_ptr<LEDPattern> LEDManager::create_pattern_from_config(const config::LEDConfig& cfg) {
     using P = config::LEDConfig::Pattern;
     P pat = cfg.pattern_enum();
@@ -247,7 +257,7 @@ void LEDManager::run_update_loop() {
                 }
                 FrameView cur{current.data(), rows, cols};
                 FrameView prev{prev_frames_rgba_[i].data(), rows, cols};
-                bool should_refresh = power_mgrs_[i]->on_frame(cur, prev, now);
+                (void)power_mgrs_[i]->on_frame(cur, prev, now);
                 // Apply power state; log transitions
                 if (s->has_enable_pin()) {
                     bool new_state = power_mgrs_[i]->power_enabled();
@@ -263,18 +273,13 @@ void LEDManager::run_update_loop() {
                     }
                     s->set_power_enabled(new_state);
                 }
-                // Determine if we are within a power-on hold window for this strip
-                bool hold_active = (i < power_on_hold_until_us_.size()) && (now < power_on_hold_until_us_[i]);
-                // Decide refresh
-                if (should_refresh && !hold_active) s->flush_if_dirty(now, 0); // force transmit if enabled
                 // Save current as previous
                 prev_frames_rgba_[i].swap(current);
             }
 
-            // Skip normal flush while in power-on hold
             bool hold_active = (i < power_on_hold_until_us_.size()) && (now < power_on_hold_until_us_[i]);
-            if (!hold_active && s->flush_if_dirty(now)) {
-                if (i < frames_tx_counts_.size()) frames_tx_counts_[i]++;
+            if (!hold_active) {
+                if (s->flush_if_dirty(now)) frames_tx_counts_[i]++;
             }
         }
 
@@ -300,55 +305,25 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
     LEDPattern* pat = (idx < patterns_.size()) ? patterns_[idx].get() : nullptr;
     if (!strip) return;
 
-    // Update existing pattern or (re)create if type changed
-    bool type_mismatch = false;
-    if (!pat) {
-        type_mismatch = true;
-    } else {
-        // Compare by last applied enum rather than translating to string again
-        size_t ensure = idx + 1;
-        if (last_patterns_.size() < ensure) last_patterns_.resize(ensure, config::LEDConfig::Pattern::INVALID);
-        if (last_patterns_[idx] != cfg.pattern_enum()) type_mismatch = true;
-    }
+    // Decide if pattern type changed using last_patterns_
+    size_t ensure = idx + 1;
+    if (last_patterns_.size() < ensure) last_patterns_.resize(ensure, config::LEDConfig::Pattern::INVALID);
+    bool type_changed = (!pat) || (last_patterns_[idx] != cfg.pattern_enum());
 
-    if (type_mismatch) {
+    if (type_changed) {
         patterns_[idx] = create_pattern_from_config(cfg);
         pat = patterns_[idx].get();
         if (pat) {
-            // Apply dynamic knobs; avoid forcing colors to black if not set in config
-            pat->set_speed_percent(cfg.has_speed() ? cfg.speed() : 50);
-            if (cfg.has_r() || cfg.has_g() || cfg.has_b() || cfg.has_w()) {
-                pat->set_solid_color(cfg.has_r() ? cfg.r() : 0,
-                                     cfg.has_g() ? cfg.g() : 0,
-                                     cfg.has_b() ? cfg.b() : 0,
-                                     cfg.has_w() ? cfg.w() : 0);
-            }
-            if (cfg.has_brightness()) pat->set_brightness_percent(cfg.brightness());
-            if (cfg.has_start()) pat->set_start_string(cfg.start().c_str());
+            apply_runtime_knobs(*pat, cfg);
             pat->reset(*strip, now_us);
-            // Render first frame with correct parameters
-            pat->update(*strip, now_us);
-            // Force an immediate flush so the new pattern is visible without waiting for the next tick
-            strip->flush_if_dirty(now_us, 0);
         }
         ESP_LOGI(TAG, "Pattern swapped for strip %u -> %s", (unsigned)idx, pat ? pat->name() : "<null>");
     } else if (pat) {
         // Apply runtime knobs
-        pat->set_speed_percent(cfg.has_speed() ? cfg.speed() : 50);
-        if (cfg.has_r() || cfg.has_g() || cfg.has_b() || cfg.has_w()) {
-            pat->set_solid_color(cfg.has_r() ? cfg.r() : 0,
-                                 cfg.has_g() ? cfg.g() : 0,
-                                 cfg.has_b() ? cfg.b() : 0,
-                                 cfg.has_w() ? cfg.w() : 0);
-        }
-        if (cfg.has_brightness()) pat->set_brightness_percent(cfg.brightness());
-        if (cfg.has_start()) pat->set_start_string(cfg.start().c_str());
-        // Special case: POSITION should react immediately to R/G changes
-        if (cfg.pattern_enum() == config::LEDConfig::Pattern::POSITION) {
-            pat->update(*strip, now_us);
-            strip->flush_if_dirty(now_us, 0);
-        }
+        apply_runtime_knobs(*pat, cfg);
     }
+    // Record last applied pattern type
+    last_patterns_[idx] = cfg.pattern_enum();
 }
 
 void LEDManager::reconcile_with_config(config::ConfigurationManager& cfg_manager) {
@@ -383,43 +358,29 @@ void LEDManager::reconcile_with_config(config::ConfigurationManager& cfg_manager
 
     if (big_change) {
         ESP_LOGI(TAG, "Detected hardware-level config change; rebuilding strips");
-        refresh_configuration(cfg_manager);
-        // Update generations snapshot after refresh
+        // Update generations snapshot then refresh configuration
         auto act2 = cfg_manager.active_leds();
         for (size_t i = 0; i < act2.size(); ++i) {
             if (i >= last_generations_.size()) last_generations_.resize(i+1, 0);
             last_generations_[i] = act2[i] ? act2[i]->generation() : 0;
         }
+
+        refresh_configuration(cfg_manager);
+
         return;
     }
 
-    // Small change: pattern/speed/colors. Apply in place. Avoid reinstalling same pattern type.
+    // Apply updates only to strips whose generation changed
     uint64_t now = esp_timer_get_time();
     for (size_t i = 0; i < active.size(); ++i) {
         auto* c = active[i];
         if (!c) continue;
-        if (i >= last_patterns_.size()) last_patterns_.resize(i+1, config::LEDConfig::Pattern::INVALID);
-        bool type_changed = (last_patterns_[i] != c->pattern_enum());
-        if (type_changed) {
-            apply_pattern_updates_from_config(i, *c, now);
-            last_patterns_[i] = c->pattern_enum();
-        } else {
-            LEDPattern* pat = (i < patterns_.size()) ? patterns_[i].get() : nullptr;
-            LEDStrip* strip = (i < strips_.size()) ? strips_[i].get() : nullptr;
-            if (pat && strip) {
-                pat->set_speed_percent(c->has_speed() ? c->speed() : 50);
-                if (c->has_r() || c->has_g() || c->has_b() || c->has_w()) {
-                    pat->set_solid_color(c->has_r() ? c->r() : 0,
-                                         c->has_g() ? c->g() : 0,
-                                         c->has_b() ? c->b() : 0,
-                                         c->has_w() ? c->w() : 0);
-                }
-                if (c->has_brightness()) pat->set_brightness_percent(c->brightness());
-                if (c->has_start()) pat->set_start_string(c->start().c_str());
-            }
-        }
         if (i >= last_generations_.size()) last_generations_.resize(i+1, 0);
-        last_generations_[i] = c->generation();
+        uint32_t current_gen = c->generation();
+        if (last_generations_[i] == current_gen) continue; // skip unchanged
+        // Conservative: record first to avoid skipping updates if generation advances mid-apply
+        last_generations_[i] = current_gen;
+        apply_pattern_updates_from_config(i, *c, now);
     }
 }
 
