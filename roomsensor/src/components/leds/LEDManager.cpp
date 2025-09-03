@@ -37,39 +37,19 @@ static const char* TAG = "LEDManager";
 LEDManager::LEDManager() = default;
 LEDManager::~LEDManager() = default;
 
-static leds::LEDChip ToLEDChip(config::LEDConfig::Chip c) {
-    switch (c) {
-        case config::LEDConfig::Chip::WS2812: return leds::LEDChip::WS2812;
-        case config::LEDConfig::Chip::SK6812: return leds::LEDChip::SK6812;
-        case config::LEDConfig::Chip::WS2814: return leds::LEDChip::WS2814;
-        case config::LEDConfig::Chip::FLIPDOT: return leds::LEDChip::FLIPDOT;
-        default: return leds::LEDChip::WS2812;
-    }
-}
+// Use config::LEDConfig::Chip directly throughout; no local enum mapping
 
-static const char* pattern_name_for_config(config::LEDConfig::Pattern p) {
-    using P = config::LEDConfig::Pattern;
-    switch (p) {
-        case P::OFF: return "OFF";
-        case P::SOLID: return "SOLID";
-        case P::FADE: return "FADE";
-        case P::STATUS: return "STATUS";
-        case P::RAINBOW: return "RAINBOW";
-        case P::CHASE: return "CHASE";
-        case P::LIFE: return "LIFE";
-        case P::POSITION: return "POSITION";
-        case P::CLOCK: return "CLOCK";
-        case P::CALENDAR: return "CALENDAR";
-        case P::INVALID: default: return "OFF";
-    }
-}
+// Pattern names are owned by pattern classes; avoid translating enums here
 
 esp_err_t LEDManager::init(config::ConfigurationManager& cfg_manager) {
     cfg_manager_ = &cfg_manager;
+    if (cfg_manager_ == nullptr) {
+        ESP_LOGE(TAG, "LEDManager init requires a ConfigurationManager instance");
+        return ESP_FAIL;
+    }
     ESP_LOGI(TAG, "Initializing LEDManager");
     refresh_configuration(cfg_manager);
-    // create update task pinned to APP core
-    // Give the task a small stack and low priority so it never starves IDLE1 on CPU1 (APP core)
+    // Create update task pinned to APP core with a small stack and low priority
     BaseType_t ok = xTaskCreatePinnedToCore(
         &LEDManager::UpdateTaskEntry, "led-update", 6144, this, update_task_priority_, &update_task_, update_task_core_);
     if (ok != pdPASS) {
@@ -86,9 +66,11 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     patterns_.clear();
     power_mgrs_.clear();
     prev_frames_rgba_.clear();
+    scratch_frames_rgba_.clear();
     last_layouts_.clear();
     last_patterns_.clear();
     frames_tx_counts_.assign(active.size(), 0);
+    last_generations_.assign(active.size(), 0);
     last_power_enabled_.assign(active.size(), false);
     power_on_hold_until_us_.assign(active.size(), 0);
     strips_.reserve(active.size());
@@ -125,70 +107,8 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
         bool use_dma = (i == selected_dma_idx);
         size_t rows = static_cast<size_t>(c->num_rows());
         size_t cols = static_cast<size_t>(c->num_columns());
-        auto chip = ToLEDChip(c->chip_enum());
-        std::unique_ptr<LEDStrip> s;
-        // Build mapper based on layout once; move into chosen branch
-        std::unique_ptr<leds::internal::LEDCoordinateMapper> mapper;
-        switch (c->layout_enum()) {
-            case config::LEDConfig::Layout::SERPENTINE_ROW:
-                mapper.reset(new leds::internal::SerpentineRowMapper(rows, cols));
-                break;
-            case config::LEDConfig::Layout::COLUMN_MAJOR:
-                mapper.reset(new leds::internal::ColumnMajorMapper(rows, cols));
-                break;
-            case config::LEDConfig::Layout::FLIPDOT_GRID:
-                mapper.reset(new leds::internal::FlipdotGridMapper(rows, cols));
-                break;
-            case config::LEDConfig::Layout::ROW_MAJOR:
-            default:
-                mapper.reset(new leds::internal::RowMajorMapper(rows, cols));
-                break;
-        }
-        if (chip == LEDChip::WS2812) {
-            LEDStripSurfaceAdapter::Params ap;
-            ap.gpio = c->data_gpio();
-            ap.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
-            ap.rows = rows;
-            ap.cols = cols;
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2812(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
-            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
-        } else if (chip == LEDChip::SK6812) {
-            LEDStripSurfaceAdapter::Params ap;
-            ap.gpio = c->data_gpio();
-            ap.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
-            ap.rows = rows;
-            ap.cols = cols;
-            // mapper from earlier switch reused
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderSK6812(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
-            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
-        } else if (chip == LEDChip::WS2814) {
-            LEDStripSurfaceAdapter::Params ap;
-            ap.gpio = c->data_gpio();
-            ap.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
-            ap.rows = rows;
-            ap.cols = cols;
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2814(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
-            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
-        } else if (chip == LEDChip::FLIPDOT) {
-            LEDStripSurfaceAdapter::Params ap;
-            ap.gpio = c->data_gpio();
-            ap.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
-            ap.rows = rows;
-            ap.cols = cols;
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderFlipdot(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, ((rows * cols) + 2) / 3));
-            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
-        } else {
-            LEDStripRmt::CreateParams p;
-            p.gpio = c->data_gpio();
-            p.enable_gpio = c->has_enabled_gpio() ? c->enabled_gpio() : -1;
-            p.length = rows * cols;
-            p.rows = rows;
-            p.cols = cols;
-            p.chip = chip;
-            p.use_dma = use_dma;
-            p.mem_block_symbols = use_dma ? 256 : 48;
-            s = LEDStripRmt::Create(p);
-        }
+        auto chip = c->chip_enum();
+        std::unique_ptr<LEDStrip> s = create_strip(*c, use_dma);
         if (!s) {
             ESP_LOGE(TAG, "Failed to create strip on GPIO %d (dma=%d)", c->data_gpio(), (int)use_dma);
             continue;
@@ -197,9 +117,10 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
         s->clear();
         s->flush_if_dirty(esp_timer_get_time(), 0);
         // Install power manager by chip type
-        if (chip == LEDChip::FLIPDOT) power_mgrs_.push_back(std::unique_ptr<PowerManager>(new FlipDotPower()));
+        if (chip == config::LEDConfig::Chip::FLIPDOT) power_mgrs_.push_back(std::unique_ptr<PowerManager>(new FlipDotPower()));
         else power_mgrs_.push_back(std::unique_ptr<PowerManager>(new LedPower()));
         prev_frames_rgba_.push_back(std::vector<uint8_t>(rows * cols * 4, 0));
+        scratch_frames_rgba_.push_back(std::vector<uint8_t>(rows * cols * 4, 0));
         strips_.push_back(std::move(s));
         patterns_.push_back(create_pattern_from_config(*c));
         last_layouts_.push_back(c->layout_enum());
@@ -214,17 +135,57 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     }
 }
 
-std::unique_ptr<LEDStrip> LEDManager::create_strip_from_config(const config::LEDConfig& cfg) {
-    LEDStripRmt::CreateParams p;
-    p.gpio = cfg.data_gpio();
-    p.enable_gpio = cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1;
-    p.length = static_cast<size_t>(cfg.num_columns() * cfg.num_rows());
-    p.rows = static_cast<size_t>(cfg.num_rows());
-    p.cols = static_cast<size_t>(cfg.num_columns());
-    p.chip = ToLEDChip(cfg.chip_enum());
-    p.use_dma = cfg.has_dma() ? cfg.dma() : false; // manager may override in assign_dma_channels
-    auto s = LEDStripRmt::Create(p);
-    if (!s) ESP_LOGE(TAG, "Failed to create strip on GPIO %d", p.gpio);
+std::unique_ptr<LEDStrip> LEDManager::create_strip(const config::LEDConfig& cfg, bool use_dma) {
+    size_t rows = static_cast<size_t>(cfg.num_rows());
+    size_t cols = static_cast<size_t>(cfg.num_columns());
+    auto chip = cfg.chip_enum();
+    std::unique_ptr<LEDStrip> s;
+    std::unique_ptr<leds::internal::LEDCoordinateMapper> mapper;
+    switch (cfg.layout_enum()) {
+        case config::LEDConfig::Layout::SERPENTINE_ROW:
+            mapper.reset(new leds::internal::SerpentineRowMapper(rows, cols));
+            break;
+        case config::LEDConfig::Layout::COLUMN_MAJOR:
+            mapper.reset(new leds::internal::ColumnMajorMapper(rows, cols));
+            break;
+        case config::LEDConfig::Layout::FLIPDOT_GRID:
+            mapper.reset(new leds::internal::FlipdotGridMapper(rows, cols));
+            break;
+        case config::LEDConfig::Layout::ROW_MAJOR:
+        default:
+            mapper.reset(new leds::internal::RowMajorMapper(rows, cols));
+            break;
+    }
+    switch (chip) {
+        case config::LEDConfig::Chip::WS2812: {
+            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1, rows, cols};
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2812(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
+            break;
+        }
+        case config::LEDConfig::Chip::SK6812: {
+            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1, rows, cols};
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderSK6812(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
+            break;
+        }
+        case config::LEDConfig::Chip::WS2814: {
+            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1, rows, cols};
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2814(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
+            break;
+        }
+        case config::LEDConfig::Chip::FLIPDOT: {
+            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1, rows, cols};
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderFlipdot(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, ((rows * cols) + 2) / 3));
+            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
+            break;
+        }
+        default:
+            ESP_LOGE(TAG, "Unknown LED chip enum");
+            return nullptr;
+    }
+    if (!s) ESP_LOGE(TAG, "Failed to create strip on GPIO %d (dma=%d)", cfg.data_gpio(), (int)use_dma);
     return s;
 }
 
@@ -249,15 +210,11 @@ std::unique_ptr<LEDPattern> LEDManager::create_pattern_from_config(const config:
     return p;
 }
 
-// assign_dma_channels removed; DMA is decided at build time in refresh_configuration
-
 void LEDManager::UpdateTaskEntry(void* arg) {
     static_cast<LEDManager*>(arg)->run_update_loop();
 }
 
 void LEDManager::run_update_loop() {
-    uint64_t last_cfg_check = 0;
-    const uint64_t cfg_check_period_us = cfg_poll_period_us_;
     TickType_t tick_delay = pdMS_TO_TICKS(update_interval_us_ / 1000);
     if (tick_delay == 0) tick_delay = 1; // ensure at least one tick to yield CPU
     while (true) {
@@ -267,12 +224,8 @@ void LEDManager::run_update_loop() {
         if ((loop_count++ % 2000u) == 0u) {
             ESP_LOGD(TAG, "update loop tick; delay_ticks=%u, strips=%u", (unsigned)tick_delay, (unsigned)strips_.size());
         }
-        if (now - last_cfg_check > cfg_check_period_us) {
-            last_cfg_check = now;
-            if (cfg_manager_) {
-                reconcile_with_config(*cfg_manager_);
-            }
-        }
+        // Cheap per-tick generation check; if changed, reconcile immediately
+        reconcile_with_config(*cfg_manager_);
 
         // Update patterns and flush strips. Skip pattern update if strip is transmitting.
         for (size_t i = 0; i < strips_.size(); ++i) {
@@ -285,7 +238,9 @@ void LEDManager::run_update_loop() {
             if (i < power_mgrs_.size()) {
                 // Build current frame view from strip's shadow via get_pixel
                 size_t rows = s->rows(), cols = s->cols();
-                std::vector<uint8_t> current(rows * cols * 4, 0);
+                if (i >= scratch_frames_rgba_.size()) scratch_frames_rgba_.resize(i+1);
+                auto& current = scratch_frames_rgba_[i];
+                current.assign(rows * cols * 4, 0);
                 for (size_t idx = 0; idx < rows * cols; ++idx) {
                     uint8_t r=0,g=0,b=0,w=0; s->get_pixel(idx, r, g, b, w);
                     size_t off = idx * 4; current[off]=r; current[off+1]=g; current[off+2]=b; current[off+3]=w;
@@ -347,12 +302,13 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
 
     // Update existing pattern or (re)create if type changed
     bool type_mismatch = false;
-    if (pat) {
-        // Compare by reported name; simple and sufficient
-        const char* desired_name = pattern_name_for_config(cfg.pattern_enum());
-        if (strcmp(pat->name(), desired_name) != 0) type_mismatch = true;
-    } else {
+    if (!pat) {
         type_mismatch = true;
+    } else {
+        // Compare by last applied enum rather than translating to string again
+        size_t ensure = idx + 1;
+        if (last_patterns_.size() < ensure) last_patterns_.resize(ensure, config::LEDConfig::Pattern::INVALID);
+        if (last_patterns_[idx] != cfg.pattern_enum()) type_mismatch = true;
     }
 
     if (type_mismatch) {
@@ -397,23 +353,43 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
 
 void LEDManager::reconcile_with_config(config::ConfigurationManager& cfg_manager) {
     auto active = cfg_manager.active_leds();
-    // Big change: number of active strips or any hardware/grid mismatch (gpio, size, layout change)
     bool big_change = (active.size() != strips_.size());
+    // If not obviously big, check per-strip generation first; only then inspect hardware params
     if (!big_change) {
+        // Detect any generation change and then decide big vs small
+        bool any_gen_changed = false;
         for (size_t i = 0; i < active.size(); ++i) {
             auto* c = active[i];
-            LEDStrip* s = strips_[i].get();
-            if (!c || !s) { big_change = true; break; }
-            size_t desired_len = static_cast<size_t>(c->num_columns() * c->num_rows());
-            if (s->pin() != (c->has_data_gpio() ? c->data_gpio() : -1) ||
-                s->length() != desired_len ||
-                (i < last_layouts_.size() && last_layouts_[i] != c->layout_enum())) { big_change = true; break; }
+            if (!c) { big_change = true; break; }
+            uint32_t gen = c->generation();
+            if (i >= last_generations_.size()) last_generations_.resize(i+1, 0);
+            if (gen != last_generations_[i]) { any_gen_changed = true; }
+        }
+        if (any_gen_changed) {
+            for (size_t i = 0; i < active.size(); ++i) {
+                auto* c = active[i];
+                LEDStrip* s = strips_[i].get();
+                if (!c || !s) { big_change = true; break; }
+                size_t desired_len = static_cast<size_t>(c->num_columns() * c->num_rows());
+                if (s->pin() != (c->has_data_gpio() ? c->data_gpio() : -1) ||
+                    s->length() != desired_len ||
+                    (i < last_layouts_.size() && last_layouts_[i] != c->layout_enum())) { big_change = true; break; }
+            }
+        } else {
+            // No generation change; nothing to do
+            return;
         }
     }
 
     if (big_change) {
         ESP_LOGI(TAG, "Detected hardware-level config change; rebuilding strips");
         refresh_configuration(cfg_manager);
+        // Update generations snapshot after refresh
+        auto act2 = cfg_manager.active_leds();
+        for (size_t i = 0; i < act2.size(); ++i) {
+            if (i >= last_generations_.size()) last_generations_.resize(i+1, 0);
+            last_generations_[i] = act2[i] ? act2[i]->generation() : 0;
+        }
         return;
     }
 
@@ -422,25 +398,28 @@ void LEDManager::reconcile_with_config(config::ConfigurationManager& cfg_manager
     for (size_t i = 0; i < active.size(); ++i) {
         auto* c = active[i];
         if (!c) continue;
-        // If pattern type changed, allow apply to recreate; otherwise, skip reinstall.
-        bool type_changed = (i >= last_patterns_.size()) || (last_patterns_[i] != c->pattern_enum());
+        if (i >= last_patterns_.size()) last_patterns_.resize(i+1, config::LEDConfig::Pattern::INVALID);
+        bool type_changed = (last_patterns_[i] != c->pattern_enum());
         if (type_changed) {
             apply_pattern_updates_from_config(i, *c, now);
-            if (i >= last_patterns_.size()) last_patterns_.resize(i+1, config::LEDConfig::Pattern::INVALID);
             last_patterns_[i] = c->pattern_enum();
         } else {
-            // Update runtime knobs only, without type swap
             LEDPattern* pat = (i < patterns_.size()) ? patterns_[i].get() : nullptr;
-            if (pat) {
+            LEDStrip* strip = (i < strips_.size()) ? strips_[i].get() : nullptr;
+            if (pat && strip) {
                 pat->set_speed_percent(c->has_speed() ? c->speed() : 50);
-                pat->set_solid_color(c->has_r() ? c->r() : 0,
-                                     c->has_g() ? c->g() : 0,
-                                     c->has_b() ? c->b() : 0,
-                                     c->has_w() ? c->w() : 0);
+                if (c->has_r() || c->has_g() || c->has_b() || c->has_w()) {
+                    pat->set_solid_color(c->has_r() ? c->r() : 0,
+                                         c->has_g() ? c->g() : 0,
+                                         c->has_b() ? c->b() : 0,
+                                         c->has_w() ? c->w() : 0);
+                }
                 if (c->has_brightness()) pat->set_brightness_percent(c->brightness());
                 if (c->has_start()) pat->set_start_string(c->start().c_str());
             }
         }
+        if (i >= last_generations_.size()) last_generations_.resize(i+1, 0);
+        last_generations_[i] = c->generation();
     }
 }
 

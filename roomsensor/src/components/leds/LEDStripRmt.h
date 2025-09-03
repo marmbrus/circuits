@@ -17,7 +17,7 @@ public:
         size_t length; // total number of LEDs = rows * cols
         size_t rows = 1; // logical rows (>=1)
         size_t cols = 0; // logical columns; if 0, inferred from length/rows
-        LEDChip chip;
+        config::LEDConfig::Chip chip;
         bool use_dma;
         uint32_t rmt_resolution_hz = 10 * 1000 * 1000; // 10 MHz default per component doc
         size_t mem_block_symbols = 48; // default for non-DMA; manager may override for DMA
@@ -29,7 +29,7 @@ public:
     // LEDStrip interface
     int pin() const override { return gpio_; }
     size_t length() const override { return length_; }
-    LEDChip chip() const override { return chip_; }
+    config::LEDConfig::Chip chip() const override { return chip_; }
     size_t rows() const override { return rows_; }
     size_t cols() const override { return cols_; }
     size_t index_for_row_col(size_t row, size_t col) const override {
@@ -65,7 +65,7 @@ private:
     size_t length_ = 0;
     size_t rows_ = 1;
     size_t cols_ = 0;
-    LEDChip chip_ = LEDChip::WS2812;
+    config::LEDConfig::Chip chip_ = config::LEDConfig::Chip::WS2812;
     bool with_dma_ = false;
     uint32_t rmt_resolution_hz_ = 10 * 1000 * 1000;
     size_t mem_block_symbols_ = 48;

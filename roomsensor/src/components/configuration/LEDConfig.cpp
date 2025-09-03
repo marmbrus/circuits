@@ -114,11 +114,13 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
     if (strcmp(key, "dataGPIO") == 0) {
         data_gpio_set_ = (value_str != nullptr);
         data_gpio_ = value_str ? atoi(value_str) : -1;
+        /* generation bumped centrally */
         return ESP_OK;
     }
     if (strcmp(key, "enabledGPIO") == 0) {
         enabled_gpio_set_ = (value_str != nullptr);
         enabled_gpio_ = value_str ? atoi(value_str) : -1;
+        /* generation bumped centrally */
         return ESP_OK;
     }
     if (strcmp(key, "chip") == 0) {
@@ -126,6 +128,7 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         if (parsed != Chip::INVALID) {
             chip_enum_ = parsed;
             chip_ = chip_to_string(parsed);
+            /* generation bumped centrally */
             return ESP_OK;
         }
         return ESP_ERR_INVALID_ARG;
@@ -133,27 +136,32 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
     if (strcmp(key, "num_columns") == 0) {
         num_columns_ = value_str ? atoi(value_str) : 1;
         if (num_columns_ <= 0) num_columns_ = 1;
+        /* generation bumped centrally */
         return ESP_OK;
     }
     if (strcmp(key, "num_rows") == 0) {
         num_rows_ = value_str ? atoi(value_str) : 1;
         if (num_rows_ <= 0) num_rows_ = 1;
+        /* generation bumped centrally */
         return ESP_OK;
     }
     if (strcmp(key, "layout") == 0) {
         Layout parsed = parse_layout(value_str);
         layout_enum_ = parsed;
         layout_ = layout_to_string(parsed);
+        /* generation bumped centrally */
         return ESP_OK;
     }
     if (strcmp(key, "name") == 0) {
         if (value_str == nullptr || *value_str == '\0') {
             display_name_.clear();
             name_set_ = false;
+            /* generation bumped centrally */
             return ESP_OK;
         }
         display_name_ = value_str;
         name_set_ = true;
+        /* generation bumped centrally */
         return ESP_OK;
     }
 
@@ -164,19 +172,21 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
             pattern_enum_ = parsed;
             pattern_ = pattern_to_string(parsed);
             pattern_set_ = true;
+            bump_generation();
             return ESP_OK;
         }
         return ESP_ERR_INVALID_ARG;
     }
-    if (strcmp(key, "R") == 0) { r_ = value_str ? atoi(value_str) : 0; r_set_ = (value_str != nullptr); return ESP_OK; }
-    if (strcmp(key, "G") == 0) { g_ = value_str ? atoi(value_str) : 0; g_set_ = (value_str != nullptr); return ESP_OK; }
-    if (strcmp(key, "B") == 0) { b_ = value_str ? atoi(value_str) : 0; b_set_ = (value_str != nullptr); return ESP_OK; }
-    if (strcmp(key, "W") == 0) { w_ = value_str ? atoi(value_str) : 0; w_set_ = (value_str != nullptr); return ESP_OK; }
+    if (strcmp(key, "R") == 0) { r_ = value_str ? atoi(value_str) : 0; r_set_ = (value_str != nullptr); bump_generation(); return ESP_OK; }
+    if (strcmp(key, "G") == 0) { g_ = value_str ? atoi(value_str) : 0; g_set_ = (value_str != nullptr); bump_generation(); return ESP_OK; }
+    if (strcmp(key, "B") == 0) { b_ = value_str ? atoi(value_str) : 0; b_set_ = (value_str != nullptr); bump_generation(); return ESP_OK; }
+    if (strcmp(key, "W") == 0) { w_ = value_str ? atoi(value_str) : 0; w_set_ = (value_str != nullptr); bump_generation(); return ESP_OK; }
     if (strcmp(key, "brightness") == 0) {
         brightness_ = value_str ? atoi(value_str) : 100;
         if (brightness_ < 0) brightness_ = 0;
         if (brightness_ > 100) brightness_ = 100;
         brightness_set_ = (value_str != nullptr);
+        /* generation bumped centrally */
         return ESP_OK;
     }
     if (strcmp(key, "speed") == 0) {
@@ -184,11 +194,13 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         if (speed_ < 0) speed_ = 0;
         if (speed_ > 100) speed_ = 100;
         speed_set_ = (value_str != nullptr);
+        /* generation bumped centrally */
         return ESP_OK;
     }
     if (strcmp(key, "start") == 0) {
         start_set_ = (value_str != nullptr);
         start_ = value_str ? value_str : "";
+        /* generation bumped centrally */
         return ESP_OK;
     }
     if (strcmp(key, "dma") == 0) {
@@ -196,17 +208,20 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         if (value_str == nullptr || value_str[0] == '\0') {
             dma_set_ = false; // unset -> auto-assign
             dma_ = false;
+            bump_generation();
             return ESP_OK;
         }
         // Accept common boolean strings
         if (strcasecmp(value_str, "1") == 0 || strcasecmp(value_str, "true") == 0 || strcasecmp(value_str, "on") == 0 || strcasecmp(value_str, "yes") == 0) {
             dma_set_ = true;
             dma_ = true;
+            bump_generation();
             return ESP_OK;
         }
         if (strcasecmp(value_str, "0") == 0 || strcasecmp(value_str, "false") == 0 || strcasecmp(value_str, "off") == 0 || strcasecmp(value_str, "no") == 0) {
             dma_set_ = true;
             dma_ = false;
+            bump_generation();
             return ESP_OK;
         }
         return ESP_ERR_INVALID_ARG;

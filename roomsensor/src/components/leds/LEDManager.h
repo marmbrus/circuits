@@ -10,7 +10,7 @@
 #include <string>
 
 namespace config { class ConfigurationManager; class LEDConfig; }
-namespace leds { class LEDStrip; class LEDPattern; enum class LEDChip : int; }
+namespace leds { class LEDStrip; class LEDPattern; }
 namespace leds { class PowerManager; }
 
 namespace leds {
@@ -44,8 +44,8 @@ public:
     const std::vector<std::unique_ptr<LEDStrip>>& strips() const { return strips_; }
 
 private:
-    // Internal helpers (no implementation yet; interfaces for review)
-    std::unique_ptr<LEDStrip> create_strip_from_config(const config::LEDConfig& cfg);
+    // Internal helpers
+    std::unique_ptr<LEDStrip> create_strip(const config::LEDConfig& cfg, bool use_dma);
     std::unique_ptr<LEDPattern> create_pattern_from_config(const config::LEDConfig& cfg);
     void reconcile_with_config(config::ConfigurationManager& cfg_manager);
     void apply_pattern_updates_from_config(size_t idx, const config::LEDConfig& cfg, uint64_t now_us);
@@ -60,6 +60,7 @@ private:
     std::vector<std::unique_ptr<LEDPattern>> patterns_; // 1:1 with strips_
     std::vector<std::unique_ptr<PowerManager>> power_mgrs_; // 1:1 with strips_
     std::vector<std::vector<uint8_t>> prev_frames_rgba_; // rows*cols*4 per strip
+    std::vector<std::vector<uint8_t>> scratch_frames_rgba_; // reusable buffer for current frame
     std::vector<bool> last_power_enabled_; // track power pin state to log transitions
     // Per-strip timestamp (us) until which we should hold transmissions after power-on
     std::vector<uint64_t> power_on_hold_until_us_;
@@ -67,6 +68,7 @@ private:
     std::vector<config::LEDConfig::Layout> last_layouts_;
     // Track last applied pattern to avoid reinstalling the same type repeatedly
     std::vector<config::LEDConfig::Pattern> last_patterns_;
+    std::vector<uint32_t> last_generations_; // per-strip generation snapshot
     TaskHandle_t update_task_ = nullptr;
     int update_task_core_ = 1; // APP CPU on ESP32-S3
     int update_task_priority_ = 1; // keep near idle to avoid starving IDLE task on APP CPU
@@ -77,10 +79,7 @@ private:
     // - Ensure a forced refresh at least every ~10s to recover from transient glitches
     uint32_t update_interval_us_ = 5'000; // default cadence; pattern may skip if transmitting
 
-    // Configuration polling and change detection
-    uint64_t last_cfg_poll_us_ = 0;
-    uint64_t cfg_poll_period_us_ = 250'000; // poll every 250ms
-    std::string last_config_fingerprint_;
+    // (deprecated) config poll fields removed in favor of generation-based reconciliation
 
     // Per-strip frame counters for periodic telemetry
     std::vector<uint32_t> frames_tx_counts_;

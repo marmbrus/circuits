@@ -40,7 +40,7 @@ public:
     // LEDStrip interface
     int pin() const override { return gpio_; }
     size_t length() const override { return rows_ * cols_; }
-    LEDChip chip() const override { return LEDChip::WS2812; }
+    config::LEDConfig::Chip chip() const override { return config::LEDConfig::Chip::WS2812; }
     size_t rows() const override { return rows_; }
     size_t cols() const override { return cols_; }
     size_t index_for_row_col(size_t row, size_t col) const override {

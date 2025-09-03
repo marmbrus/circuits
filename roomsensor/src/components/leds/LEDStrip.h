@@ -2,16 +2,9 @@
 
 #include <cstdint>
 #include <cstddef>
+#include "LEDConfig.h"
 
 namespace leds {
-
-// Logical LED chip type; should align with config::LEDConfig::Chip but avoids including configuration here
-enum class LEDChip {
-    WS2812 = 0, // GRB (RGB) with implicit W=0
-    SK6812,     // RGBW
-    WS2814,     // RGBW (timings compatible; model treated as SK6812 in driver)
-    FLIPDOT,    // Monochrome on/off (maps any non-zero RGBW to ON)
-};
 
 // Abstraction for a single LED strip backed by RMT hardware.
 // Responsibilities:
@@ -26,7 +19,7 @@ public:
     // Immutable properties
     virtual int pin() const = 0;
     virtual size_t length() const = 0; // number of addressable LEDs
-    virtual LEDChip chip() const = 0;
+    virtual config::LEDConfig::Chip chip() const = 0;
     // 2D grid geometry. Patterns can treat the strip as a rows x cols grid.
     // LEDs are laid out in column-major order (index = col * rows + row).
     virtual size_t rows() const = 0; // number of rows in the logical grid (>= 1)

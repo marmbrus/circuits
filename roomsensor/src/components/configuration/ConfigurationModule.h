@@ -24,6 +24,21 @@ public:
     // Serialize current module configuration into a provided cJSON object
     // The method should add an object under this module's name with key/value pairs
     virtual esp_err_t to_json(struct cJSON* root_object) const = 0;
+
+    // Monotonic configuration generation. Incremented on every successful update to any value
+    // within this module instance. LEDManager and other systems can perform cheap change detection
+    // by sampling this value each tick.
+    uint32_t generation() const { return generation_; }
+
+    // Public update marker so ConfigurationManager can centralize generation accounting
+    void mark_updated() { bump_generation(); }
+
+protected:
+    // Call in derived classes whenever a value is changed successfully
+    void bump_generation() { ++generation_; }
+
+private:
+    uint32_t generation_ = 0;
 };
 
 } // namespace config

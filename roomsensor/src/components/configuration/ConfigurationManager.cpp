@@ -248,6 +248,8 @@ esp_err_t ConfigurationManager::handle_update(const char* module_name, const cha
         ESP_LOGW(TAG, "Config update failed: %s.%s -> %s", module_name, key, esp_err_to_name(err));
         return err;
     }
+    // Centralized generation bump on successful update
+    mod->mark_updated();
 
     {
         const char* log_value = (value_str && value_str[0] != '\0') ? value_str : "(unset)";
