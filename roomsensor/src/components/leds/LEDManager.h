@@ -61,6 +61,8 @@ private:
     std::vector<std::unique_ptr<PowerManager>> power_mgrs_; // 1:1 with strips_
     std::vector<std::vector<uint8_t>> prev_frames_rgba_; // rows*cols*4 per strip
     std::vector<bool> last_power_enabled_; // track power pin state to log transitions
+    // Per-strip timestamp (us) until which we should hold transmissions after power-on
+    std::vector<uint64_t> power_on_hold_until_us_;
     // Track layout used for each strip to detect when grid mapping changes
     std::vector<config::LEDConfig::Layout> last_layouts_;
     // Track last applied pattern to avoid reinstalling the same type repeatedly

@@ -90,6 +90,7 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     last_patterns_.clear();
     frames_tx_counts_.assign(active.size(), 0);
     last_power_enabled_.assign(active.size(), false);
+    power_on_hold_until_us_.assign(active.size(), 0);
     strips_.reserve(active.size());
     patterns_.reserve(active.size());
 
@@ -298,17 +299,26 @@ void LEDManager::run_update_loop() {
                     if (i >= last_power_enabled_.size()) last_power_enabled_.resize(i+1, false);
                     if (new_state != last_power_enabled_[i]) {
                         ESP_LOGI(TAG, "LED power %s on strip %u", new_state ? "ENABLED" : "DISABLED", (unsigned)i);
+                        // On OFF->ON, start a 10ms hold window to allow downstream circuits to initialize
+                        if (new_state && !last_power_enabled_[i]) {
+                            if (i >= power_on_hold_until_us_.size()) power_on_hold_until_us_.resize(i+1, 0);
+                            power_on_hold_until_us_[i] = now + 10ull * 1000ull; // 10ms
+                        }
                         last_power_enabled_[i] = new_state;
                     }
                     s->set_power_enabled(new_state);
                 }
+                // Determine if we are within a power-on hold window for this strip
+                bool hold_active = (i < power_on_hold_until_us_.size()) && (now < power_on_hold_until_us_[i]);
                 // Decide refresh
-                if (should_refresh) s->flush_if_dirty(now, 0); // force transmit if enabled
+                if (should_refresh && !hold_active) s->flush_if_dirty(now, 0); // force transmit if enabled
                 // Save current as previous
                 prev_frames_rgba_[i].swap(current);
             }
 
-            if (s->flush_if_dirty(now)) {
+            // Skip normal flush while in power-on hold
+            bool hold_active = (i < power_on_hold_until_us_.size()) && (now < power_on_hold_until_us_[i]);
+            if (!hold_active && s->flush_if_dirty(now)) {
                 if (i < frames_tx_counts_.size()) frames_tx_counts_[i]++;
             }
         }
