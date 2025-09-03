@@ -122,9 +122,6 @@ bool SCD4xSensor::init(i2c_master_bus_handle_t bus_handle) {
     _initialized = true;
     ESP_LOGI(TAG, "SCD4x sensor initialized successfully");
 
-    // Wait at least 5 seconds for first valid reading
-    vTaskDelay(pdMS_TO_TICKS(5000));
-    poll(); // Force an initial read, if desired
     return true;
 }
 
@@ -132,6 +129,36 @@ void SCD4xSensor::poll() {
     if (!_initialized) {
         ESP_LOGW(TAG, "SCD4x not initialized, cannot poll");
         return;
+    }
+
+    // Check data-ready status first and only proceed when ready.
+    // Warn only after 3 consecutive not-ready polls to avoid log spam.
+    {
+        static int s_not_ready_count = 0;
+        const uint16_t CMD_GET_DATA_READY_STATUS = 0xE4B8;
+        if (sendCommand(CMD_GET_DATA_READY_STATUS) == ESP_OK) {
+            // Minimum wait before reading response
+            vTaskDelay(pdMS_TO_TICKS(2));
+            uint8_t status_rx[3] = {0};
+            if (i2c_master_receive(_dev_handle, status_rx, sizeof(status_rx), 100) == ESP_OK) {
+                // Validate CRC (per SCD4x protocol)
+                uint8_t crc = calculateCRC(status_rx, 2);
+                if (crc == status_rx[2]) {
+                    uint16_t status = (static_cast<uint16_t>(status_rx[0]) << 8) | status_rx[1];
+                    bool ready = (status & 0x07FF) != 0; // any of 11 LSBs set => data ready
+                    if (!ready) {
+                        s_not_ready_count++;
+                        if (s_not_ready_count >= 3) {
+                            ESP_LOGW(TAG, "SCD4x data not ready for 3 consecutive polls");
+                            s_not_ready_count = 0; // reset after reporting
+                        }
+                        return; // Skip this poll to avoid impacting the bus
+                    }
+                    // Ready: reset counter and proceed
+                    s_not_ready_count = 0;
+                }
+            }
+        }
     }
 
     esp_err_t ret = readMeasurement();
