@@ -94,24 +94,7 @@ void ClockPattern::render(LEDStrip& strip) {
     ESP_LOGD(TAG_CLOCK, "CLOCK render: %02d:%02d (H1=%d H2=%d M1=%d M2=%d) masks: H1=0x%02X H2=0x%02X M1=0x%02X M2=0x%02X",
              hh, mm, h1, h2, m1, m2, DIGIT_MASKS[h1], DIGIT_MASKS[h2], DIGIT_MASKS[m1], DIGIT_MASKS[m2]);
 
-    if (kClockDrawOutline) {
-        // Seconds progress along the 16x16 outline (60 segments), synchronized with RTC
-        struct timeval tv{}; gettimeofday(&tv, nullptr);
-        time_t now = tv.tv_sec; struct tm lt; localtime_r(&now, &lt);
-        float sec_in_min = static_cast<float>(lt.tm_sec) + static_cast<float>(tv.tv_usec) / 1000000.0f;
-        float frac = sec_in_min / 60.0f;
-        int segments = static_cast<int>(frac * 60.0f + 0.5f);
-        auto draw_seg = [&](size_t r, size_t c) { if (r < strip.rows() && c < strip.cols()) put_pixel(strip, r, c, rr, gg, bb, ww); };
-        int drawn = 0;
-        // top edge
-        for (size_t x = 0; drawn < segments && x < strip.cols(); ++x, ++drawn) draw_seg(0, x);
-        // right edge
-        for (size_t y = 1; drawn < segments && y < strip.rows(); ++y, ++drawn) draw_seg(y, strip.cols() - 1);
-        // bottom edge (right to left)
-        for (size_t xi = 1; drawn < segments && xi < strip.cols(); ++xi, ++drawn) draw_seg(strip.rows() - 1, strip.cols() - 1 - xi);
-        // left edge (bottom to top, skip top corner)
-        for (size_t yi = 1; drawn < segments && yi < strip.rows() - 1; ++yi, ++drawn) draw_seg(strip.rows() - 1 - yi, 0);
-    }
+    if (kClockDrawOutline) draw_outline(strip);
 }
 
 void ClockPattern::update(LEDStrip& strip, uint64_t now_us) {
@@ -123,11 +106,68 @@ void ClockPattern::update(LEDStrip& strip, uint64_t now_us) {
         render(strip);
         return;
     }
+    // Always update outline each tick to show seconds progress; redraw digits only when minute changes or knobs changed
+    if (kClockDrawOutline) draw_outline(strip);
     if (needs_render_ || key != last_rendered_min_) {
         last_rendered_min_ = key;
         needs_render_ = false;
         render(strip);
     }
+}
+
+void ClockPattern::draw_outline(LEDStrip& strip) {
+    if (!kClockDrawOutline) return;
+    struct timeval tv{}; gettimeofday(&tv, nullptr);
+    time_t now = tv.tv_sec; struct tm lt; localtime_r(&now, &lt);
+    float sec_in_min = static_cast<float>(lt.tm_sec) + static_cast<float>(tv.tv_usec) / 1000000.0f;
+    float frac = sec_in_min / 60.0f;
+    // Head position goes around the perimeter (same 60-step mapping); snake length limited to kSnakeLen
+    int head_seg = static_cast<int>(frac * 60.0f + 0.5f) % 60;
+    auto scale = [this](uint8_t c) -> uint8_t { return static_cast<uint8_t>((static_cast<int>(c) * brightness_percent_) / 100); };
+    uint8_t rr = scale(r_), gg = scale(g_), bb = scale(b_), ww = scale(w_);
+
+    auto to_rc = [&](int seg, size_t& r, size_t& c) {
+        size_t rows = strip.rows(); size_t cols = strip.cols();
+        if (rows == 0 || cols == 0) { r = c = 0; return; }
+        // Map 60 segments clockwise around the border starting at top-left moving right
+        // top edge: 0..cols-1
+        if (seg < static_cast<int>(cols)) { r = 0; c = static_cast<size_t>(seg); return; }
+        seg -= static_cast<int>(cols);
+        // right edge: 1..rows-1
+        if (seg < static_cast<int>(rows) - 1) { r = static_cast<size_t>(seg + 1); c = cols - 1; return; }
+        seg -= static_cast<int>(rows) - 1;
+        // bottom edge: 1..cols-1 (right to left)
+        if (seg < static_cast<int>(cols) - 1) { r = rows - 1; c = cols - 1 - static_cast<size_t>(seg + 1); return; }
+        seg -= static_cast<int>(cols) - 1;
+        // left edge: 1..rows-2 (bottom to top)
+        size_t left_len = (rows >= 2) ? (rows - 2) : 0;
+        if (seg < static_cast<int>(left_len)) { r = rows - 1 - static_cast<size_t>(seg + 1); c = 0; return; }
+        r = 0; c = 0;
+    };
+
+    // Erase previous snake (
+    for (int i = 0; i < last_snake_count_; ++i) {
+        size_t idx = last_snake_idx_[static_cast<size_t>(i)];
+        uint8_t zr=0,zg=0,zb=0,zw=0; strip.set_pixel(idx, zr, zg, zb, zw);
+    }
+
+    // Draw new snake head and trailing tail of length <= kSnakeLen
+    int count = 0;
+    for (int i = 0; i < kSnakeLen; ++i) {
+        int seg = head_seg - i; if (seg < 0) seg += 60;
+        size_t r, c; to_rc(seg, r, c);
+        if (r >= strip.rows() || c >= strip.cols()) continue;
+        size_t idx = strip.index_for_row_col(r, c);
+        // Fade tail brightness linearly
+        uint8_t fr = static_cast<uint8_t>((rr * (kSnakeLen - i)) / kSnakeLen);
+        uint8_t fg = static_cast<uint8_t>((gg * (kSnakeLen - i)) / kSnakeLen);
+        uint8_t fb = static_cast<uint8_t>((bb * (kSnakeLen - i)) / kSnakeLen);
+        uint8_t fw = static_cast<uint8_t>((ww * (kSnakeLen - i)) / kSnakeLen);
+        strip.set_pixel(idx, fr, fg, fb, fw);
+        if (count < kSnakeLen) { last_snake_idx_[static_cast<size_t>(count)] = idx; }
+        count++;
+    }
+    last_snake_count_ = count;
 }
 
 } // namespace leds

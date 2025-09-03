@@ -2,6 +2,7 @@
 
 #include "LEDPattern.h"
 #include <cstddef>
+#include <array>
 
 namespace leds {
 
@@ -24,6 +25,12 @@ private:
     void render(LEDStrip& strip);
     void draw_digit(LEDStrip& strip, size_t top_row, size_t left_col, int digit,
                     uint8_t rr, uint8_t gg, uint8_t bb, uint8_t ww);
+    void draw_outline(LEDStrip& strip);
+
+    // Track last drawn outline snake to erase cleanly next tick
+    static constexpr int kSnakeLen = 4;
+    std::array<size_t, kSnakeLen> last_snake_idx_{};
+    int last_snake_count_ = 0;
 
     uint8_t r_ = 255, g_ = 255, b_ = 255, w_ = 255;
     int last_rendered_min_ = -1;
