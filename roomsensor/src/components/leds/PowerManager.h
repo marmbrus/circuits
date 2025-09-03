@@ -36,7 +36,10 @@ public:
                   const FrameView& previous,
                   uint64_t now_us) override {
         (void)previous; (void)now_us;
-        enabled_ = any_on(current);
+        bool any = any_on(current);
+        if (any) last_nonzero_us_ = now_us;
+        bool hold = (last_nonzero_us_ != 0) && ((now_us - last_nonzero_us_) < hold_on_after_off_us_);
+        enabled_ = any || hold;
         // For LEDs, pattern/manager cadence governs refresh; do not force here
         return false;
     }
@@ -51,6 +54,8 @@ private:
         return false;
     }
     bool enabled_ = false;
+    uint64_t last_nonzero_us_ = 0;
+    static constexpr uint64_t hold_on_after_off_us_ = 1ull * 1000ull * 1000ull; // 1 second
 };
 
 // FlipDot policy:
