@@ -82,7 +82,7 @@ bool SEN55Sensor::init(i2c_master_bus_handle_t bus_handle) {
         return false;
     }
 
-    // Reset the sensor first
+    // Reset the sensor first (idle mode)
     ret = sendCommand(CMD_RESET);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to reset sensor: %s", esp_err_to_name(ret));
@@ -92,8 +92,23 @@ bool SEN55Sensor::init(i2c_master_bus_handle_t bus_handle) {
     // Wait for reset to complete - according to Sensirion docs this needs at least 100ms
     vTaskDelay(pdMS_TO_TICKS(200));
 
+    // While in Idle, read identity information to avoid NACKs in Measurement-Mode on some firmwares
+    {
+        char product_name[33] = {0};
+        char serial_number[33] = {0};
+        uint8_t fw_ver = 0;
+        if (readStringFromCommand(CMD_READ_PRODUCT_NAME, product_name, sizeof(product_name)) == ESP_OK) {
+            ESP_LOGI(TAG, "Product: %s", product_name);
+        }
+        if (readStringFromCommand(CMD_READ_SERIAL_NUMBER, serial_number, sizeof(serial_number)) == ESP_OK) {
+            ESP_LOGI(TAG, "Serial: %s", serial_number);
+        }
+        if (readFirmwareVersion(fw_ver) == ESP_OK) {
+            ESP_LOGI(TAG, "Firmware version: %u", (unsigned)fw_ver);
+        }
+    }
+
     // Start measurement - based on sen5x_start_measurement() in the Sensirion embedded library
-    // No arguments needed - contrary to previous implementation
     ret = sendCommand(CMD_START_MEASUREMENT);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start measurement: %s", esp_err_to_name(ret));
@@ -173,6 +188,14 @@ void SEN55Sensor::poll() {
     report_metric(METRIC_VOC, _voc, _tag_collection);
     report_metric(METRIC_NOX, _nox, _tag_collection);
 
+    // Read and log device status if any error/warning is present
+    uint32_t status = 0;
+    if (readDeviceStatus(status) == ESP_OK) {
+        if (status != 0) {
+            logDeviceStatus(status);
+        }
+    }
+
     // Respect shared warm-up: skip reporting RH/T for first I2C_SENSOR_WARMUP_MS
     if (!is_warming_up()) {
         report_metric(METRIC_TEMPERATURE, getTemperatureFahrenheit(), _tag_collection); // Report in Fahrenheit
@@ -191,6 +214,82 @@ esp_err_t SEN55Sensor::sendCommand(uint16_t command) {
         ESP_LOGE(TAG, "Failed to send command 0x%04x: %s", command, esp_err_to_name(ret));
     }
     return ret;
+}
+
+esp_err_t SEN55Sensor::readStringFromCommand(uint16_t command, char* out, size_t max_len) {
+    if (!out || max_len == 0) return ESP_ERR_INVALID_ARG;
+    esp_err_t ret = sendCommand(command);
+    if (ret != ESP_OK) return ret;
+    vTaskDelay(pdMS_TO_TICKS(20));
+    // Up to 32 ASCII chars, with CRC after every 2 bytes. We'll read 48 bytes payload.
+    uint8_t buf[48] = {0};
+    ret = i2c_master_receive(_dev_handle, buf, sizeof(buf), 100);
+    if (ret != ESP_OK) return ret;
+    size_t out_idx = 0;
+    for (int i = 0; i < 48; i += 3) {
+        // validate CRC
+        uint8_t crc = calculateCRC(&buf[i], 2);
+        if (crc != buf[i+2]) break;
+        if (out_idx + 2 < max_len) {
+            out[out_idx++] = (char)buf[i];
+            out[out_idx++] = (char)buf[i+1];
+        }
+    }
+    if (out_idx >= max_len) out_idx = max_len - 1;
+    out[out_idx] = '\0';
+    return ESP_OK;
+}
+
+esp_err_t SEN55Sensor::readFirmwareVersion(uint8_t &fw_version) {
+    esp_err_t ret = sendCommand(CMD_READ_FIRMWARE_VERSION);
+    if (ret != ESP_OK) return ret;
+    vTaskDelay(pdMS_TO_TICKS(20));
+    uint8_t data[3] = {0};
+    ret = i2c_master_receive(_dev_handle, data, sizeof(data), 100);
+    if (ret != ESP_OK) return ret;
+    uint8_t crc = calculateCRC(data, 2);
+    if (crc != data[2]) return ESP_ERR_INVALID_CRC;
+    fw_version = data[0];
+    return ESP_OK;
+}
+
+esp_err_t SEN55Sensor::readDeviceStatus(uint32_t &status) {
+    esp_err_t ret = sendCommand(CMD_READ_DEVICE_STATUS);
+    if (ret != ESP_OK) return ret;
+    vTaskDelay(pdMS_TO_TICKS(20));
+    uint8_t data[6] = {0};
+    ret = i2c_master_receive(_dev_handle, data, sizeof(data), 100);
+    if (ret != ESP_OK) return ret;
+    // validate two CRCs
+    if (calculateCRC(&data[0], 2) != data[2]) return ESP_ERR_INVALID_CRC;
+    if (calculateCRC(&data[3], 2) != data[5]) return ESP_ERR_INVALID_CRC;
+    uint16_t msw = ((uint16_t)data[0] << 8) | data[1];
+    uint16_t lsw = ((uint16_t)data[3] << 8) | data[4];
+    status = ((uint32_t)msw << 16) | lsw;
+    return ESP_OK;
+}
+
+void SEN55Sensor::logDeviceStatus(uint32_t status) {
+    // Bits per datasheet section 5.4
+    bool speed = (status >> 21) & 0x1;
+    bool fan_cleaning = (status >> 19) & 0x1;
+    bool gas_err = (status >> 7) & 0x1;
+    bool rht_comm_err = (status >> 6) & 0x1;
+    bool laser_fail = (status >> 5) & 0x1;
+    bool fan_fail = (status >> 4) & 0x1;
+    ESP_LOGW(TAG, "Device Status=0x%08lx SPEED=%d FAN_CLEAN=%d GAS_ERR=%d RHT_ERR=%d LASER_FAIL=%d FAN_FAIL=%d",
+             (unsigned long)status, speed, fan_cleaning, gas_err, rht_comm_err, laser_fail, fan_fail);
+}
+
+bool SEN55Sensor::dataReady() {
+    // Read Data-Ready Flag (0x0202) -> 3 bytes response (2 data + CRC)
+    if (sendCommand(CMD_READ_DATA_READY) != ESP_OK) return false;
+    vTaskDelay(pdMS_TO_TICKS(20));
+    uint8_t data[3] = {0};
+    if (i2c_master_receive(_dev_handle, data, sizeof(data), 100) != ESP_OK) return false;
+    if (calculateCRC(data, 2) != data[2]) return false;
+    // data[1] == 0x01 when new measurements are ready
+    return data[1] == 0x01;
 }
 
 esp_err_t SEN55Sensor::sendCommandWithArgs(uint16_t command, const uint8_t* args, size_t args_len) {
@@ -283,23 +382,8 @@ esp_err_t SEN55Sensor::readMeasurement() {
     _pm4   = pm4p0 / 10.0f;
     _pm10  = pm10p0 / 10.0f;
 
-    // Temperature [°C] - CORRECT SCALING FROM SENSIRION LIBRARY
-    int16_t tempRaw = (int16_t)((data[12] << 8) | data[13]);
-    if (tempRaw == 0x7FFF) {
-        if (_startup_readings_count >= 5) {
-            ESP_LOGW(TAG, "Temperature not available (raw=0x7FFF)");
-        } else {
-            ESP_LOGD(TAG, "Temperature not available during startup (raw=0x7FFF)");
-        }
-    } else {
-        // According to the official SEN5x docs, T(°C) = raw / 200
-        _temperature = tempRaw / 200.0f;
-        ESP_LOGD(TAG, "Temperature calculation: %d / 200 = %.2f°C",
-                 tempRaw, _temperature);
-    }
-
-    // Humidity [%RH] - CORRECT SCALING FROM SENSIRION LIBRARY
-    int16_t humidityRaw = (int16_t)((data[15] << 8) | data[16]);
+    // Humidity [%RH] (bytes 12..13), scale 100 per datasheet
+    int16_t humidityRaw = (int16_t)((data[12] << 8) | data[13]);
     if (humidityRaw == 0x7FFF) {
         if (_startup_readings_count >= 5) {
             ESP_LOGW(TAG, "Humidity not available (raw=0x7FFF)");
@@ -309,6 +393,20 @@ esp_err_t SEN55Sensor::readMeasurement() {
     } else {
         // According to Sensirion SEN5x, humidity is reported as raw/100 (percent)
         _humidity = humidityRaw / 100.0f;
+    }
+
+    // Temperature [°C] (bytes 15..16), scale 200 per datasheet
+    int16_t tempRaw = (int16_t)((data[15] << 8) | data[16]);
+    if (tempRaw == 0x7FFF) {
+        if (_startup_readings_count >= 5) {
+            ESP_LOGW(TAG, "Temperature not available (raw=0x7FFF)");
+        } else {
+            ESP_LOGD(TAG, "Temperature not available during startup (raw=0x7FFF)");
+        }
+    } else {
+        _temperature = tempRaw / 200.0f;
+        ESP_LOGD(TAG, "Temperature calculation: %d / 200 = %.2f°C",
+                 tempRaw, _temperature);
     }
 
     // VOC Index

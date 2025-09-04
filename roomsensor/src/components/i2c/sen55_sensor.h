@@ -168,6 +168,11 @@ private:
     esp_err_t sendCommand(uint16_t command);
     esp_err_t sendCommandWithArgs(uint16_t command, const uint8_t* args, size_t args_len);
     esp_err_t readMeasurement();
+    esp_err_t readStringFromCommand(uint16_t command, char* out, size_t max_len);
+    esp_err_t readFirmwareVersion(uint8_t &fw_version);
+    esp_err_t readDeviceStatus(uint32_t &status);
+    void logDeviceStatus(uint32_t status);
+    bool dataReady();
 
     // Helper methods
     uint8_t calculateCRC(const uint8_t* data, size_t length) const;
@@ -195,6 +200,11 @@ private:
     static constexpr uint16_t CMD_READ_MEASUREMENT = 0x03C4;
     static constexpr uint16_t CMD_READ_DEVICE_INFO = 0xD014;
     static constexpr uint16_t CMD_RESET = 0xD304;
+    static constexpr uint16_t CMD_READ_PRODUCT_NAME = 0xD014;
+    static constexpr uint16_t CMD_READ_SERIAL_NUMBER = 0xD033;
+    static constexpr uint16_t CMD_READ_FIRMWARE_VERSION = 0xD100;
+    static constexpr uint16_t CMD_READ_DEVICE_STATUS = 0xD206;
+    static constexpr uint16_t CMD_READ_DATA_READY = 0x0202;
 
     bool _temperature_valid;   ///< Whether temperature reading is valid
     bool _humidity_valid;      ///< Whether humidity reading is valid
