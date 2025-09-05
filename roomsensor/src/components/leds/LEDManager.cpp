@@ -8,6 +8,7 @@
 #include "LEDWireEncoderFlipdot.h"
 #include "LEDCoordinateMapperRowMajor.h"
 #include "LEDCoordinateMapperSerpentineRow.h"
+#include "LEDCoordinateMapperSerpentineColumn.h"
 #include "LEDCoordinateMapperColumnMajor.h"
 #include "LEDCoordinateMapperFlipdotGrid.h"
 #include "OffPattern.h"
@@ -155,6 +156,9 @@ std::unique_ptr<LEDStrip> LEDManager::create_strip(const config::LEDConfig& cfg,
     switch (cfg.layout_enum()) {
         case config::LEDConfig::Layout::SERPENTINE_ROW:
             mapper.reset(new leds::internal::SerpentineRowMapper(rows, cols));
+            break;
+        case config::LEDConfig::Layout::SERPENTINE_COLUMN:
+            mapper.reset(new leds::internal::SerpentineColumnMapper(rows, cols, static_cast<size_t>(cfg.has_segment_rows() ? cfg.segment_rows() : 0)));
             break;
         case config::LEDConfig::Layout::COLUMN_MAJOR:
             mapper.reset(new leds::internal::ColumnMajorMapper(rows, cols));

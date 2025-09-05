@@ -236,7 +236,14 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                   <Chip
                     label={`Layout: ${led.layout}`}
                     size="small"
-                    onClick={() => onEdit(ledKey, 'layout', led.layout, { type: 'select', options: ['ROW_MAJOR','SERPENTINE_ROW','COLUMN_MAJOR','FLIPDOT_GRID'], label: 'Layout' })}
+                    onClick={() => onEdit(ledKey, 'layout', led.layout, { type: 'select', options: ['ROW_MAJOR','SERPENTINE_ROW','SERPENTINE_COLUMN','COLUMN_MAJOR','FLIPDOT_GRID'], label: 'Layout' })}
+                  />
+                )}
+                {(led.layout === 'SERPENTINE_COLUMN') && (
+                  <Chip
+                    label={`SegRows: ${('segment_rows' in led && led.segment_rows !== undefined) ? led.segment_rows : 0}`}
+                    size="small"
+                    onClick={() => onEdit(ledKey, 'segment_rows', (('segment_rows' in led && led.segment_rows !== undefined) ? led.segment_rows : 0), { type: 'number', label: 'Segment Rows' })}
                   />
                 )}
               </Stack>
