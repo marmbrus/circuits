@@ -1,0 +1,58 @@
+# ESP-IDF specific
+build/
+sdkconfig
+sdkconfig.old
+dependencies.lock
+managed_components/
+bootloader/
+partition_table/
+flash_*_args
+*flash_args*
+*.bin
+*.S
+*.map
+*.elf
+compile_commands.json
+project_description.json
+config.env
+ldgen_libraries*
+esp-idf/
+
+# Build system files
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+credentials.json
+fsdata/
+fsbuild/
+
+# JS UI (Vite/React)
+js/node_modules/
+js/dist/
+js/.vite/
+js/.eslintcache
+js/npm-debug.log*
+js/yarn-debug.log*
+js/yarn-error.log*
+js/pnpm-debug.log*
+js/.env
+js/.env.*
+js/.vercel/

@@ -1,0 +1,12 @@
+{
+  "io2": {
+    "pin1config": "SENSOR",
+    "pin2config": "SENSOR",
+    "pin3config": "SENSOR",
+    "pin4config": "SENSOR",
+    "pin5config": "SWITCH",
+    "pin6config": "SWITCH",
+    "pin7config": "SWITCH",
+    "pin8config": "SWITCH"
+  }
+}

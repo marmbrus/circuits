@@ -1,0 +1,13 @@
+{
+  "led1": {
+    "dataGPIO": 3,
+    "chip": "WS2812",
+    "num_rows": 6,
+    "num_columns": 6,
+    "brightness": 1,
+    "pattern": "STATUS"
+  },
+  "motion": {
+    "gpio": 14
+  }
+}
