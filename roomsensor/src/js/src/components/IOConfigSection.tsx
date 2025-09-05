@@ -10,7 +10,7 @@ type Props = {
   publish: (moduleName: string, key: string, value: string | number | boolean) => void
 }
 
-// IOConfig supports pin1config..pin8config (persisted enum: SWITCH|SENSOR) and switch1..switch8 (non-persisted boolean)
+// IOConfig supports pin1config..pin8config (persisted enum: SWITCH|SENSOR) and pin1switch..pin8switch (non-persisted boolean)
 export default function IOConfigSection({ modules, config, onEdit, publish }: Props) {
   if (modules.length === 0) return null
   const pinModes = ['', 'SWITCH', 'SENSOR']
@@ -26,7 +26,7 @@ export default function IOConfigSection({ modules, config, onEdit, publish }: Pr
               <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                 {pins.map((idx) => {
                   const pinKey = `pin${idx}config`
-                  const switchKey = `switch${idx}`
+                  const switchKey = `pin${idx}switch`
                   const nameKey = `pin${idx}name`
                   const mode = io[pinKey]
                   const sw = io[switchKey]
