@@ -73,6 +73,8 @@ private:
 
     int _io_index = -1; // 1..8 mapping from address
     config::IOConfig* _config_ptr = nullptr; // non-owning
+
+    bool _initial_state_published = false;
 };
 
 

@@ -37,6 +37,11 @@ public:
     const char* pin_name(int pin_index /*1..8*/) const;
     bool is_pin_name_set(int pin_index /*1..8*/) const;
 
+    // Runtime contact state for SENSOR pins (non-persisted)
+    void set_contact_state(int pin_index /*1..8*/, bool closed);
+    bool contact_state(int pin_index /*1..8*/) const;
+    bool is_contact_state_set(int pin_index /*1..8*/) const;
+
     static PinMode parse_pin_mode(const char* value);
     static const char* pin_mode_to_string(PinMode mode);
 
@@ -54,6 +59,10 @@ private:
     // Persisted pin names (pin1name..pin8name)
     std::string pin_names_[8] = {"", "", "", "", "", "", "", ""};
     bool pin_name_set_[8] = {false, false, false, false, false, false, false, false};
+
+    // Non-persisted contact states for SENSOR pins
+    bool contact_states_[8] = {false, false, false, false, false, false, false, false};
+    bool contact_state_set_[8] = {false, false, false, false, false, false, false, false};
 };
 
 } // namespace config

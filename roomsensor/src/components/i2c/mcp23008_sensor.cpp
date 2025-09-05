@@ -161,32 +161,47 @@ void MCP23008Sensor::poll() {
         ESP_LOGW(TAG, "Failed to read GPIO: %s", esp_err_to_name(ret));
         return;
     }
-    // Compare with last state and report changes for SENSOR pins only
+    // Compare with last state and report changes for SENSOR pins only.
+    // Also update IOConfig contact states for SENSOR pins.
     uint8_t changed = gpio ^ _gpio_cached_last;
+    bool any_contact_change = false;
     for (int i = 0; i < 8; ++i) {
-        if (((changed >> i) & 0x01) == 0) continue; // no change on this pin
-        // If mode is SENSOR, emit metric and log
         config::IOConfig::PinMode mode = config::IOConfig::PinMode::INVALID;
-        if (_config_ptr) {
-            mode = _config_ptr->pin_mode(i + 1);
+        if (_config_ptr) mode = _config_ptr->pin_mode(i + 1);
+
+        bool bit_now_high = ((gpio >> i) & 0x01) != 0;
+        bool is_low_now = !bit_now_high; // active low => closed when low
+
+        if (_config_ptr && mode == config::IOConfig::PinMode::SENSOR) {
+            _config_ptr->set_contact_state(i + 1, is_low_now);
         }
+
+        if (((changed >> i) & 0x01) == 0) continue; // no electrical change on this pin
+
         if (mode == config::IOConfig::PinMode::SENSOR) {
-            bool is_low = ((gpio >> i) & 0x01) == 0;
             // Update tag with pin index (1..8)
             char index_buf[4]; snprintf(index_buf, sizeof(index_buf), "%d", i + 1);
             add_tag_to_collection(_tag_collection, "index", index_buf);
-            // Add optional pin name if configured
             const char* pname = _config_ptr ? _config_ptr->pin_name(i + 1) : "";
             if (pname && pname[0] != '\0') {
                 add_tag_to_collection(_tag_collection, "name", pname);
             }
-            ESP_LOGI(TAG, "io%d pin%d contact %s", _io_index, i + 1, is_low ? "closed" : "open");
-            report_metric("contact", is_low ? 1.0f : 0.0f, _tag_collection);
+            ESP_LOGI(TAG, "io%d pin%d contact %s", _io_index, i + 1, is_low_now ? "closed" : "open");
+            report_metric("contact", is_low_now ? 1.0f : 0.0f, _tag_collection);
+            any_contact_change = true;
         }
     }
     _gpio_cached_last = gpio;
     // Maintain _level for backward compatibility with existing callers
     _level = (gpio & 0x01) ? 1.0f : 0.0f;
+
+    // Publish once at startup with initial states, and thereafter on any contact change.
+    if (!_initial_state_published) {
+        config::GetConfigurationManager().publish_full_configuration();
+        _initial_state_published = true;
+    } else if (any_contact_change) {
+        config::GetConfigurationManager().publish_full_configuration();
+    }
 }
 
 float MCP23008Sensor::getLevel() const {
