@@ -149,6 +149,18 @@ void SEN55Sensor::poll() {
         return;
     }
 
+    // Respect data-ready flag to avoid reading too fast
+    static int s_dr_miss_count = 0;
+    if (!dataReady()) {
+        s_dr_miss_count++;
+        if ((s_dr_miss_count % 20) == 0) {
+            ESP_LOGW(TAG, "SEN55 data-not-ready for %d polls (~%ds)", s_dr_miss_count, s_dr_miss_count);
+        }
+        return;
+    } else {
+        s_dr_miss_count = 0;
+    }
+
     esp_err_t ret = readMeasurement();
     if (ret != ESP_OK) {
         static int s_not_ready_count = 0;
@@ -372,15 +384,24 @@ esp_err_t SEN55Sensor::readMeasurement() {
     uint16_t pm2p5  = (uint16_t)((data[3] << 8) | data[4]);
     uint16_t pm4p0  = (uint16_t)((data[6] << 8) | data[7]);
     uint16_t pm10p0 = (uint16_t)((data[9] << 8) | data[10]);
-    bool pm_invalid = (pm1p0 == 0xFFFF) || (pm2p5 == 0xFFFF) || (pm4p0 == 0xFFFF) || (pm10p0 == 0xFFFF);
-    if (pm_invalid) {
-        // Not ready: avoid 6553.5 artifacts
-        return ESP_ERR_INVALID_STATE;
-    }
     _pm1   = pm1p0 / 10.0f;
     _pm2_5 = pm2p5 / 10.0f;
     _pm4   = pm4p0 / 10.0f;
     _pm10  = pm10p0 / 10.0f;
+    if ((pm1p0 == 0xFFFF) || (pm2p5 == 0xFFFF) || (pm4p0 == 0xFFFF) || (pm10p0 == 0xFFFF)) {
+        // Log once per poll if module reports 'unknown' PM values, but do not suppress reporting
+        uint32_t status = 0;
+        if (readDeviceStatus(status) == ESP_OK) {
+            bool speed = (status >> 21) & 0x1;
+            bool fan_clean = (status >> 19) & 0x1;
+            bool laser_fail = (status >> 5) & 0x1;
+            bool fan_fail = (status >> 4) & 0x1;
+            ESP_LOGW(TAG, "PM returned 0xFFFF; status=0x%08lx speed=%d fan_clean=%d laser_fail=%d fan_fail=%d",
+                     (unsigned long)status, speed, fan_clean, laser_fail, fan_fail);
+        } else {
+            ESP_LOGW(TAG, "PM returned 0xFFFF; status read failed");
+        }
+    }
 
     // Humidity [%RH] (bytes 12..13), scale 100 per datasheet
     int16_t humidityRaw = (int16_t)((data[12] << 8) | data[13]);
