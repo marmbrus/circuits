@@ -1540,6 +1540,14 @@
 		(color 0 0 0 0)
 		(uuid "efb9e96e-b217-4a48-85ac-2a5142a95c71")
 	)
+	(no_connect
+		(at 86.36 54.61)
+		(uuid "2ad23757-5876-44c4-a331-d8c8afea455d")
+	)
+	(no_connect
+		(at 86.36 62.23)
+		(uuid "91c35bc6-22a9-44da-b48a-4dd1df06bfc4")
+	)
 	(bus_entry
 		(at 194.31 40.64)
 		(size -2.54 2.54)
@@ -1788,16 +1796,6 @@
 	)
 	(wire
 		(pts
-			(xy 86.36 62.23) (xy 93.98 62.23)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "572814ec-2f6e-4e7f-9c2d-c07343c794eb")
-	)
-	(wire
-		(pts
 			(xy 55.88 22.86) (xy 71.12 22.86)
 		)
 		(stroke
@@ -2015,16 +2013,6 @@
 			(type default)
 		)
 		(uuid "ad949e3d-f934-44e4-8e94-11b101fb69cd")
-	)
-	(wire
-		(pts
-			(xy 86.36 54.61) (xy 93.98 54.61)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b031e387-de7a-4db1-a103-aefa75aa12be")
 	)
 	(wire
 		(pts
@@ -2905,76 +2893,6 @@
 			(project "air"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3ffc5730-6d36-4d91-a659-0c16eb9809f3"
 					(reference "TP4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:C")
-		(at 93.98 58.42 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "5d4cbb04-9736-4a6a-951e-8bb5d11aac5a")
-		(property "Reference" "C3"
-			(at 97.79 57.1499 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "C"
-			(at 97.79 59.6899 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
-			(at 94.9452 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 93.98 58.42 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Unpolarized capacitor"
-			(at 93.98 58.42 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "d6aeb39c-616b-45f6-b855-a2d27fa3f477")
-		)
-		(pin "2"
-			(uuid "5a75d574-7c9d-47bd-836a-fa398b94e034")
-		)
-		(instances
-			(project "air"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3ffc5730-6d36-4d91-a659-0c16eb9809f3"
-					(reference "C3")
 					(unit 1)
 				)
 			)

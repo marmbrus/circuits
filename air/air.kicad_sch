@@ -920,9 +920,9 @@
 				(justify right)
 			)
 		)
-		(pin "3V3" input
-			(at 39.37 68.58 0)
-			(uuid "9627db04-f89a-41e2-b339-368ed4d1bb23")
+		(pin "5V" input
+			(at 39.37 59.69 0)
+			(uuid "ec3bf327-c191-463c-8cfc-818f79165b36")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -930,9 +930,9 @@
 				(justify right)
 			)
 		)
-		(pin "5V" input
-			(at 39.37 59.69 0)
-			(uuid "ec3bf327-c191-463c-8cfc-818f79165b36")
+		(pin "3v3" input
+			(at 39.37 68.58 0)
+			(uuid "92c6f345-3711-49a2-9b01-d1550319ba3c")
 			(effects
 				(font
 					(size 1.27 1.27)

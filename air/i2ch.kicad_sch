@@ -1405,7 +1405,7 @@
 		)
 		(uuid "71729c57-4019-413f-ac3b-73e725ba1337")
 	)
-	(hierarchical_label "3V3"
+	(hierarchical_label "3v3"
 		(shape input)
 		(at 53.34 53.34 180)
 		(effects
