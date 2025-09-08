@@ -25,6 +25,8 @@ public:
     bool isInitialized() const override;
     uint32_t poll_interval_ms() const override { return 100; }
 
+    bool probe(i2c_master_bus_handle_t bus_handle) override;
+
     int index() const override { return _io_index; }
     std::string config_module_name() const override {
         if (_io_index < 1) return std::string();

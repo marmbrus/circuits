@@ -73,6 +73,16 @@ public:
     virtual bool isInitialized() const = 0;
 
     /**
+     * @brief Probe the device at this sensor's address to verify identity.
+     *
+     * Default implementation returns true (best-effort) so legacy sensors
+     * continue to work. Sensors that can positively identify themselves
+     * should override and return false when they know the device is not
+     * their expected chip.
+     */
+    virtual bool probe(i2c_master_bus_handle_t bus_handle) { (void)bus_handle; return true; }
+
+    /**
      * @brief Desired periodic polling interval in milliseconds.
      *
      * Default is 10 seconds for most sensors. Sensors that need

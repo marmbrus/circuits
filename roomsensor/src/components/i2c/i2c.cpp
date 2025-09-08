@@ -7,6 +7,7 @@
 #include "i2c_master_ext.h"
 #include "opt3001_sensor.h"
 #include "mcp23008_sensor.h"
+#include "amg8833_sensor.h"
 #include "i2c_telemetry.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -21,6 +22,7 @@ static I2CSensor* s_sensors[] = {
     new LIS2DHSensor(),
     new BME280Sensor(),
     new SEN55Sensor(),
+    new AMG8833Sensor(),
     new SCD4xSensor(),
     new OPT3001Sensor(), // OPT3001 at default 0x44
     // ADS1115 ADCs at all four possible addresses
@@ -156,9 +158,17 @@ bool init_i2c() {
             // Check if this address matches any of our known sensors
             bool recognized = false;
 
+            bool any_driver_accepted = false;
             for (int i = 0; i < s_sensor_count; i++) {
                 if (s_sensors[i]->addr() == addr) {
                     recognized = true;
+                    // Ask driver to probe identity; if declines, log and skip
+                    bool accepted = s_sensors[i]->probe(s_i2c_bus);
+                    if (!accepted) {
+                        ESP_LOGI(TAG, "Probe declined at 0x%02X by %s; driver not activated", addr, s_sensors[i]->name().c_str());
+                        continue;
+                    }
+
                     recognized_flags[i] = true;
                     ESP_LOGI(TAG, "Found device at address 0x%02X: %s", addr, s_sensors[i]->name().c_str());
 
@@ -170,15 +180,22 @@ bool init_i2c() {
                         if (initialized) {
                             ESP_LOGI(TAG, "Successfully initialized %s", s_sensors[i]->name().c_str());
                             initialized_count++;
+                            any_driver_accepted = true;
                         } else {
                             ESP_LOGW(TAG, "Failed to initialize %s", s_sensors[i]->name().c_str());
+                            // even if init fails, it was accepted by probe; do not count as all-probe failure
+                            any_driver_accepted = true;
                         }
                     } else {
                         ESP_LOGI(TAG, "%s already initialized", s_sensors[i]->name().c_str());
                         initialized_count++;
+                        any_driver_accepted = true;
                     }
-                    break;
+                    // do not break; allow multiple drivers with same address to be probed
                 }
+            }
+            if (recognized && !any_driver_accepted) {
+                ESP_LOGW(TAG, "No drivers accepted device at 0x%02X; all probes declined. No driver activated.", addr);
             }
 
             if (!recognized) {
