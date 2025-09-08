@@ -145,8 +145,6 @@ bool init_i2c() {
 
     ESP_LOGI(TAG, "Scanning I2C bus for devices...");
 
-    // Note: We'll suppress noisy I2C logs only around probe calls, not globally.
-
     // Track which entries in s_sensors were recognized (address matched on bus)
     bool recognized_flags[s_sensor_count];
     for (int i = 0; i < s_sensor_count; ++i) recognized_flags[i] = false;
@@ -164,14 +162,8 @@ bool init_i2c() {
             for (int i = 0; i < s_sensor_count; i++) {
                 if (s_sensors[i]->addr() == addr) {
                     recognized = true;
-                    // Ask driver to probe identity; suppress I2C logs only during probe
-                    esp_log_level_t prev_idf = esp_log_level_get("i2c.master");
-                    esp_log_level_t prev_ext = esp_log_level_get("i2c_master_ext");
-                    esp_log_level_set("i2c.master", ESP_LOG_NONE);
-                    esp_log_level_set("i2c_master_ext", ESP_LOG_NONE);
+                    // Ask driver to probe identity; if declines, log and skip
                     bool accepted = s_sensors[i]->probe(s_i2c_bus);
-                    esp_log_level_set("i2c.master", prev_idf);
-                    esp_log_level_set("i2c_master_ext", prev_ext);
                     if (!accepted) {
                         ESP_LOGI(TAG, "Probe declined at 0x%02X by %s; driver not activated", addr, s_sensors[i]->name().c_str());
                         continue;
@@ -214,7 +206,6 @@ bool init_i2c() {
             }
         }
     }
-
 
     ESP_LOGI(TAG, "I2C scan complete: %d devices found, %d sensors initialized",
              found_count, initialized_count);
