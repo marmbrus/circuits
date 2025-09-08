@@ -81,8 +81,6 @@ export type SensorState = {
     }>
   }
   logs?: Array<{ ts: number; level: string; message: string }>
-  // Latest camera frame if any (raw int16[64] values in quarter-degree C)
-  cameraFrame?: Int16Array
 }
 
 export type SensorsMap = Map<string, SensorState>

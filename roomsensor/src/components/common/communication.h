@@ -7,9 +7,6 @@
 // Add new MQTT publish helper function
 esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos = 1, int retain = 0);
 
-// Binary publish helper following the same subtopic mapping rules as publish_to_topic
-esp_err_t publish_binary_to_subtopic(const char* subtopic, const uint8_t* data, size_t len, int qos, int retain);
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -47,11 +47,6 @@ public:
     bool isInitialized() const override;
 
     /**
-     * @brief Probe the device at SEN55 address to verify identity.
-     */
-    bool probe(i2c_master_bus_handle_t bus_handle) override;
-
-    /**
      * @brief Check if the sensor has an interrupt that needs polling
      *
      * SEN55 doesn't support interrupts, so this always returns false

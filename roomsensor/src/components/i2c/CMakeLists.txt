@@ -11,9 +11,8 @@ idf_component_register(
         "ads1115_sensor.cpp"
         "opt3001_sensor.cpp"
         "mcp23008_sensor.cpp"
-        "amg8833_sensor.cpp"
         "i2c_telemetry.cpp"
         "metrics_tags.cpp"
     INCLUDE_DIRS "." "../common"
-    PRIV_REQUIRES driver mqtt json configuration main
+    PRIV_REQUIRES driver mqtt json configuration
 )

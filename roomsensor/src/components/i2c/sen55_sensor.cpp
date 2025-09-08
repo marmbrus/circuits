@@ -46,45 +46,6 @@ bool SEN55Sensor::isInitialized() const {
     return _initialized;
 }
 
-bool SEN55Sensor::probe(i2c_master_bus_handle_t bus_handle) {
-    if (bus_handle == nullptr) return false;
-
-    // Configure a temporary device handle at the SEN55 address
-    i2c_master_dev_handle_t temp_dev = nullptr;
-    i2c_device_config_t dev_cfg = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = SEN55_I2C_ADDR,
-        .scl_speed_hz = 100000,
-        .scl_wait_us = 0,
-        .flags = 0
-    };
-    esp_err_t err = i2c_master_bus_add_device(bus_handle, &dev_cfg, &temp_dev);
-    if (err != ESP_OK) {
-        return true; // best-effort: could not confirm, do not block
-    }
-
-    // Try to read product name and check for "SEN" prefix
-    char product[33] = {0};
-    _dev_handle = temp_dev; // reuse helper which uses _dev_handle
-    esp_err_t rd = readStringFromCommand(CMD_READ_PRODUCT_NAME, product, sizeof(product));
-    _dev_handle = nullptr;
-
-    // Remove the temporary device handle
-    i2c_master_bus_rm_device(temp_dev);
-
-    if (rd == ESP_OK) {
-        // Typical product string contains "SEN55"/"SEN54"
-        if (strstr(product, "SEN55") != nullptr || strstr(product, "SEN54") != nullptr || strstr(product, "SEN5") != nullptr) {
-            return true;
-        }
-        // We positively know it's not SEN5x
-        return false;
-    }
-
-    // If reading failed (e.g., device busy), treat as best-effort true
-    return true;
-}
-
 bool SEN55Sensor::init() {
     ESP_LOGE(TAG, "Invalid init() call without bus handle. Use init(i2c_master_bus_handle_t) instead.");
     return false;

@@ -691,28 +691,6 @@ esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, i
     return ESP_OK;
 }
 
-esp_err_t publish_binary_to_subtopic(const char* subtopic, const uint8_t* data, size_t len, int qos, int retain) {
-    if (!mqtt_client || system_state != FULLY_CONNECTED) {
-        ESP_LOGE(TAG, "MQTT binary publish failed: client not connected (state: %d)", system_state);
-        return ESP_ERR_INVALID_STATE;
-    }
-    char full_topic[128];
-    char mac_str[13];
-    snprintf(mac_str, sizeof(mac_str), "%02x%02x%02x%02x%02x%02x",
-            device_mac[0], device_mac[1], device_mac[2],
-            device_mac[3], device_mac[4], device_mac[5]);
-    // If subtopic starts with '/', skip it
-    const char* topic_path = (subtopic[0] == '/') ? subtopic + 1 : subtopic;
-    strncpy(full_topic, topic_path, sizeof(full_topic) - 1);
-    full_topic[sizeof(full_topic) - 1] = '\0';
-    int msg_id = esp_mqtt_client_publish(mqtt_client, full_topic, (const char*)data, (int)len, qos, retain);
-    if (msg_id < 0) {
-        ESP_LOGE(TAG, "MQTT binary publish failed, error code=%d", msg_id);
-        return ESP_FAIL;
-    }
-    return ESP_OK;
-}
-
 esp_err_t wifi_wait_for_boot_publish(int timeout_ms) {
     // If MQTT isn't initialized, there's nothing to wait for; return immediately
     if (mqtt_client == NULL) {

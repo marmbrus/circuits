@@ -9,7 +9,6 @@ import { useEffect, useMemo, useState } from 'react'
 import type { SensorState } from '../types'
 import { useSensors } from '../mqttStore'
 import SensorConfigView from './SensorConfig'
-import CameraView from './CameraView'
 import FriendlyDuration, { formatDuration } from './FriendlyDuration'
 
 
@@ -200,18 +199,6 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 								presentIOModules={presentIO}
 							/>
 						)}
-					{sensor.cameraFrame ? (
-						<Accordion disableGutters elevation={0} defaultExpanded sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
-							<AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
-								<Stack direction="row" spacing={1} alignItems="center">
-									<Typography variant="subtitle2">Camera</Typography>
-								</Stack>
-							</AccordionSummary>
-							<AccordionDetails>
-								<CameraView frame={sensor.cameraFrame} />
-							</AccordionDetails>
-						</Accordion>
-					) : null}
 					{sensor.i2c && sensor.i2c.devices?.length ? (
 						<Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
 							<AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>

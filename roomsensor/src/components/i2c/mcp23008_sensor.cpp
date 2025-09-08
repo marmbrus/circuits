@@ -34,58 +34,6 @@ bool MCP23008Sensor::isInitialized() const {
     return _initialized;
 }
 
-bool MCP23008Sensor::probe(i2c_master_bus_handle_t bus_handle) {
-    if (bus_handle == nullptr) return false;
-
-    // Create temporary device handle at this address
-    i2c_master_dev_handle_t temp_dev = nullptr;
-    i2c_device_config_t dev_cfg = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address  = _i2c_addr,
-        .scl_speed_hz    = 400000,
-        .scl_wait_us     = 0,
-        .flags           = 0
-    };
-    esp_err_t err = i2c_master_bus_add_device(bus_handle, &dev_cfg, &temp_dev);
-    if (err != ESP_OK) {
-        return true; // best-effort: cannot confirm
-    }
-
-    // Read IOCON and try toggling an unused-safe bit (SEQOP bit 5)
-    uint8_t orig = 0;
-    esp_err_t rd = i2c_master_bus_read_uint8(temp_dev, REG_IOCON, &orig);
-    if (rd != ESP_OK) {
-        i2c_master_bus_rm_device(temp_dev);
-        return true; // best-effort; could be write-only/aliased on some clones
-    }
-
-    uint8_t toggled = orig ^ (1u << 5); // flip SEQOP (sequential op disable)
-    (void)i2c_master_bus_write_uint8(temp_dev, REG_IOCON, toggled);
-
-    uint8_t verify = 0;
-    esp_err_t rd2 = i2c_master_bus_read_uint8(temp_dev, REG_IOCON, &verify);
-
-    // Restore original value
-    (void)i2c_master_bus_write_uint8(temp_dev, REG_IOCON, orig);
-
-    i2c_master_bus_rm_device(temp_dev);
-
-    if (rd2 == ESP_OK) {
-        // If readback reflects the toggled bit (ignoring other bits), we are likely MCP23008
-        uint8_t expect = toggled;
-        if ((verify ^ expect) == 0) {
-            return true;
-        } else {
-            // Some variants may mask certain bits; as a stricter check, also ensure readable REG_GPIO exists
-            // and REG_IODIR reset default is plausible.
-            // Read a couple of other registers safely; if they NACK or are constant 0xFF, we still treat best-effort
-            return false; // positively not behaving like MCP23008
-        }
-    }
-
-    return true; // best-effort when we can't be certain
-}
-
 bool MCP23008Sensor::init() {
     ESP_LOGE(TAG, "Invalid init() without bus handle. Use init(bus_handle).");
     return false;

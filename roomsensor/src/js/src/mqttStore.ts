@@ -276,24 +276,6 @@ class MqttManager {
     if (parts.length < 3 || parts[0] !== 'sensor') return
     const mac = parts[1].toLowerCase()
     const category = parts[2]
-    // Camera frames: sensor/$mac/camera (binary int16[64])
-    if (category === 'camera' && parts.length === 3) {
-      try {
-        if (typeof payload === 'string') return
-        const u8 = payload as unknown as Uint8Array
-        if (!u8 || typeof u8.byteLength !== 'number') return
-        if (u8.byteLength !== 128) return // 64 * int16
-        const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength)
-        const buf = new Int16Array(64)
-        for (let i = 0; i < 64; i++) buf[i] = dv.getInt16(i * 2, true)
-        const s = this.ensureSensor(mac)
-        s.cameraFrame = buf
-        this.notify()
-      } catch (e) {
-        this.setError(`camera parse error: ${(e as Error).message}`)
-      }
-      return
-    }
 
     // Record retained topics so they can be deleted later
     if (isRetained) {
