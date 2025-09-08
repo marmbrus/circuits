@@ -3349,7 +3349,7 @@
 	)
 	(wire
 		(pts
-			(xy 182.88 113.03) (xy 228.6 113.03)
+			(xy 195.58 113.03) (xy 228.6 113.03)
 		)
 		(stroke
 			(width 0)
@@ -5384,15 +5384,6 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C5383105"
-			(at 255.27 129.54 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
 		(pin "1"
 			(uuid "2e589b29-e73b-4625-84f4-63707887093c")
 		)
@@ -6290,7 +6281,7 @@
 			)
 		)
 		(property "Label" "SDA"
-			(at 58.166 80.772 0)
+			(at 59.69 80.7719 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6705,7 +6696,7 @@
 			)
 		)
 		(property "Label" "SCL"
-			(at 58.166 66.548 0)
+			(at 59.69 66.5479 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8057,13 +8048,13 @@
 			)
 		)
 		(pin "IS" input
-			(at 182.88 113.03 180)
+			(at 195.58 113.03 0)
 			(uuid "0abb7aa1-4d82-42de-9a7b-4c8fb3502151")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
+				(justify right)
 			)
 		)
 		(instances
