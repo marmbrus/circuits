@@ -18,6 +18,7 @@
 #include "gpio.h"
 #include "filesystem.h"
 #include "netlog.h"
+#include "debug.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <time.h>
@@ -50,6 +51,7 @@ extern "C" void app_main(void)
     static leds::LEDManager led_manager;
     if (led_manager.init(cfg) != ESP_OK) {
         ESP_LOGE(TAG, "LEDManager initialization failed");
+        log_memory_snapshot(TAG, "led_manager_init_failed");
     }
 
     // Initialize interactive console BEFORE WiFi to allow early interaction
@@ -86,11 +88,13 @@ extern "C" void app_main(void)
     // Initialize netlog once network path is progressing
     if (netlog_init_early() != ESP_OK) {
         ESP_LOGW(TAG, "Failed to initialize netlog early");
+        log_memory_snapshot(TAG, "netlog_init_failed");
     }
 
     // Initialize the metrics reporting system (both queue and background task)
     if (initialize_metrics_system() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize metrics system");
+        log_memory_snapshot(TAG, "metrics_init_failed");
     } else {
         ESP_LOGI(TAG, "Metrics reporting system started successfully");
     }
@@ -100,17 +104,20 @@ extern "C" void app_main(void)
         esp_err_t isr_err = gpio_install_isr_service(0);
         if (isr_err != ESP_OK && isr_err != ESP_ERR_INVALID_STATE) {
             ESP_LOGE(TAG, "Failed to install GPIO ISR service: %s", esp_err_to_name(isr_err));
+            log_memory_snapshot(TAG, "gpio_isr_install_failed");
         }
     }
 
     // Initialize GPIO features (e.g., motion sensor) after metrics system
     if (init_gpio() != ESP_OK) {
         ESP_LOGE(TAG, "GPIO initialization failed");
+        log_memory_snapshot(TAG, "gpio_init_failed");
     }
 
     // Initialize I2C subsystem
     if (!init_i2c()) {
         ESP_LOGE(TAG, "Failed to initialize I2C subsystem");
+        log_memory_snapshot(TAG, "i2c_init_failed");
     } else {
         ESP_LOGI(TAG, "I2C subsystem initialized successfully");
     }
@@ -118,11 +125,13 @@ extern "C" void app_main(void)
     // Mount LittleFS (reusing 'storage' partition label)
     if (webfs::init("storage", false) != ESP_OK) {
         ESP_LOGW(TAG, "LittleFS mount failed; web UI may not be available");
+        log_memory_snapshot(TAG, "littlefs_mount_failed");
     }
 
     // Start HTTP webserver
     if (start_webserver() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start HTTP server");
+        log_memory_snapshot(TAG, "http_server_start_failed");
     } else {
         ESP_LOGI(TAG, "HTTP server started successfully");
     }
@@ -130,6 +139,7 @@ extern "C" void app_main(void)
     // Initialize OTA update system
     if (ota_init() != ESP_OK) {
         ESP_LOGW(TAG, "OTA initialization failed");
+        log_memory_snapshot(TAG, "ota_init_failed");
     } else {
         ESP_LOGI(TAG, "OTA system initialized successfully");
     }

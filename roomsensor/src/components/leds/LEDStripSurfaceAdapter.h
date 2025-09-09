@@ -7,6 +7,7 @@
 #include "driver/gpio.h"
 #include <memory>
 #include <vector>
+#include "PsramAllocator.h"
 
 namespace leds {
 
@@ -105,7 +106,8 @@ private:
     size_t rows_ = 1;
     size_t cols_ = 1;
     std::unique_ptr<LEDSurfaceImpl> surface_;
-    std::vector<uint8_t> shadow_rgba_;
+    // Shadow buffer can be large: rows*cols*4
+    std::vector<uint8_t, PsramAllocator<uint8_t>> shadow_rgba_;
     bool dirty_ = false;
 };
 
