@@ -4,7 +4,6 @@
 #include "LEDGrid.h"
 #include "LEDWireEncoder.h"
 #include <vector>
-#include "PsramAllocator.h"
 #include <memory>
 
 namespace leds {
@@ -51,9 +50,8 @@ private:
     size_t cols_ = 0;
     std::unique_ptr<internal::LEDCoordinateMapper> mapper_;
     std::unique_ptr<internal::LEDWireEncoder> encoder_;
-    // Large frame buffers → store in PSRAM
-    std::vector<uint8_t, PsramAllocator<uint8_t>> logical_rgba_;
-    std::vector<uint8_t, PsramAllocator<uint8_t>> frame_bytes_;
+    std::vector<uint8_t> logical_rgba_;
+    std::vector<uint8_t> frame_bytes_;
 };
 
 } // namespace leds

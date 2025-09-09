@@ -27,7 +27,6 @@
 #include "LEDConfig.h"
 #include "esp_timer.h"
 #include "esp_log.h"
-#include "debug.h"
 #include <algorithm>
 #include <cstring>
 
@@ -67,7 +66,6 @@ esp_err_t LEDManager::init(config::ConfigurationManager& cfg_manager) {
         &LEDManager::UpdateTaskEntry, "led-update", 6144, this, update_task_priority_, &update_task_, update_task_core_);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create LED update task");
-        log_memory_snapshot(TAG, "led_update_task_create_failed");
         return ESP_FAIL;
     }
     return ESP_OK;
@@ -133,8 +131,8 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
         // Install power manager by chip type
         if (chip == config::LEDConfig::Chip::FLIPDOT) power_mgrs_.push_back(std::unique_ptr<PowerManager>(new FlipDotPower()));
         else power_mgrs_.push_back(std::unique_ptr<PowerManager>(new LedPower()));
-        prev_frames_rgba_.emplace_back(rows * cols * 4, 0);
-        scratch_frames_rgba_.emplace_back(rows * cols * 4, 0);
+        prev_frames_rgba_.push_back(std::vector<uint8_t>(rows * cols * 4, 0));
+        scratch_frames_rgba_.push_back(std::vector<uint8_t>(rows * cols * 4, 0));
         strips_.push_back(std::move(s));
         patterns_.push_back(create_pattern_from_config(*c));
         last_layouts_.push_back(c->layout_enum());

@@ -4,7 +4,6 @@
 #include "led_strip.h"
 #include "esp_timer.h"
 #include <vector>
-#include "PsramAllocator.h"
 #include <memory>
 
 namespace leds {
@@ -72,8 +71,7 @@ private:
     size_t mem_block_symbols_ = 48;
 
     // backing store for current values (RGBA order logical RGBW)
-    // Pixel shadow buffer can be large
-    std::vector<uint8_t, PsramAllocator<uint8_t>> pixels_; // 3 or 4 bytes per LED
+    std::vector<uint8_t> pixels_; // 3 or 4 bytes per LED
     bool has_white_ = false;
     bool dirty_ = false;
 

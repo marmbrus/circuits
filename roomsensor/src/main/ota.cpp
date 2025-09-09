@@ -14,12 +14,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
-#include "esp_heap_caps.h"
 #include "config.h"
 #include "system_state.h"
 #include "communication.h"
 #include "filesystem.h"
-#include "debug.h"
 
 /*
  * OTA Update State Machine
@@ -793,11 +791,7 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
 
 // OTA update task that runs in the background
 static void ota_update_task(void *pvParameter) {
-    ESP_LOGI(TAG, "OTA update task started - task handle: %p", xTaskGetCurrentTaskHandle());
-    
-    // Minimal startup diagnostics
-    UBaseType_t stack_high_water = uxTaskGetStackHighWaterMark(NULL);
-    ESP_LOGD(TAG, "OTA task stack high water: %u bytes", stack_high_water);
+    ESP_LOGI(TAG, "OTA update task started");
 
     // Validate that network event group exists
     if (network_event_group == NULL) {
@@ -805,41 +799,26 @@ static void ota_update_task(void *pvParameter) {
         vTaskDelete(NULL);
         return;
     }
-    ESP_LOGD(TAG, "Network event group validated: %p", network_event_group);
 
     // Get current version on startup
-    // Major transition: capture current version
     get_current_version();
 
     // Ensure the app is marked valid to prevent rollback
-    // Ensure app is valid
     mark_app_valid();
 
     uint32_t check_count = 0;
     bool was_connected = false;
 
-    ESP_LOGI(TAG, "OTA monitoring loop started");
+    ESP_LOGI(TAG, "Starting OTA monitoring loop");
 
     // Main OTA loop - runs forever
     while (1) {
-        // Debug: Periodic stack and memory monitoring
-        // Quiet health checks; keep cheap metrics if needed
-
         // Check for system readiness
         bool is_connected = false;
 
         // Use system state to determine readiness
         extern SystemState get_system_state(void);
         SystemState current_state = get_system_state();
-        
-        // Debug: Log system state periodically or on changes
-        static SystemState last_logged_state = (SystemState)-1;
-        if (current_state != last_logged_state) {
-            const char* state_names[] = {"STARTING", "WIFI_CONNECTING", "WIFI_CONNECTED", "MQTT_CONNECTING", "FULLY_CONNECTED"};
-            const char* state_name = (current_state >= 0 && current_state <= 4) ? state_names[current_state] : "UNKNOWN";
-            ESP_LOGI(TAG, "System state: %s", state_name);
-            last_logged_state = current_state;
-        }
 
         // Only treat as connected when the whole system is up (WiFi + MQTT)
         if (current_state == FULLY_CONNECTED) {
@@ -848,10 +827,10 @@ static void ota_update_task(void *pvParameter) {
 
         // Network state change logging
         if (is_connected && !was_connected) {
-            ESP_LOGI(TAG, "Network connected; OTA checks enabled");
+            ESP_LOGI(TAG, "Network is now connected, proceeding with OTA checks");
             was_connected = true;
         } else if (!is_connected && was_connected) {
-            ESP_LOGI(TAG, "Network disconnected; OTA checks paused");
+            ESP_LOGI(TAG, "Network is now disconnected, pausing OTA checks");
             was_connected = false;
         }
 
@@ -859,17 +838,13 @@ static void ota_update_task(void *pvParameter) {
         if (is_connected) {
             // Ensure SNTP has set the time before performing HTTPS requests and comparing timestamps
             if (!is_time_synchronized()) {
-                ESP_LOGD(TAG, "Waiting for SNTP before OTA checks");
+                ESP_LOGI(TAG, "Waiting for time synchronization (SNTP) before OTA checks");
                 vTaskDelay(pdMS_TO_TICKS(5000));
                 continue;
             }
             // Check for updates
             check_count++;
-            ESP_LOGI(TAG, "Checking for updates");
-            
-            // Debug: Memory before HTTP request
-            size_t heap_before_http = esp_get_free_heap_size();
-            (void)heap_before_http;
+            ESP_LOGI(TAG, "OTA check #%lu: Checking for updates from %s", check_count, MANIFEST_URL);
 
             esp_err_t err = ESP_OK;
             esp_http_client_handle_t client = NULL;
@@ -881,44 +856,25 @@ static void ota_update_task(void *pvParameter) {
             config.crt_bundle_attach = esp_crt_bundle_attach;
             config.skip_cert_common_name_check = false;
             config.timeout_ms = 10000; // Add 10s timeout to avoid hanging
-            
-            
+
             client = esp_http_client_init(&config);
             if (client == NULL) {
-                ESP_LOGE(TAG, "Failed to initialize HTTP client - insufficient memory?");
-                size_t heap_after_fail = esp_get_free_heap_size();
-                ESP_LOGE(TAG, "Free heap after HTTP client init failure: %zu bytes", heap_after_fail);
+                ESP_LOGE(TAG, "Failed to initialize HTTP client");
                 // Skip to delay and try again later
             } else {
-                
-                
                 // Perform HTTP request with proper error handling
-                
                 err = esp_http_client_perform(client);
 
                 if (err != ESP_OK) {
-                    ESP_LOGE(TAG, "HTTP GET request failed: %s (0x%x)", esp_err_to_name(err), err);
-                    
-                    // Additional error details
-                    int status_code = esp_http_client_get_status_code(client);
-                    int64_t content_length = esp_http_client_get_content_length(client);
-                    ESP_LOGE(TAG, "HTTP error details - Status: %d, Content-Length: %lld", 
-                             status_code, (long long)content_length);
+                    ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
                 } else {
                     int status_code = esp_http_client_get_status_code(client);
-                    int64_t content_length = esp_http_client_get_content_length(client);
-                    (void)status_code; (void)content_length;
-                    
                     if (status_code != 200) {
                         ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
                     }
                 }
 
-                // Debug: Memory after HTTP request
-                
-
                 // Cleanup
-                
                 esp_http_client_cleanup(client);
             }
 
@@ -944,111 +900,47 @@ esp_err_t ota_init(void) {
 
     // Create event group for network synchronization if it doesn't exist
     if (network_event_group == NULL) {
-        ESP_LOGI(TAG, "Creating network event group for OTA");
         network_event_group = xEventGroupCreate();
         if (network_event_group == NULL) {
-            ESP_LOGE(TAG, "Failed to create event group - insufficient memory?");
-            size_t free_heap = esp_get_free_heap_size();
-            ESP_LOGE(TAG, "Free heap after event group creation failure: %zu bytes", free_heap);
+            ESP_LOGE(TAG, "Failed to create event group");
             return ESP_FAIL;
         }
-        ESP_LOGI(TAG, "Created network event group for OTA successfully");
-    } else {
-        ESP_LOGI(TAG, "Network event group already exists");
+        ESP_LOGI(TAG, "Created network event group for OTA");
     }
 
     // Get current firmware version and partition info
-    ESP_LOGI(TAG, "Getting current firmware version");
     get_current_version();
 
     // Ensure LittleFS is mounted for web OTA reads/writes
-    ESP_LOGI(TAG, "Initializing web filesystem");
     webfs::init("storage", false);
 
     // Check if we're running from factory partition (for future use)
     const esp_partition_t *running = esp_ota_get_running_partition();
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
         // Report DEV_BUILD status - this will be done when status is published
-        ESP_LOGI(TAG, "Running from factory partition (DEV_BUILD mode)");
-    } else {
-        ESP_LOGI(TAG, "Running from OTA partition");
+        ESP_LOGD(TAG, "Running from factory partition");
     }
 
     // Mark app as valid to prevent rollback
-    ESP_LOGI(TAG, "Marking current app as valid");
     mark_app_valid();
-
-    // Debug: Check memory before task creation
-    size_t free_heap_mid = esp_get_free_heap_size();
-    ESP_LOGI(TAG, "Free heap before task creation: %zu bytes", free_heap_mid);
-    ESP_LOGI(TAG, "OTA task stack size: %d bytes, priority: %d", OTA_TASK_STACK_SIZE, OTA_TASK_PRIORITY);
 
     // Start OTA task if not already running
     if (!ota_running || ota_task_handle == NULL) {
-        ESP_LOGI(TAG, "Creating OTA background task");
         ota_running = true;
-        
-        // Debug: Validate stack size requirements and memory fragmentation
-        if (OTA_TASK_STACK_SIZE < 4096) {
-            ESP_LOGW(TAG, "OTA task stack size may be too small: %d bytes", OTA_TASK_STACK_SIZE);
-        }
-        
-        // Check for heap fragmentation by trying to allocate the required stack size
-        void* test_alloc = malloc(OTA_TASK_STACK_SIZE);
-        if (test_alloc) {
-            ESP_LOGI(TAG, "Memory test: Successfully allocated %d bytes for stack test", OTA_TASK_STACK_SIZE);
-            free(test_alloc);
-        } else {
-            ESP_LOGE(TAG, "Memory test: Failed to allocate %d bytes - heap fragmentation likely", OTA_TASK_STACK_SIZE);
-            
-            // Try smaller allocations to see what's available
-            size_t test_sizes[] = {8192, 4096, 2048, 1024};
-            for (int i = 0; i < 4; i++) {
-                void* smaller_test = malloc(test_sizes[i]);
-                if (smaller_test) {
-                    ESP_LOGI(TAG, "Memory test: %zu bytes allocation succeeded", test_sizes[i]);
-                    free(smaller_test);
-                } else {
-                    ESP_LOGE(TAG, "Memory test: %zu bytes allocation failed", test_sizes[i]);
-                }
-            }
-        }
-        
-        // Check largest free block
-        size_t largest_free_block = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
-        ESP_LOGI(TAG, "Largest contiguous free block: %zu bytes (need %d bytes)", 
-                 largest_free_block, OTA_TASK_STACK_SIZE);
-        
-        if (largest_free_block < OTA_TASK_STACK_SIZE) {
-            ESP_LOGE(TAG, "Insufficient contiguous memory for OTA task stack!");
-        }
-        
-        // Create task in internal RAM (stack must be in internal RAM for OTA when flash cache may be disabled)
-        BaseType_t ret = xTaskCreate(
-            ota_update_task,
-            "ota_task",
-            OTA_TASK_STACK_SIZE,
-            NULL,
-            OTA_TASK_PRIORITY,
-            &ota_task_handle
-        );
+        BaseType_t ret = xTaskCreate(ota_update_task, "ota_task",
+                                    OTA_TASK_STACK_SIZE, NULL,
+                                    OTA_TASK_PRIORITY, &ota_task_handle);
 
         if (ret != pdPASS) {
-            ota_running = false; // Reset flag on failure
-            size_t free_heap_after = esp_get_free_heap_size();
-            ESP_LOGE(TAG, "Failed to create OTA task - xTaskCreate returned %d", ret);
-            log_memory_snapshot(TAG, "ota_task_create_failed");
+            ESP_LOGE(TAG, "Failed to create OTA task");
             return ESP_FAIL;
         }
-        ESP_LOGI(TAG, "OTA task created");
-        
-        // Debug: Check memory after successful task creation
-        
+
+        ESP_LOGI(TAG, "OTA task created successfully");
     } else {
-        ESP_LOGW(TAG, "OTA task already running (handle: %p), skipping creation", ota_task_handle);
+        ESP_LOGW(TAG, "OTA task already running, skipping creation");
     }
 
-    // Final: success
 
     ESP_LOGI(TAG, "OTA module initialized successfully");
     return ESP_OK;

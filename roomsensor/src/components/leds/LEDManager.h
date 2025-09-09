@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
-#include "PsramAllocator.h"
 #include "LEDConfig.h"
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
@@ -60,9 +59,8 @@ private:
     std::vector<std::unique_ptr<LEDStrip>> strips_;
     std::vector<std::unique_ptr<LEDPattern>> patterns_; // 1:1 with strips_
     std::vector<std::unique_ptr<PowerManager>> power_mgrs_; // 1:1 with strips_
-    // Store per-strip RGBA frames in PSRAM to free internal RAM
-    std::vector<std::vector<uint8_t, PsramAllocator<uint8_t>>> prev_frames_rgba_; // rows*cols*4 per strip
-    std::vector<std::vector<uint8_t, PsramAllocator<uint8_t>>> scratch_frames_rgba_; // reusable buffer for current frame
+    std::vector<std::vector<uint8_t>> prev_frames_rgba_; // rows*cols*4 per strip
+    std::vector<std::vector<uint8_t>> scratch_frames_rgba_; // reusable buffer for current frame
     std::vector<bool> last_power_enabled_; // track power pin state to log transitions
     // Per-strip timestamp (us) until which we should hold transmissions after power-on
     std::vector<uint64_t> power_on_hold_until_us_;

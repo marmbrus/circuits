@@ -22,7 +22,7 @@
 
 // OTA Configuration
 #define OTA_CHECK_INTERVAL_MS     1000000   // Check for updates every 1000 seconds
-#define OTA_TASK_STACK_SIZE       4096   // Reduced from 12288 to fit in internal RAM
+#define OTA_TASK_STACK_SIZE       12288
 #define OTA_TASK_PRIORITY         3       // Lower priority than critical tasks
 
 // I2C Configuration
