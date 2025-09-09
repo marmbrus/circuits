@@ -9,6 +9,7 @@
 #include "cmd_wifi.h"
 #include "cmd_nvs.h"
 #include "cmd_system.h"
+#include "cmd_ota.h"
 #include "gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -56,6 +57,7 @@ static void console_task(void *arg)
     register_nvs();
     register_wifi();
     register_gpio();
+    register_ota();
 
     const char* prompt = LOG_COLOR_I "esp32> " LOG_RESET_COLOR;
     ESP_LOGI(TAG_CONSOLE, "Console initialized. Type 'help' to list commands.");

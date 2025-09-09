@@ -94,11 +94,17 @@ static time_t web_remote_timestamp = 0;
 static char web_local_version[33] = {0};
 static time_t web_local_timestamp = 0;
 static char web_last_error[96] = {0};
+// Force-OTA overrides (used by console command)
+static bool g_force_ota = false;
+static char g_force_url[256] = {0};
+static char g_force_version[64] = {0};
 
 // Forward declare
 static char* read_text_file(const char* path);
 static bool write_text_file_atomic(const char* path, const char* text);
 static void report_ota_status(ota_status_t status, const char* error_message);
+static esp_err_t perform_https_ota_from_url(const char* firmware_url);
+static char* download_url_to_string(const char* url, size_t* out_len, size_t max_len);
 
 // Helper: read a small JSON file fully into memory
 static char* read_text_file(const char* path) {
@@ -508,6 +514,36 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
 
     // Use embedded build timestamp directly for comparison
 
+    // Handle forced OTA path first: bypass timestamp comparison
+    if (g_force_ota) {
+        // Prefer forced URL/version if provided
+        if (g_force_url[0]) firmware_url = g_force_url;
+        if (g_force_version[0]) remote_version_str = g_force_version;
+
+        report_ota_status(OTA_STATUS_UPGRADING_FIRMWARE, NULL);
+        ESP_LOGI(TAG, "Force-updating firmware from %s", firmware_url);
+        esp_err_t ret = perform_https_ota_from_url(firmware_url);
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "Forced OTA successful; saving info and rebooting");
+            write_text_file_atomic("/storage/firmware_version.txt", remote_version_str);
+            // Use either provided timestamp or bump local by 1 to record
+            save_ota_info(FIRMWARE_BUILD_TIME + 1, remote_version_str);
+            g_force_ota = false; g_force_url[0]=0; g_force_version[0]=0;
+            cJSON_Delete(root);
+            vTaskDelay(pdMS_TO_TICKS(500));
+            esp_restart();
+            return true;
+        } else {
+            ESP_LOGE(TAG, "Forced OTA failed: %s", esp_err_to_name(ret));
+            log_memory_snapshot(TAG, "forced_ota_failed");
+            mark_app_valid();
+            report_ota_status(OTA_STATUS_ERROR, esp_err_to_name(ret));
+            g_force_ota = false; g_force_url[0]=0; g_force_version[0]=0;
+            cJSON_Delete(root);
+            return false;
+        }
+    }
+
     // PRIMARY CHECK: Compare build timestamps
     if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
         ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
@@ -547,18 +583,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             // Perform the OTA update
             ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
 
-            esp_http_client_config_t config = {};
-            config.url = firmware_url;
-            config.crt_bundle_attach = esp_crt_bundle_attach;
-            config.skip_cert_common_name_check = false;
-            config.buffer_size = 1024;
-            config.timeout_ms = 30000; // 30 second timeout for firmware download
-
-            esp_https_ota_config_t ota_config = {};
-            ota_config.http_config = &config;
-            ota_config.bulk_flash_erase = true;
-
-            esp_err_t ret = esp_https_ota(&ota_config);
+            esp_err_t ret = perform_https_ota_from_url(firmware_url);
             if (ret == ESP_OK) {
                 ESP_LOGI(TAG, "OTA update successful! Saving update info and rebooting...");
 
@@ -578,6 +603,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 return true;
             } else {
                 ESP_LOGE(TAG, "OTA update failed with error: %s", esp_err_to_name(ret));
+                // Capture memory state to diagnose TLS/HTTP allocation failures
+                log_memory_snapshot(TAG, "ota_https_ota_failed");
                 // LED state handled by LEDManager patterns
                 mark_app_valid();
                 cJSON_Delete(root);
@@ -789,6 +816,108 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     }
 
     return ESP_OK;
+}
+
+static esp_err_t perform_https_ota_from_url(const char* firmware_url) {
+    esp_http_client_config_t config = {};
+    config.url = firmware_url;
+    config.crt_bundle_attach = esp_crt_bundle_attach;
+    config.skip_cert_common_name_check = false;
+    config.buffer_size = 1024;
+    config.timeout_ms = 30000; // 30 second timeout for firmware download
+
+    esp_https_ota_config_t ota_config = {};
+    ota_config.http_config = &config;
+    ota_config.bulk_flash_erase = true;
+
+    return esp_https_ota(&ota_config);
+}
+
+extern "C" esp_err_t ota_force_update(const char* version_hash) {
+    // Build URL based on provided hash or manifest
+    if (version_hash && version_hash[0] != '\0') {
+        snprintf(g_force_url, sizeof(g_force_url), "https://updates.gaia.bio/firmware-%s.bin", version_hash);
+        // Track a friendly version string for status
+        snprintf(g_force_version, sizeof(g_force_version), "%s", version_hash);
+    } else {
+        // No hash: use manifest URL as-is; set force flag only
+        g_force_url[0] = 0; // Will use manifest-provided URL inside parse_manifest_and_check_update
+        g_force_version[0] = 0;
+    }
+    g_force_ota = true;
+    ESP_LOGI(TAG, "Force OTA armed (hash=%s)", (version_hash && version_hash[0]) ? version_hash : "<manifest>");
+    return ESP_OK;
+}
+
+// Robust downloader that handles chunked and unknown content-length bodies
+static char* download_url_to_string(const char* url, size_t* out_len, size_t max_len) {
+    if (out_len) *out_len = 0;
+    esp_http_client_config_t cfg = {};
+    cfg.url = url;
+    cfg.crt_bundle_attach = esp_crt_bundle_attach;
+    cfg.skip_cert_common_name_check = false;
+    cfg.timeout_ms = 15000;
+
+    esp_http_client_handle_t client = esp_http_client_init(&cfg);
+    if (!client) return NULL;
+
+    esp_err_t err = esp_http_client_open(client, 0);
+    if (err != ESP_OK) {
+        esp_http_client_cleanup(client);
+        return NULL;
+    }
+
+    // Ignore content-length; support chunked
+    size_t cap = 1024;
+    if (cap > max_len) cap = max_len;
+    char* data = (char*)malloc(cap + 1);
+    if (!data) {
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        return NULL;
+    }
+    size_t used = 0;
+    while (1) {
+        if (used >= max_len) {
+            // Too large
+            free(data);
+            esp_http_client_close(client);
+            esp_http_client_cleanup(client);
+            return NULL;
+        }
+        int to_read = 1024;
+        if (used + (size_t)to_read > cap) {
+            size_t new_cap = cap * 2;
+            if (new_cap < used + (size_t)to_read) new_cap = used + (size_t)to_read;
+            if (new_cap > max_len) new_cap = max_len;
+            char* nd = (char*)realloc(data, new_cap + 1);
+            if (!nd) {
+                free(data);
+                esp_http_client_close(client);
+                esp_http_client_cleanup(client);
+                return NULL;
+            }
+            data = nd;
+            cap = new_cap;
+        }
+        int r = esp_http_client_read(client, data + used, to_read);
+        if (r < 0) {
+            free(data);
+            esp_http_client_close(client);
+            esp_http_client_cleanup(client);
+            return NULL;
+        } else if (r == 0) {
+            // Done
+            break;
+        } else {
+            used += (size_t)r;
+        }
+    }
+    data[used] = 0;
+    if (out_len) *out_len = used;
+    esp_http_client_close(client);
+    esp_http_client_cleanup(client);
+    return data;
 }
 
 // OTA update task that runs in the background
