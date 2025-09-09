@@ -1,11 +1,16 @@
-import { AppBar, Box, Chip, Container, LinearProgress, Stack, Toolbar, Typography } from '@mui/material'
+import { AppBar, Box, Button, Chip, Container, LinearProgress, Stack, Toolbar, Typography } from '@mui/material'
 import './App.css'
 import { useSensors } from './mqttStore'
 import SensorGrid from './components/SensorGrid'
 import VersionsChip from './components/VersionsChip'
+import RestartAltIcon from '@mui/icons-material/RestartAlt'
 
 function App() {
-  const { sensors, connectionStatus, lastError } = useSensors()
+  const { sensors, connectionStatus, lastError, restartSensor } = useSensors()
+
+  const rebootAll = () => {
+    for (const mac of sensors.keys()) restartSensor(mac)
+  }
 
   return (
     <Box sx={{ bgcolor: 'background.default', color: 'text.primary', minHeight: '100vh' }}>
@@ -20,6 +25,15 @@ function App() {
             )}
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">
+            <Button
+              onClick={rebootAll}
+              size="small"
+              variant="outlined"
+              startIcon={<RestartAltIcon />}
+              disabled={sensors.size === 0}
+            >
+              Reboot all
+            </Button>
             <Chip
               label={connectionStatus}
               size="small"
