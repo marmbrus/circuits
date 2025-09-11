@@ -14,6 +14,7 @@ WifiConfig::WifiConfig() {
     descriptors_.push_back({"channel", ConfigValueType::String, nullptr, true});
     // Default loglevel warn (2). Persisted to NVS and applied at runtime.
     descriptors_.push_back({"loglevel", ConfigValueType::I32, "2", true});
+    descriptors_.push_back({"statusGPIO", ConfigValueType::I32, "-1", false});
 }
 
 const char* WifiConfig::name() const {
@@ -91,6 +92,14 @@ esp_err_t WifiConfig::apply_update(const char* key, const char* value_str) {
         return ESP_OK;
     }
 
+    if (strcmp(key, "statusGPIO") == 0) {
+        int gpio = value_str ? atoi(value_str) : -1;
+        // You might want to add validation for the GPIO pin number here
+        status_gpio_ = gpio;
+        status_gpio_set_ = true;
+        return ESP_OK;
+    }
+
 
     ESP_LOGW(TAG, "Unknown key '%s'", key);
     return ESP_ERR_NOT_FOUND;
@@ -118,6 +127,10 @@ esp_err_t WifiConfig::to_json(cJSON* root_object) const {
     added++;
     if (has_channel()) {
         cJSON_AddStringToObject(wifi_obj, "channel", channel_.c_str());
+        added++;
+    }
+    if (has_status_gpio()) {
+        cJSON_AddNumberToObject(wifi_obj, "statusGPIO", status_gpio_);
         added++;
     }
     

@@ -19,6 +19,7 @@
 #include "filesystem.h"
 #include "netlog.h"
 #include "debug.h"
+#include "status_led.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <time.h>
@@ -42,6 +43,9 @@ extern "C" void app_main(void)
     if (cfg_err != ESP_OK) {
         ESP_LOGE(TAG, "ConfigurationManager initialization failed: %s", esp_err_to_name(cfg_err));
     }
+
+    // Start the status LED task immediately after reading the configuration.
+    init_status_led();
     
     // Configure timezone for localtime() use (Pacific Time with DST rules)
     setenv("TZ", "PST8PDT,M3.2.0/2,M11.1.0/2", 1);
