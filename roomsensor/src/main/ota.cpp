@@ -819,6 +819,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 ESP_LOGI(TAG, "Web assets up to date");
             } else {
                 ESP_LOGI(TAG, "Updating web assets to %s", remote_web_hash);
+                report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
+                vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
                 esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
                 if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
                 else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
@@ -845,6 +847,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
             const char* remote_web_url = web_url->valuestring; const char* remote_web_hash = web_remote_version;
             if (!(web_local_timestamp > 0 && web_local_timestamp >= web_remote_timestamp)) {
+                report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
+                vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
                 esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
                 if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
                 else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
@@ -868,6 +872,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         } else if (web_local_timestamp > 0 && web_local_timestamp == web_remote_timestamp) {
             // equal, ok
         } else {
+            report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
+            vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
             esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
             if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
             else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
