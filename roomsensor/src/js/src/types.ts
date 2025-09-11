@@ -16,6 +16,7 @@ export type WifiConfig = {
   password: string
   mqtt_broker: string
   loglevel?: number
+  channel?: string
 }
 
 export type TagsConfig = {

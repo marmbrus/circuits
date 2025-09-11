@@ -21,3 +21,16 @@ static inline void log_memory_snapshot(const char* tag, const char* context) {
 }
 
 
+// Intentionally trigger a crash to generate a core dump (for test purposes).
+// Uses a null pointer store to provoke a StoreProhibited panic, which the
+// ESP-IDF coredump component (v5.3) can capture to flash when enabled.
+// WARNING: Calling this will reboot the device.
+static inline void trigger_test_coredump(void) {
+    ESP_LOGE("coredump-test", "Triggering intentional crash for core dump test in 1 tick...");
+    // Small delay to let logs flush if possible
+    for (volatile int i = 0; i < 100000; ++i) { /* spin */ }
+    volatile int* p = (volatile int*)0;
+    *p = 42; // cause StoreProhibited
+}
+
+

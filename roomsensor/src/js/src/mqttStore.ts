@@ -10,6 +10,7 @@ export type UseSensorsResult = {
   deleteRetainedForSensor: (mac: string) => void
   clearSensorLogs: (mac: string) => void
   restartSensor: (mac: string) => void
+  restartAllSensors: () => void
 }
 
 // Development-only fallback endpoints; in production we fetch from the device
@@ -481,6 +482,13 @@ class MqttManager {
     }
   }
 
+  restartAllSensors = () => {
+    this.dlog(`Restarting all ${this.sensors.size} sensors...`)
+    for (const mac of this.sensors.keys()) {
+      this.restartSensor(mac)
+    }
+  }
+
   deleteRetainedForSensor = (mac: string) => {
     if (!this.client) return
     const key = mac.toLowerCase()
@@ -535,6 +543,7 @@ export function useSensors(): UseSensorsResult {
     deleteRetainedForSensor: manager.deleteRetainedForSensor,
     clearSensorLogs: manager.clearSensorLogs,
     restartSensor: manager.restartSensor,
+    restartAllSensors: manager.restartAllSensors,
   }
 }
 

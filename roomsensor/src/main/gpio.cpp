@@ -154,5 +154,3 @@ esp_err_t init_gpio(void) {
     if (err != ESP_OK) return err;
     return ESP_OK;
 }
-
-

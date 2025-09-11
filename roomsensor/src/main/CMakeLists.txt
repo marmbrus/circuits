@@ -11,6 +11,7 @@ idf_component_register(
         "filesystem.cpp"
     INCLUDE_DIRS "."
     REQUIRES i2c leds driver nvs_flash mqtt json esp_wifi esp_app_format esp_http_server esp_http_client esp_https_ota app_update console vfs joltwallet__littlefs serial_console configuration
+    PRIV_REQUIRES espcoredump
 )
 
 # Generate build timestamp directly as compile definition (no header file)
