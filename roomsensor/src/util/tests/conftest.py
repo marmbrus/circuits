@@ -3,6 +3,7 @@ import pytest
 from roomsensor_util import find_default_port
 from roomsensor_util.serial_console import SerialConsole
 from typing import Generator
+from pathlib import Path
 
 
 @pytest.fixture(scope="session")
@@ -53,7 +54,24 @@ def pytest_exception_interact(node, call, report):
             # The 'console' fixture is available on the test function object
             if "console" in node.funcargs:
                 console: SerialConsole = node.funcargs["console"]
+                # Always print a recent tail to stdout for quick visibility
                 console.dump_recent_output()
+                # Save full raw and clean logs to artifacts
+                artifacts_dir = Path(__file__).resolve().parent / ".artifacts"
+                artifacts_dir.mkdir(parents=True, exist_ok=True)
+                test_name = node.name.replace(os.sep, "_")
+                raw_path = artifacts_dir / f"{test_name}_raw.log"
+                clean_path = artifacts_dir / f"{test_name}_clean.log"
+                try:
+                    raw_bytes = console.get_buffer()
+                    with open(raw_path, "wb") as f:
+                        f.write(raw_bytes)
+                    clean_text = console.get_clean_text()
+                    with open(clean_path, "w", encoding="utf-8") as f:
+                        f.write(clean_text)
+                    print(f"Saved serial logs to {raw_path} and {clean_path}")
+                except Exception as ioerr:
+                    print(f"Error saving serial logs: {ioerr}")
         except Exception as e:
             print(f"\nError dumping serial console output: {e}")
 
