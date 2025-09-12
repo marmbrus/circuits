@@ -18,6 +18,8 @@
 #include "gpio.h"
 #include "filesystem.h"
 #include "netlog.h"
+#include "debug.h"
+#include "status_led.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <time.h>
@@ -41,6 +43,9 @@ extern "C" void app_main(void)
     if (cfg_err != ESP_OK) {
         ESP_LOGE(TAG, "ConfigurationManager initialization failed: %s", esp_err_to_name(cfg_err));
     }
+
+    // Start the status LED task immediately after reading the configuration.
+    init_status_led();
     
     // Configure timezone for localtime() use (Pacific Time with DST rules)
     setenv("TZ", "PST8PDT,M3.2.0/2,M11.1.0/2", 1);
@@ -50,6 +55,7 @@ extern "C" void app_main(void)
     static leds::LEDManager led_manager;
     if (led_manager.init(cfg) != ESP_OK) {
         ESP_LOGE(TAG, "LEDManager initialization failed");
+        log_memory_snapshot(TAG, "led_manager_init_failed");
     }
 
     // Initialize interactive console BEFORE WiFi to allow early interaction
@@ -86,11 +92,13 @@ extern "C" void app_main(void)
     // Initialize netlog once network path is progressing
     if (netlog_init_early() != ESP_OK) {
         ESP_LOGW(TAG, "Failed to initialize netlog early");
+        log_memory_snapshot(TAG, "netlog_init_failed");
     }
 
     // Initialize the metrics reporting system (both queue and background task)
     if (initialize_metrics_system() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize metrics system");
+        log_memory_snapshot(TAG, "metrics_init_failed");
     } else {
         ESP_LOGI(TAG, "Metrics reporting system started successfully");
     }
@@ -100,17 +108,20 @@ extern "C" void app_main(void)
         esp_err_t isr_err = gpio_install_isr_service(0);
         if (isr_err != ESP_OK && isr_err != ESP_ERR_INVALID_STATE) {
             ESP_LOGE(TAG, "Failed to install GPIO ISR service: %s", esp_err_to_name(isr_err));
+            log_memory_snapshot(TAG, "gpio_isr_install_failed");
         }
     }
 
     // Initialize GPIO features (e.g., motion sensor) after metrics system
     if (init_gpio() != ESP_OK) {
         ESP_LOGE(TAG, "GPIO initialization failed");
+        log_memory_snapshot(TAG, "gpio_init_failed");
     }
 
     // Initialize I2C subsystem
     if (!init_i2c()) {
         ESP_LOGE(TAG, "Failed to initialize I2C subsystem");
+        log_memory_snapshot(TAG, "i2c_init_failed");
     } else {
         ESP_LOGI(TAG, "I2C subsystem initialized successfully");
     }
@@ -118,11 +129,13 @@ extern "C" void app_main(void)
     // Mount LittleFS (reusing 'storage' partition label)
     if (webfs::init("storage", false) != ESP_OK) {
         ESP_LOGW(TAG, "LittleFS mount failed; web UI may not be available");
+        log_memory_snapshot(TAG, "littlefs_mount_failed");
     }
 
     // Start HTTP webserver
     if (start_webserver() != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start HTTP server");
+        log_memory_snapshot(TAG, "http_server_start_failed");
     } else {
         ESP_LOGI(TAG, "HTTP server started successfully");
     }
@@ -130,12 +143,15 @@ extern "C" void app_main(void)
     // Initialize OTA update system
     if (ota_init() != ESP_OK) {
         ESP_LOGW(TAG, "OTA initialization failed");
+        log_memory_snapshot(TAG, "ota_init_failed");
     } else {
         ESP_LOGI(TAG, "OTA system initialized successfully");
     }
 
+    ESP_LOGI(TAG, "Startup sequence complete.");
+
     // Idle loop to keep app_main task alive while yielding CPU
     while (true) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(100000));
     }
 }

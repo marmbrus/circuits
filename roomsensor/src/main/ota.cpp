@@ -11,13 +11,20 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "esp_heap_caps.h"
+#include "esp_system.h"
 #include "config.h"
 #include "system_state.h"
 #include "communication.h"
 #include "filesystem.h"
+#include "debug.h"
+#include "ConfigurationManager.h"
+#include "WifiConfig.h"
+#include <string>
 
 /*
  * OTA Update State Machine
@@ -63,6 +70,7 @@ static const char *MANIFEST_URL = "https://updates.gaia.bio/manifest.json";
 static char current_version[64] = {0}; // Store current firmware version
 static TaskHandle_t ota_task_handle = NULL;
 static bool ota_running = false;
+// Validation delay management is handled within the OTA task loop
 
 // Event group to signal that network is connected
 static EventGroupHandle_t network_event_group;
@@ -79,7 +87,9 @@ static const char* NVS_LAST_OTA_HASH = "last_ota_hash";
 typedef enum {
     OTA_STATUS_DEV_BUILD,
     OTA_STATUS_UPGRADING_FIRMWARE,
+    OTA_STATUS_AWAITING_VALIDATION,
     OTA_STATUS_UPGRADING_WEB,
+    OTA_STATUS_ROLLED_BACK,
     OTA_STATUS_UP_TO_DATE,
     OTA_STATUS_ERROR,
 } ota_status_t;
@@ -92,11 +102,114 @@ static time_t web_remote_timestamp = 0;
 static char web_local_version[33] = {0};
 static time_t web_local_timestamp = 0;
 static char web_last_error[96] = {0};
+// Local firmware timestamp derived from storage (revYYYYMMDDHHMMSS)
+static time_t local_fw_timestamp = 0;
+// Force-OTA overrides (used by console command)
+static bool g_force_ota = false;
+static char g_force_url[256] = {0};
+static char g_force_version[64] = {0};
+
+// Represents the state stored in /storage/ota_state.json
+typedef struct {
+    char expected_partition[16];
+    char ota_version[64];
+    time_t ota_timestamp;
+} ota_state_t;
+static ota_state_t g_ota_state = {0};
 
 // Forward declare
 static char* read_text_file(const char* path);
 static bool write_text_file_atomic(const char* path, const char* text);
 static void report_ota_status(ota_status_t status, const char* error_message);
+static esp_err_t perform_https_ota_from_url(const char* firmware_url);
+
+// Read the OTA state file (/storage/ota_state.json)
+static bool read_ota_state(ota_state_t* state) {
+    if (!state) return false;
+    memset(state, 0, sizeof(ota_state_t));
+    char* s = read_text_file("/storage/ota_state.json");
+    if (!s) return false;
+
+    cJSON* root = cJSON_Parse(s);
+    free(s);
+    if (!root) return false;
+
+    cJSON* part = cJSON_GetObjectItem(root, "expected_partition");
+    cJSON* ver = cJSON_GetObjectItem(root, "ota_version");
+    cJSON* ts = cJSON_GetObjectItem(root, "ota_timestamp");
+
+    if (cJSON_IsString(part)) strncpy(state->expected_partition, part->valuestring, sizeof(state->expected_partition) - 1);
+    if (cJSON_IsString(ver)) strncpy(state->ota_version, ver->valuestring, sizeof(state->ota_version) - 1);
+    if (cJSON_IsNumber(ts)) state->ota_timestamp = (time_t)ts->valuedouble;
+
+    cJSON_Delete(root);
+    return state->expected_partition[0] != '\0';
+}
+
+// Write to the OTA state file (/storage/ota_state.json)
+static bool write_ota_state(const ota_state_t* state) {
+    if (!state) return false;
+    cJSON* root = cJSON_CreateObject();
+    if (!root) return false;
+
+    cJSON_AddStringToObject(root, "expected_partition", state->expected_partition);
+    cJSON_AddStringToObject(root, "ota_version", state->ota_version);
+    cJSON_AddNumberToObject(root, "ota_timestamp", (double)state->ota_timestamp);
+
+    char* txt = cJSON_PrintUnformatted(root);
+    bool ok = false;
+    if (txt) {
+        ok = write_text_file_atomic("/storage/ota_state.json", txt);
+        free(txt);
+    }
+    cJSON_Delete(root);
+    return ok;
+}
+
+// Clear the OTA state file
+static void clear_ota_state(void) {
+    remove("/storage/ota_state.json");
+}
+
+// Helper: convert struct tm interpreted as UTC to epoch
+// (unused) UTC mktime helper removed
+
+// Load local firmware info from /storage/firmware.json if present
+static void load_local_firmware_info(void) {
+    const char* path = "/storage/firmware.json";
+    char* s = read_text_file(path);
+    if (!s) return;
+    cJSON* root = cJSON_Parse(s);
+    if (!root) { free(s); return; }
+    const cJSON* v = cJSON_GetObjectItem(root, "local_version");
+    const cJSON* t = cJSON_GetObjectItem(root, "local_build_timestamp_epoch");
+    if (cJSON_IsString(v)) {
+        strncpy(current_version, v->valuestring, sizeof(current_version) - 1);
+    }
+    if (cJSON_IsNumber(t)) {
+        local_fw_timestamp = (time_t)t->valuedouble;
+    }
+    cJSON_Delete(root);
+    free(s);
+}
+
+// Persist local firmware info to /storage/firmware.json
+static void save_local_firmware_info(const char* version, time_t ts_epoch) {
+    cJSON* root = cJSON_CreateObject();
+    if (!root) return;
+    cJSON_AddStringToObject(root, "local_version", version ? version : "");
+    cJSON_AddStringToObject(root, "local_git_describe", version ? version : "");
+    char iso[64]; struct tm tm_time; gmtime_r(&ts_epoch, &tm_time);
+    strftime(iso, sizeof(iso), "%Y-%m-%dT%H:%M:%SZ", &tm_time);
+    cJSON_AddStringToObject(root, "local_build_timestamp", iso);
+    cJSON_AddNumberToObject(root, "local_build_timestamp_epoch", (double)ts_epoch);
+    char* txt = cJSON_PrintUnformatted(root);
+    if (txt) {
+        write_text_file_atomic("/storage/firmware.json", txt);
+        free(txt);
+    }
+    cJSON_Delete(root);
+}
 
 // Helper: read a small JSON file fully into memory
 static char* read_text_file(const char* path) {
@@ -357,6 +470,7 @@ static void save_ota_info(time_t timestamp, const char* hash) {
     nvs_close(nvs_handle);
 }
 
+
 // Helper function to get stored OTA version (returns empty string if none)
 static void get_current_version() {
     // Get the current running partition
@@ -369,31 +483,20 @@ static void get_current_version() {
     ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
              running->type, running->subtype, running->address);
 
-    // Try to read version from build-time updated file first
-    char* version_from_file = read_text_file("/storage/firmware_version.txt");
-    if (version_from_file && strlen(version_from_file) > 0) {
-        strncpy(current_version, version_from_file, sizeof(current_version) - 1);
-        free(version_from_file);
-        ESP_LOGI(TAG, "Current firmware version (from file): %s", current_version);
-    } else {
-        // Fallback to embedded version from app descriptor
-        esp_app_desc_t app_desc;
-        if (esp_ota_get_partition_description(running, &app_desc) == ESP_OK) {
-            strncpy(current_version, app_desc.version, sizeof(current_version) - 1);
-            ESP_LOGI(TAG, "Current firmware version (from app_desc): %s", current_version);
-        } else {
-            ESP_LOGW(TAG, "Failed to get partition description");
-        }
-        if (version_from_file) free(version_from_file);
+    // Require JSON metadata
+    load_local_firmware_info();
+    if (current_version[0] == '\0' || local_fw_timestamp == 0) {
+        ESP_LOGE(TAG, "Missing /storage/firmware.json or required fields. current_version='%s' ts=%ld", current_version, (long)local_fw_timestamp);
+        assert(0 && "firmware.json missing or incomplete");
     }
 
-    // Display embedded build timestamp
+    // Display effective local timestamp source
+    time_t effective_ts = local_fw_timestamp;
     char build_time_str[64];
     struct tm build_timeinfo;
-    gmtime_r(&FIRMWARE_BUILD_TIME, &build_timeinfo);
+    gmtime_r(&effective_ts, &build_timeinfo);
     strftime(build_time_str, sizeof(build_time_str), "%Y-%m-%d %H:%M:%S UTC", &build_timeinfo);
-    ESP_LOGI(TAG, "Current firmware build time: %s (epoch: %ld)",
-            build_time_str, (long)FIRMWARE_BUILD_TIME);
+    ESP_LOGI(TAG, "Current firmware time (effective): %s (epoch: %ld)", build_time_str, (long)effective_ts);
 
     // Check if the current app is marked as valid
     const esp_partition_t *validated = esp_ota_get_boot_partition();
@@ -438,6 +541,9 @@ static void mark_app_valid() {
         ESP_LOGD(TAG, "Could not get OTA state: %s (this is normal for factory app)", esp_err_to_name(err));
     }
 }
+
+// Schedule marking the app valid after a delay if we're in PENDING_VERIFY
+// No separate validation task; OTA task manages the 5-minute window.
 
 // Parse manifest and check if update is needed
 static bool parse_manifest_and_check_update(char *manifest_data) {
@@ -504,12 +610,61 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     // Load local web info from LittleFS
     load_local_web_info();
 
-    // Use embedded build timestamp directly for comparison
+    // Use storage-derived timestamp if available, else embedded build timestamp
+    time_t local_effective_ts = local_fw_timestamp;
+
+    // Handle forced OTA path first: bypass timestamp comparison
+    if (g_force_ota) {
+        // Prefer forced URL/version if provided
+        if (g_force_url[0]) firmware_url = g_force_url;
+        if (g_force_version[0]) remote_version_str = g_force_version;
+
+        report_ota_status(OTA_STATUS_UPGRADING_FIRMWARE, NULL);
+        ESP_LOGI(TAG, "Force-updating firmware from %s", firmware_url);
+        esp_err_t ret = perform_https_ota_from_url(firmware_url);
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "Forced OTA successful; saving info and rebooting");
+            time_t now_ts = time(NULL);
+            if (now_ts <= 0) now_ts = remote_timestamp > 0 ? remote_timestamp : 0;
+            // Record attempt in NVS; DO NOT update firmware.json until validation passes
+            save_ota_info((now_ts > 0 ? now_ts : FIRMWARE_BUILD_TIME), remote_version_str);
+            g_force_ota = false; g_force_url[0]=0; g_force_version[0]=0;
+            cJSON_Delete(root);
+            vTaskDelay(pdMS_TO_TICKS(500));
+            esp_restart();
+            return true;
+        } else {
+            ESP_LOGE(TAG, "Forced OTA failed: %s", esp_err_to_name(ret));
+            log_memory_snapshot(TAG, "forced_ota_failed");
+            mark_app_valid();
+            report_ota_status(OTA_STATUS_ERROR, esp_err_to_name(ret));
+            g_force_ota = false; g_force_url[0]=0; g_force_version[0]=0;
+            cJSON_Delete(root);
+            return false;
+        }
+    }
+
+    // Before deciding, skip retrying the exact same manifest version we last attempted
+    bool skip_firmware = false;
+    if (cJSON_IsString(version)) {
+        char last_hash[64] = {0}; size_t hash_len = sizeof(last_hash);
+        nvs_handle_t n;
+        if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &n) == ESP_OK) {
+            if (nvs_get_str(n, NVS_LAST_OTA_HASH, last_hash, &hash_len) == ESP_OK) {
+                if (last_hash[0] != '\0' && strcmp(last_hash, version->valuestring) == 0) {
+                    ESP_LOGD(TAG, "Skipping firmware OTA: manifest version matches last attempted (%s)", last_hash);
+                    // Always skip firmware for same-version attempts
+                    skip_firmware = true;
+                }
+            }
+            nvs_close(n);
+        }
+    }
 
     // PRIMARY CHECK: Compare build timestamps
-    if (remote_timestamp > 0 && FIRMWARE_BUILD_TIME > 0) {
-        ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local: %ld",
-                (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
+    if (!skip_firmware && remote_timestamp > 0 && local_effective_ts > 0) {
+        ESP_LOGD(TAG, "Raw timestamp values - Remote: %ld, Local(eff): %ld",
+                (long)remote_timestamp, (long)local_effective_ts);
 
         // Only run sanity checks if system time is known
         if (is_time_synchronized()) {
@@ -518,7 +673,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             if (remote_timestamp > current_time + 315360000) { // 10 years in seconds
                 ESP_LOGW(TAG, "Remote timestamp is unrealistically far in the future, may be corrupted");
             }
-            if (FIRMWARE_BUILD_TIME > current_time + 315360000) {
+            if (local_effective_ts > current_time + 315360000) {
                 ESP_LOGW(TAG, "Local build timestamp is unrealistically far in the future, may be corrupted");
             }
         } else {
@@ -526,8 +681,8 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         }
 
         // Directly compare the timestamps
-        if (remote_timestamp > FIRMWARE_BUILD_TIME) {
-            time_t time_diff = remote_timestamp - FIRMWARE_BUILD_TIME;
+        if (remote_timestamp > local_effective_ts) {
+            time_t time_diff = remote_timestamp - local_effective_ts;
 
             // Keep this log concise
             ESP_LOGI(TAG, "Newer version found (%ld sec newer), starting upgrade...", (long)time_diff);
@@ -545,29 +700,28 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             // Perform the OTA update
             ESP_LOGI(TAG, "Starting firmware update from %s", firmware_url);
 
-            esp_http_client_config_t config = {};
-            config.url = firmware_url;
-            config.crt_bundle_attach = esp_crt_bundle_attach;
-            config.skip_cert_common_name_check = false;
-            config.buffer_size = 1024;
-            config.timeout_ms = 30000; // 30 second timeout for firmware download
-
-            esp_https_ota_config_t ota_config = {};
-            ota_config.http_config = &config;
-            ota_config.bulk_flash_erase = true;
-
-            esp_err_t ret = esp_https_ota(&ota_config);
+            esp_err_t ret = perform_https_ota_from_url(firmware_url);
             if (ret == ESP_OK) {
                 ESP_LOGI(TAG, "OTA update successful! Saving update info and rebooting...");
 
-                // Update the firmware version file so the new firmware reports the correct version
-                if (write_text_file_atomic("/storage/firmware_version.txt", remote_version_str)) {
-                    ESP_LOGI(TAG, "Updated firmware version file to: %s", remote_version_str);
-                } else {
-                    ESP_LOGW(TAG, "Failed to update firmware version file, but OTA succeeded");
+                // Set the boot partition to the new OTA partition
+                const esp_partition_t* update_partition = esp_ota_get_next_update_partition(NULL);
+                if (update_partition == NULL) {
+                    ESP_LOGE(TAG, "Could not find OTA partition to boot from");
+                    report_ota_status(OTA_STATUS_ERROR, "No OTA partition found");
+                    cJSON_Delete(root);
+                    return false;
                 }
+                ESP_LOGI(TAG, "Next boot partition: %s", update_partition->label);
 
-                // Save OTA information before reboot
+                // CRITICAL: Write OTA state BEFORE rebooting
+                ota_state_t next_state = {0};
+                strncpy(next_state.expected_partition, update_partition->label, sizeof(next_state.expected_partition) - 1);
+                strncpy(next_state.ota_version, remote_version_str, sizeof(next_state.ota_version) - 1);
+                next_state.ota_timestamp = remote_timestamp;
+                write_ota_state(&next_state);
+
+                // Save OTA info to NVS for redundancy/logging
                 save_ota_info(remote_timestamp, remote_version_str);
 
                 cJSON_Delete(root);
@@ -576,127 +730,161 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 return true;
             } else {
                 ESP_LOGE(TAG, "OTA update failed with error: %s", esp_err_to_name(ret));
-                // LED state handled by LEDManager patterns
-                mark_app_valid();
+                // Capture memory state to diagnose TLS/HTTP allocation failures
+                log_memory_snapshot(TAG, "ota_https_ota_failed");
+                // LED state handled by LEDManager patterns; validation handled in OTA loop
                 cJSON_Delete(root);
                 report_ota_status(OTA_STATUS_ERROR, esp_err_to_name(ret));
                 return false;
             }
-        } else if (remote_timestamp < FIRMWARE_BUILD_TIME) {
-            // Local is newer than remote
-            if (is_factory) {
-                // Report as DEV_BUILD for factory partition
-                report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
-                ESP_LOGI(TAG, "Running factory build with newer version than server");
-            } else {
-                // Treat as up to date when local newer than server
-                report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
-                ESP_LOGI(TAG, "Running newer version than available on server");
-            }
+        } else if (remote_timestamp < local_effective_ts) {
+            // Local is newer than remote; final status will be decided later
+            ESP_LOGI(TAG, "Running newer version than available on server");
         } else {
-            // Versions are identical
-            if (is_factory) {
-                // Report as DEV_BUILD for factory partition
-                report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
-                ESP_LOGI(TAG, "Running factory build with same version as server");
-            } else {
-                // Report as UP_TO_DATE for OTA partition
-                report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
-                ESP_LOGI(TAG, "Running the latest version");
-            }
+            // Versions are identical; final status will be decided later
+            ESP_LOGI(TAG, "Running the latest version (timestamps equal)");
         }
-    } else {
-        ESP_LOGW(TAG, "Cannot compare timestamps: Remote=%ld, Local=%ld. Skipping update.",
-                (long)remote_timestamp, (long)FIRMWARE_BUILD_TIME);
+    } else if (!skip_firmware) {
+        ESP_LOGD(TAG, "Cannot compare timestamps: Remote=%ld, Local(eff)=%ld. Deferring classification.",
+                (long)remote_timestamp, (long)local_effective_ts);
+    }
 
-        // Always report status even if we can't compare versions
-        if (is_factory) {
-            report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
-            ESP_LOGI(TAG, "Running factory build, status unknown (missing timestamp)");
-        } else {
-            // Default to UP_TO_DATE if we can't determine
-            report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
-            ESP_LOGI(TAG, "Running OTA partition, status unknown (missing timestamp)");
+    // If we reach here, no firmware update is needed; proceed to classification and then web app if applicable
+
+    // Compute predicates early for linear classification
+    char running_ver[64] = {0};
+    esp_app_desc_t running_desc = {};
+    if (running && esp_ota_get_partition_description(running, &running_desc) == ESP_OK) {
+        strncpy(running_ver, running_desc.version, sizeof(running_ver) - 1);
+    }
+
+    // Read last attempted OTA hash from NVS
+    char last_hash_pre[64] = {0}; size_t last_hash_pre_len = sizeof(last_hash_pre);
+    nvs_handle_t nvs_tmp_pre;
+    if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvs_tmp_pre) == ESP_OK) {
+        (void)nvs_get_str(nvs_tmp_pre, NVS_LAST_OTA_HASH, last_hash_pre, &last_hash_pre_len);
+        nvs_close(nvs_tmp_pre);
+    }
+
+    bool running_matches_remote = (running_ver[0] != '\0' && remote_version_str && strcmp(running_ver, remote_version_str) == 0);
+    bool same_as_last_attempt_pre = (last_hash_pre[0] != '\0' && remote_version_str && strcmp(last_hash_pre, remote_version_str) == 0);
+
+    esp_ota_img_states_t img_state_pre = ESP_OTA_IMG_UNDEFINED;
+    (void)esp_ota_get_state_partition(running, &img_state_pre);
+    bool pending_verify_pre = (img_state_pre == ESP_OTA_IMG_PENDING_VERIFY);
+
+    // HIGHEST PRIORITY: Check for rollback by comparing expected vs actual partition.
+    ota_state_t ota_state = {0};
+    if (read_ota_state(&ota_state)) {
+        if (strcmp(ota_state.expected_partition, running->label) != 0) {
+            ESP_LOGW(TAG, "State: ROLLED_BACK (expected partition '%s' but running from '%s')", ota_state.expected_partition, running->label);
+            clear_ota_state(); // Clear state after detecting rollback
+            // Fall through to standard ROLLED_BACK reporting
         }
     }
 
-    // If we reach here, no firmware update is needed; proceed to check web app
+    // If the running partition is pending verification, we are awaiting validation.
+    if (pending_verify_pre) {
+        ESP_LOGI(TAG, "State: AWAITING_VALIDATION (partition is pending verification)");
+        report_ota_status(OTA_STATUS_AWAITING_VALIDATION, NULL);
+        cJSON_Delete(root);
+        return false;
+    }
 
-    bool had_error = false;
+    // Linear classification (firmware) before web work
+    bool remote_newer = (remote_timestamp > 0 && local_fw_timestamp > 0 && remote_timestamp > local_fw_timestamp);
+    bool remote_older = (remote_timestamp > 0 && local_fw_timestamp > 0 && remote_timestamp < local_fw_timestamp);
 
-    // Reset last error before web check
+    // ROLLED_BACK if server newer and we already tried this manifest version
+    if (remote_newer && same_as_last_attempt_pre) {
+        ESP_LOGI(TAG, "State: ROLLED_BACK (remote_newer && same_as_last_attempt)");
+        // fall-through to web handling; final status after web may remain ROLLED_BACK unless web fails
+        // set a flag via local var
+        ota_status_t fw_state = OTA_STATUS_ROLLED_BACK;
+
+        // Web handling below will run; after that, finalize status
+        // Reset last error before web check
+        web_last_error[0] = '\0';
+        if (cJSON_IsString(web_version)) strncpy(web_remote_version, web_version->valuestring, sizeof(web_remote_version) - 1); else web_remote_version[0] = '\0';
+        web_remote_timestamp = 0; if (cJSON_IsNumber(web_build_timestamp_epoch)) web_remote_timestamp = (time_t)web_build_timestamp_epoch->valuedouble;
+        load_local_web_info();
+
+        bool web_ok = true;
+        if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
+            const char* remote_web_url = web_url->valuestring;
+            const char* remote_web_hash = web_remote_version;
+            if (web_local_timestamp > 0 && web_local_timestamp > web_remote_timestamp) {
+                ESP_LOGI(TAG, "Local web assets newer than server; skipping web update");
+            } else if (web_local_timestamp > 0 && web_local_timestamp == web_remote_timestamp) {
+                ESP_LOGI(TAG, "Web assets up to date");
+            } else {
+                ESP_LOGI(TAG, "Updating web assets to %s", remote_web_hash);
+                report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
+                vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
+                esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
+                if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
+                else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
+            }
+        }
+
+        ota_status_t final_status = (web_ok ? fw_state : OTA_STATUS_ERROR);
+        report_ota_status(final_status, (final_status == OTA_STATUS_ERROR && web_last_error[0]) ? web_last_error : NULL);
+        cJSON_Delete(root);
+        return false;
+    }
+
+    // DEV_BUILD (factory newer than server). Ensure dev local timestamp remains the max of known local sources.
+    if (is_factory && remote_older) {
+        ESP_LOGI(TAG, "State: DEV_BUILD (factory && remote_older)");
+        // For dev images, firmware.json is the source of truth. No need to adjust timestamp.
+
+        // Handle web and finalize
+        web_last_error[0] = '\0';
+        if (cJSON_IsString(web_version)) strncpy(web_remote_version, web_version->valuestring, sizeof(web_remote_version) - 1); else web_remote_version[0] = '\0';
+        web_remote_timestamp = 0; if (cJSON_IsNumber(web_build_timestamp_epoch)) web_remote_timestamp = (time_t)web_build_timestamp_epoch->valuedouble;
+        load_local_web_info();
+        bool web_ok = true;
+        if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
+            const char* remote_web_url = web_url->valuestring; const char* remote_web_hash = web_remote_version;
+            if (!(web_local_timestamp > 0 && web_local_timestamp >= web_remote_timestamp)) {
+                report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
+                vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
+                esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
+                if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
+                else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
+            }
+        }
+        report_ota_status(web_ok ? OTA_STATUS_DEV_BUILD : OTA_STATUS_ERROR, (!web_ok && web_last_error[0]) ? web_last_error : NULL);
+        cJSON_Delete(root);
+        return false;
+    }
+
+    // Firmware OK candidate (not newer): we require web_ok to claim UP_TO_DATE
     web_last_error[0] = '\0';
-
-    // Populate remote web fields if present
-    if (cJSON_IsString(web_version)) {
-        strncpy(web_remote_version, web_version->valuestring, sizeof(web_remote_version) - 1);
-    } else {
-        web_remote_version[0] = '\0';
-    }
-    web_remote_timestamp = 0;
-    if (cJSON_IsNumber(web_build_timestamp_epoch)) {
-        web_remote_timestamp = (time_t)web_build_timestamp_epoch->valuedouble;
-    }
-
-    // Load local web info from file if any
+    if (cJSON_IsString(web_version)) strncpy(web_remote_version, web_version->valuestring, sizeof(web_remote_version) - 1); else web_remote_version[0] = '\0';
+    web_remote_timestamp = 0; if (cJSON_IsNumber(web_build_timestamp_epoch)) web_remote_timestamp = (time_t)web_build_timestamp_epoch->valuedouble;
     load_local_web_info();
-
-            // In DEV_BUILD (factory), treat local web as at least as new as the firmware build
-        // to avoid overwriting serial-flashed dev images unless the server is strictly newer.
-        if (is_factory) {
-            if (FIRMWARE_BUILD_TIME > 0 && web_local_timestamp < FIRMWARE_BUILD_TIME) {
-                web_local_timestamp = FIRMWARE_BUILD_TIME;
-                if (strlen(current_version) > 0) {
-                    strncpy(web_local_version, current_version, sizeof(web_local_version) - 1);
-                }
-            }
-        }
-
-    /* unified status: no separate web_status */
-
+    bool web_ok = true;
     if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
-        const char* remote_web_url = web_url->valuestring;
-        const char* remote_web_hash = web_remote_version;
-
+        const char* remote_web_url = web_url->valuestring; const char* remote_web_hash = web_remote_version;
         if (web_local_timestamp > 0 && web_local_timestamp > web_remote_timestamp) {
-            // Local dev build is newer; keep it
-            /* unified status: no separate web_status */
-            ESP_LOGI(TAG, "Local web assets newer than server; skipping web update");
+            // newer, ok
         } else if (web_local_timestamp > 0 && web_local_timestamp == web_remote_timestamp) {
-            /* unified status: no separate web_status */
-            ESP_LOGI(TAG, "Web assets up to date");
+            // equal, ok
         } else {
-            // Need to update web
             report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
-
+            vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
             esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
-            if (wret == ESP_OK) {
-                // Save local info for future comparisons
-                save_local_web_info(remote_web_hash, web_remote_timestamp);
-                strncpy(web_local_version, remote_web_hash, sizeof(web_local_version) - 1);
-                web_local_timestamp = web_remote_timestamp;
-                /* unified status: no separate web_status */
-                ESP_LOGI(TAG, "Web assets updated successfully to %s", remote_web_hash);
-            } else {
-                snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret));
-                ESP_LOGE(TAG, "Web update failed: %s", web_last_error);
-                report_ota_status(OTA_STATUS_ERROR, web_last_error);
-                had_error = true;
-            }
+            if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
+            else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
         }
     }
 
-    // Firmware remains valid; report final status unless an error was already reported
-    mark_app_valid();
+    ota_status_t final_status = OTA_STATUS_UP_TO_DATE;
+    if (!web_ok) final_status = OTA_STATUS_ERROR;
+
+    report_ota_status(final_status, (final_status == OTA_STATUS_ERROR && web_last_error[0]) ? web_last_error : NULL);
     cJSON_Delete(root);
-    if (!had_error) {
-        // Keep DEV_BUILD final status for factory partition to reflect local dev flash
-        if (is_factory) {
-            report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
-        } else {
-            report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
-        }
-    }
     return false;
 }
 
@@ -789,9 +977,52 @@ static esp_err_t http_event_handler(esp_http_client_event_t *evt) {
     return ESP_OK;
 }
 
+static esp_err_t perform_https_ota_from_url(const char* firmware_url) {
+    esp_http_client_config_t config = {};
+    config.url = firmware_url;
+    config.crt_bundle_attach = esp_crt_bundle_attach;
+    config.skip_cert_common_name_check = false;
+    config.buffer_size = 1024;      // reduce RX buffer to save internal RAM
+    config.buffer_size_tx = 512;    // reduce TX buffer
+    config.keep_alive_enable = false; // ensure server closes promptly
+    config.timeout_ms = 30000; // 30 second timeout for firmware download
+
+    esp_https_ota_config_t ota_config = {};
+    ota_config.http_config = &config;
+    ota_config.bulk_flash_erase = true;
+    // Add init callback to tweak headers before transfer
+    ota_config.http_client_init_cb = [](esp_http_client_handle_t client) -> esp_err_t {
+        esp_http_client_set_header(client, "User-Agent", "roomsensor-ota/1.0");
+        esp_http_client_set_header(client, "Connection", "close");
+        return ESP_OK;
+    };
+
+    return esp_https_ota(&ota_config);
+}
+
+extern "C" esp_err_t ota_force_update(const char* version_hash) {
+    // Build URL based on provided hash or manifest
+    if (version_hash && version_hash[0] != '\0') {
+        snprintf(g_force_url, sizeof(g_force_url), "https://updates.gaia.bio/firmware-%s.bin", version_hash);
+        // Track a friendly version string for status
+        snprintf(g_force_version, sizeof(g_force_version), "%s", version_hash);
+    } else {
+        // No hash: use manifest URL as-is; set force flag only
+        g_force_url[0] = 0; // Will use manifest-provided URL inside parse_manifest_and_check_update
+        g_force_version[0] = 0;
+    }
+    g_force_ota = true;
+    ESP_LOGI(TAG, "Force OTA armed (hash=%s)", (version_hash && version_hash[0]) ? version_hash : "<manifest>");
+    return ESP_OK;
+}
+
 // OTA update task that runs in the background
 static void ota_update_task(void *pvParameter) {
-    ESP_LOGI(TAG, "OTA update task started");
+    ESP_LOGI(TAG, "OTA update task started - task handle: %p", xTaskGetCurrentTaskHandle());
+    
+    // Minimal startup diagnostics
+    UBaseType_t stack_high_water = uxTaskGetStackHighWaterMark(NULL);
+    ESP_LOGD(TAG, "OTA task stack high water: %u bytes", stack_high_water);
 
     // Validate that network event group exists
     if (network_event_group == NULL) {
@@ -799,26 +1030,52 @@ static void ota_update_task(void *pvParameter) {
         vTaskDelete(NULL);
         return;
     }
+    ESP_LOGD(TAG, "Network event group validated: %p", network_event_group);
 
     // Get current version on startup
+    // Major transition: capture current version
     get_current_version();
 
-    // Ensure the app is marked valid to prevent rollback
-    mark_app_valid();
+    // Track a 5-minute validation window for PENDING_VERIFY images
+    TickType_t validation_deadline = 0;
+    {
+        const esp_partition_t *running = esp_ota_get_running_partition();
+        if (running) {
+            esp_ota_img_states_t ota_state;
+            if (esp_ota_get_state_partition(running, &ota_state) == ESP_OK &&
+                ota_state == ESP_OTA_IMG_PENDING_VERIFY) {
+                validation_deadline = xTaskGetTickCount() + pdMS_TO_TICKS(5 * 60 * 1000);
+                ESP_LOGI(TAG, "Pending verify image detected; will mark valid in 5 minutes");
+            }
+        }
+    }
 
     uint32_t check_count = 0;
     bool was_connected = false;
+    TickType_t last_network_check_time = 0;
 
-    ESP_LOGI(TAG, "Starting OTA monitoring loop");
+    ESP_LOGI(TAG, "OTA monitoring loop started");
 
     // Main OTA loop - runs forever
     while (1) {
+        // This loop now runs on a short, consistent interval (e.g., 1 second)
+        // to allow for responsive state checks, like validation deadlines.
+
         // Check for system readiness
         bool is_connected = false;
 
         // Use system state to determine readiness
         extern SystemState get_system_state(void);
         SystemState current_state = get_system_state();
+        
+        // Debug: Log system state periodically or on changes
+        static SystemState last_logged_state = (SystemState)-1;
+        if (current_state != last_logged_state) {
+            const char* state_names[] = {"STARTING", "WIFI_CONNECTING", "WIFI_CONNECTED", "MQTT_CONNECTING", "FULLY_CONNECTED"};
+            const char* state_name = (current_state >= 0 && current_state <= 4) ? state_names[current_state] : "UNKNOWN";
+            ESP_LOGI(TAG, "System state: %s", state_name);
+            last_logged_state = current_state;
+        }
 
         // Only treat as connected when the whole system is up (WiFi + MQTT)
         if (current_state == FULLY_CONNECTED) {
@@ -827,66 +1084,115 @@ static void ota_update_task(void *pvParameter) {
 
         // Network state change logging
         if (is_connected && !was_connected) {
-            ESP_LOGI(TAG, "Network is now connected, proceeding with OTA checks");
+            ESP_LOGI(TAG, "Network connected; OTA checks enabled");
             was_connected = true;
         } else if (!is_connected && was_connected) {
-            ESP_LOGI(TAG, "Network is now disconnected, pausing OTA checks");
+            ESP_LOGI(TAG, "Network disconnected; OTA checks paused");
             was_connected = false;
+        }
+
+        // If pending verify and deadline reached, mark valid once and sync version file
+        if (validation_deadline != 0 && (int32_t)(xTaskGetTickCount() - validation_deadline) >= 0) {
+            validation_deadline = 0; // single-shot
+            mark_app_valid();
+            // After validation, persist the new local firmware info so future cycles use it
+            if (read_ota_state(&g_ota_state) && g_ota_state.ota_version[0] != '\0') {
+                save_local_firmware_info(g_ota_state.ota_version, g_ota_state.ota_timestamp);
+                local_fw_timestamp = g_ota_state.ota_timestamp;
+                strncpy(current_version, g_ota_state.ota_version, sizeof(current_version)-1);
+            }
+            clear_ota_state(); // OTA is complete and validated
+            // Force an immediate re-check of the manifest to update status to UP_TO_DATE or UPGRADING_WEB
+            last_network_check_time = 0;
         }
 
         // Only proceed with OTA check if system is fully connected
         if (is_connected) {
-            // Ensure SNTP has set the time before performing HTTPS requests and comparing timestamps
+            // Ensure SNTP has set the time before proceeding
             if (!is_time_synchronized()) {
-                ESP_LOGI(TAG, "Waiting for time synchronization (SNTP) before OTA checks");
-                vTaskDelay(pdMS_TO_TICKS(5000));
-                continue;
-            }
-            // Check for updates
-            check_count++;
-            ESP_LOGI(TAG, "OTA check #%lu: Checking for updates from %s", check_count, MANIFEST_URL);
-
-            esp_err_t err = ESP_OK;
-            esp_http_client_handle_t client = NULL;
-
-            // Initialize HTTP client with proper error checking
-            esp_http_client_config_t config = {};
-            config.url = MANIFEST_URL;
-            config.event_handler = http_event_handler;
-            config.crt_bundle_attach = esp_crt_bundle_attach;
-            config.skip_cert_common_name_check = false;
-            config.timeout_ms = 10000; // Add 10s timeout to avoid hanging
-
-            client = esp_http_client_init(&config);
-            if (client == NULL) {
-                ESP_LOGE(TAG, "Failed to initialize HTTP client");
-                // Skip to delay and try again later
+                ESP_LOGD(TAG, "Waiting for SNTP before OTA checks");
             } else {
-                // Perform HTTP request with proper error handling
-                err = esp_http_client_perform(client);
+                // Check if it's time for the less frequent network check
+                if (last_network_check_time == 0 || (xTaskGetTickCount() - last_network_check_time) >= pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS)) {
+                    last_network_check_time = xTaskGetTickCount(); // Reset timer
 
-                if (err != ESP_OK) {
-                    ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
-                } else {
-                    int status_code = esp_http_client_get_status_code(client);
-                    if (status_code != 200) {
-                        ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
+                    // Check for updates
+                    check_count++;
+                    ESP_LOGI(TAG, "Checking for updates");
+
+                    // Debug: Memory before HTTP request
+                    size_t heap_before_http = esp_get_free_heap_size();
+                    (void)heap_before_http;
+
+                    esp_err_t err = ESP_OK;
+                    esp_http_client_handle_t client = NULL;
+
+                    // Initialize HTTP client with channel-aware manifest selection
+                    char url_buf[256];
+                    const char* url_to_use = MANIFEST_URL;
+                    {
+                        using namespace config;
+                        auto& cfg = GetConfigurationManager();
+                        if (cfg.wifi().has_channel()) {
+                            const std::string& ch = cfg.wifi().channel();
+                            if (!ch.empty()) {
+                                // manifest-<channel>.json
+                                snprintf(url_buf, sizeof(url_buf), "https://updates.gaia.bio/manifest-%s.json", ch.c_str());
+                                url_buf[sizeof(url_buf)-1] = '\0';
+                                url_to_use = url_buf;
+                                ESP_LOGI(TAG, "Using channel manifest: %s", url_to_use);
+                            }
+                        }
+                    }
+                    esp_http_client_config_t config = {};
+                    config.url = url_to_use;
+                    config.event_handler = http_event_handler;
+                    config.crt_bundle_attach = esp_crt_bundle_attach;
+                    config.skip_cert_common_name_check = false;
+                    config.timeout_ms = 10000; // Add 10s timeout to avoid hanging
+
+
+                    client = esp_http_client_init(&config);
+                    if (client == NULL) {
+                        ESP_LOGE(TAG, "Failed to initialize HTTP client - insufficient memory?");
+                        size_t heap_after_fail = esp_get_free_heap_size();
+                        ESP_LOGE(TAG, "Free heap after HTTP client init failure: %zu bytes", heap_after_fail);
+                        // Skip to delay and try again later
+                    } else {
+
+
+                        // Perform HTTP request with proper error handling
+
+                        err = esp_http_client_perform(client);
+
+                        if (err != ESP_OK) {
+                            ESP_LOGE(TAG, "HTTP GET request failed: %s (0x%x)", esp_err_to_name(err), err);
+
+                            // Additional error details
+                            int status_code = esp_http_client_get_status_code(client);
+                            int64_t content_length = esp_http_client_get_content_length(client);
+                            ESP_LOGE(TAG, "HTTP error details - Status: %d, Content-Length: %lld",
+                                     status_code, (long long)content_length);
+                        } else {
+                            int status_code = esp_http_client_get_status_code(client);
+                            int64_t content_length = esp_http_client_get_content_length(client);
+                            (void)status_code; (void)content_length;
+
+                            if (status_code != 200) {
+                                ESP_LOGW(TAG, "OTA check completed with unexpected status code: %d", status_code);
+                            }
+                        }
+                        esp_http_client_cleanup(client);
                     }
                 }
-
-                // Cleanup
-                esp_http_client_cleanup(client);
             }
-
-            // Sleep for the normal interval before checking again when connected
-            vTaskDelay(pdMS_TO_TICKS(OTA_CHECK_INTERVAL_MS));
         } else {
-            // Not fully connected - back off before checking again
-            ESP_LOGW(TAG, "Waiting for FULLY_CONNECTED state before OTA check...");
-            vTaskDelay(pdMS_TO_TICKS(60000));
-
-            // No explicit else branch needed - we'll just loop back to the connectivity check
+            // Not fully connected, reset the network check timer so we check immediately on reconnect
+            last_network_check_time = 0;
         }
+
+        // Short, consistent delay for the main loop
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
     // This should never be reached, but just in case
@@ -900,47 +1206,106 @@ esp_err_t ota_init(void) {
 
     // Create event group for network synchronization if it doesn't exist
     if (network_event_group == NULL) {
+        ESP_LOGI(TAG, "Creating network event group for OTA");
         network_event_group = xEventGroupCreate();
         if (network_event_group == NULL) {
-            ESP_LOGE(TAG, "Failed to create event group");
+            ESP_LOGE(TAG, "Failed to create event group - insufficient memory?");
+            size_t free_heap = esp_get_free_heap_size();
+            ESP_LOGE(TAG, "Free heap after event group creation failure: %zu bytes", free_heap);
             return ESP_FAIL;
         }
-        ESP_LOGI(TAG, "Created network event group for OTA");
+        ESP_LOGI(TAG, "Created network event group for OTA successfully");
+    } else {
+        ESP_LOGI(TAG, "Network event group already exists");
     }
 
     // Get current firmware version and partition info
+    ESP_LOGI(TAG, "Getting current firmware version");
     get_current_version();
 
     // Ensure LittleFS is mounted for web OTA reads/writes
+    ESP_LOGI(TAG, "Initializing web filesystem");
     webfs::init("storage", false);
 
     // Check if we're running from factory partition (for future use)
     const esp_partition_t *running = esp_ota_get_running_partition();
     if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
         // Report DEV_BUILD status - this will be done when status is published
-        ESP_LOGD(TAG, "Running from factory partition");
+        ESP_LOGI(TAG, "Running from factory partition (DEV_BUILD mode)");
+    } else {
+        ESP_LOGI(TAG, "Running from OTA partition");
     }
 
-    // Mark app as valid to prevent rollback
-    mark_app_valid();
+    // Validation handled by OTA task loop
+
+    // Debug: Check memory before task creation
+    size_t free_heap_mid = esp_get_free_heap_size();
+    ESP_LOGI(TAG, "Free heap before task creation: %zu bytes", free_heap_mid);
+    ESP_LOGI(TAG, "OTA task stack size: %d bytes, priority: %d", OTA_TASK_STACK_SIZE, OTA_TASK_PRIORITY);
 
     // Start OTA task if not already running
     if (!ota_running || ota_task_handle == NULL) {
+        ESP_LOGI(TAG, "Creating OTA background task");
         ota_running = true;
-        BaseType_t ret = xTaskCreate(ota_update_task, "ota_task",
-                                    OTA_TASK_STACK_SIZE, NULL,
-                                    OTA_TASK_PRIORITY, &ota_task_handle);
+        
+        // Debug: Validate stack size requirements and memory fragmentation
+        if (OTA_TASK_STACK_SIZE < 4096) {
+            ESP_LOGW(TAG, "OTA task stack size may be too small: %d bytes", OTA_TASK_STACK_SIZE);
+        }
+        
+        // Check for heap fragmentation by trying to allocate the required stack size
+        void* test_alloc = malloc(OTA_TASK_STACK_SIZE);
+        if (test_alloc) {
+            ESP_LOGI(TAG, "Memory test: Successfully allocated %d bytes for stack test", OTA_TASK_STACK_SIZE);
+            free(test_alloc);
+        } else {
+            ESP_LOGE(TAG, "Memory test: Failed to allocate %d bytes - heap fragmentation likely", OTA_TASK_STACK_SIZE);
+            
+            // Try smaller allocations to see what's available
+            size_t test_sizes[] = {8192, 4096, 2048, 1024};
+            for (int i = 0; i < 4; i++) {
+                void* smaller_test = malloc(test_sizes[i]);
+                if (smaller_test) {
+                    ESP_LOGI(TAG, "Memory test: %zu bytes allocation succeeded", test_sizes[i]);
+                    free(smaller_test);
+                } else {
+                    ESP_LOGE(TAG, "Memory test: %zu bytes allocation failed", test_sizes[i]);
+                }
+            }
+        }
+        
+        // Check largest free block
+        size_t largest_free_block = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+        ESP_LOGI(TAG, "Largest contiguous free block: %zu bytes (need %d bytes)", 
+                 largest_free_block, OTA_TASK_STACK_SIZE);
+        
+        if (largest_free_block < OTA_TASK_STACK_SIZE) {
+            ESP_LOGE(TAG, "Insufficient contiguous memory for OTA task stack!");
+        }
+        
+        // Create task in internal RAM (stack must be in internal RAM for OTA when flash cache may be disabled)
+        BaseType_t ret = xTaskCreate(
+            ota_update_task,
+            "ota_task",
+            OTA_TASK_STACK_SIZE,
+            NULL,
+            OTA_TASK_PRIORITY,
+            &ota_task_handle
+        );
 
         if (ret != pdPASS) {
-            ESP_LOGE(TAG, "Failed to create OTA task");
+            ota_running = false; // Reset flag on failure
+            ESP_LOGE(TAG, "Failed to create OTA task - xTaskCreate returned %d", ret);
+            log_memory_snapshot(TAG, "ota_task_create_failed");
             return ESP_FAIL;
         }
-
-        ESP_LOGI(TAG, "OTA task created successfully");
+        ESP_LOGI(TAG, "OTA task created");
+        
     } else {
-        ESP_LOGW(TAG, "OTA task already running, skipping creation");
+        ESP_LOGW(TAG, "OTA task already running (handle: %p), skipping creation", ota_task_handle);
     }
 
+    // Final: success
 
     ESP_LOGI(TAG, "OTA module initialized successfully");
     return ESP_OK;
@@ -957,8 +1322,7 @@ esp_err_t check_for_ota_update(void) {
     // For backward compatibility, do a one-time check
     get_current_version();
 
-    // Make sure we mark the app valid to prevent rollback
-    mark_app_valid();
+    // Validation handled by OTA task loop
 
     ESP_LOGI(TAG, "Checking for OTA updates from %s", MANIFEST_URL);
 
@@ -1002,10 +1366,24 @@ static void report_ota_status(ota_status_t status, const char* error_message) {
         case OTA_STATUS_DEV_BUILD: status_str = "DEV_BUILD"; break;
         case OTA_STATUS_UPGRADING_FIRMWARE: status_str = "UPGRADING_FIRMWARE"; break;
         case OTA_STATUS_UPGRADING_WEB: status_str = "UPGRADING_WEB"; break;
+        case OTA_STATUS_AWAITING_VALIDATION: status_str = "AWAITING_VALIDATION"; break;
+        case OTA_STATUS_ROLLED_BACK: status_str = "ROLLED_BACK"; break;
         case OTA_STATUS_UP_TO_DATE: status_str = "UP_TO_DATE"; break;
         case OTA_STATUS_ERROR: status_str = "ERROR"; break;
     }
     cJSON_AddStringToObject(ota_json, "status", status_str);
+
+    // Release channel (default to "prod" when not configured)
+    {
+        using namespace config;
+        ConfigurationManager& cfg = GetConfigurationManager();
+        const char* ch = "prod";
+        if (cfg.wifi().has_channel()) {
+            const std::string& s = cfg.wifi().channel();
+            if (!s.empty()) ch = s.c_str();
+        }
+        cJSON_AddStringToObject(ota_json, "channel", ch);
+    }
 
     // Partition info
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -1023,12 +1401,15 @@ static void report_ota_status(ota_status_t status, const char* error_message) {
     }
 
     // Format build timestamps in ISO format
-    if (FIRMWARE_BUILD_TIME > 0) {
+    {
+        time_t local_effective_ts_json = local_fw_timestamp;
+        if (local_effective_ts_json > 0) {
         char build_time_str[64];
         struct tm build_timeinfo;
-        gmtime_r(&FIRMWARE_BUILD_TIME, &build_timeinfo);
+        gmtime_r(&local_effective_ts_json, &build_timeinfo);
         strftime(build_time_str, sizeof(build_time_str), "%Y-%m-%dT%H:%M:%SZ", &build_timeinfo);
         cJSON_AddStringToObject(ota_json, "local_build_time", build_time_str);
+        }
     }
 
     if (remote_timestamp > 0) {
@@ -1074,33 +1455,38 @@ static void report_ota_status(ota_status_t status, const char* error_message) {
 
 // Public function to report OTA status
 void ota_report_status(void) {
-    // Skip early reporting if remote version info isn't available yet
-    if (remote_timestamp == 0 || strlen(remote_version) == 0) {
-        ESP_LOGD(TAG, "Skipping OTA status report - remote version info not available yet");
-        return;
-    }
-
-    // Determine current status
-    ota_status_t status = OTA_STATUS_UP_TO_DATE;
-
-    // Check if running from factory partition - ALWAYS a dev build
+    // Determine current status using same invariants as the linear flow
     const esp_partition_t *running = esp_ota_get_running_partition();
-    if (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY) {
-        // Always a development build for factory partition
-        status = OTA_STATUS_DEV_BUILD;
-    } else {
-        // Only for OTA partitions - check version status
-        if (remote_timestamp > 0) {
-            // We have remote version info, can determine exact status
-            if (remote_timestamp > FIRMWARE_BUILD_TIME) {
-                status = OTA_STATUS_UPGRADING_FIRMWARE;
-            }
-        } else {
-            // Default to UP_TO_DATE if we can't determine, but only for OTA partitions
-            status = OTA_STATUS_UP_TO_DATE;
-        }
-    }
+    bool is_factory = (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY);
 
-    // Report the status
+    // load local firmware info (required)
+    current_version[0] = '\0';
+    local_fw_timestamp = 0;
+    load_local_firmware_info();
+
+    // last attempt hash
+    char last_hash[64] = {0}; size_t hash_len = sizeof(last_hash);
+    nvs_handle_t n;
+    if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &n) == ESP_OK) {
+        (void)nvs_get_str(n, NVS_LAST_OTA_HASH, last_hash, &hash_len);
+        nvs_close(n);
+    }
+    bool same_as_last_attempt = (last_hash[0] && strlen(remote_version) && strcmp(last_hash, remote_version) == 0);
+
+    esp_ota_img_states_t state = ESP_OTA_IMG_UNDEFINED;
+    (void)esp_ota_get_state_partition(running, &state);
+    bool pending_verify = (state == ESP_OTA_IMG_PENDING_VERIFY);
+
+    bool remote_newer = (remote_timestamp > 0 && local_fw_timestamp > 0 && remote_timestamp > local_fw_timestamp);
+    bool remote_equal = (remote_timestamp > 0 && local_fw_timestamp > 0 && remote_timestamp == local_fw_timestamp);
+    bool remote_older = (remote_timestamp > 0 && local_fw_timestamp > 0 && remote_timestamp < local_fw_timestamp);
+
+    ota_status_t status = OTA_STATUS_UP_TO_DATE;
+    if (remote_newer && same_as_last_attempt) status = OTA_STATUS_ROLLED_BACK;
+    else if (remote_equal && same_as_last_attempt && pending_verify) status = OTA_STATUS_AWAITING_VALIDATION;
+    else if (is_factory && remote_older) status = OTA_STATUS_DEV_BUILD;
+    else if (remote_newer && !same_as_last_attempt) status = OTA_STATUS_UPGRADING_FIRMWARE;
+    else status = OTA_STATUS_UP_TO_DATE;
+
     report_ota_status(status, NULL);
 }

@@ -2,6 +2,10 @@
 
 #include "esp_err.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Initialize OTA system and start background update task
  * 
@@ -37,3 +41,18 @@ void ota_notify_network_connected(void);
  * the roomsensor/device/{MAC}/ota topic with detailed information.
  */
 void ota_report_status(void);
+
+/**
+ * @brief Force an OTA update immediately.
+ *
+ * If version_hash is NULL or empty, downloads the manifest and updates to the
+ * version specified there, regardless of local version/timestamp.
+ * If version_hash is provided, attempts to download
+ *   https://updates.gaia.bio/firmware-<hash>.bin
+ * and apply it.
+ */
+esp_err_t ota_force_update(const char* version_hash);
+
+#ifdef __cplusplus
+}
+#endif

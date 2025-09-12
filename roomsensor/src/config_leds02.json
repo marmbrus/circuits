@@ -1,5 +1,10 @@
 {
-  "wifi": {},
+  "device": {
+    "type": "leds_0.2"
+  },
+  "wifi": {
+    "statusGPIO": 40
+  },
   "led1": {
     "dataGPIO": 11,
     "enabledGPIO": 15,

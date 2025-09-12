@@ -6,11 +6,7 @@ import VersionsChip from './components/VersionsChip'
 import RestartAltIcon from '@mui/icons-material/RestartAlt'
 
 function App() {
-  const { sensors, connectionStatus, lastError, restartSensor } = useSensors()
-
-  const rebootAll = () => {
-    for (const mac of sensors.keys()) restartSensor(mac)
-  }
+  const { sensors, connectionStatus, lastError, restartAllSensors } = useSensors()
 
   return (
     <Box sx={{ bgcolor: 'background.default', color: 'text.primary', minHeight: '100vh' }}>
@@ -25,15 +21,6 @@ function App() {
             )}
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Button
-              onClick={rebootAll}
-              size="small"
-              variant="outlined"
-              startIcon={<RestartAltIcon />}
-              disabled={sensors.size === 0}
-            >
-              Reboot all
-            </Button>
             <Chip
               label={connectionStatus}
               size="small"
@@ -46,6 +33,19 @@ function App() {
               variant={connectionStatus === 'connected' ? 'filled' : 'outlined'}
             />
             <VersionsChip sensors={sensors} />
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RestartAltIcon />}
+              onClick={() => {
+                if (window.confirm('Are you sure you want to restart all sensors?')) {
+                  restartAllSensors()
+                }
+              }}
+              disabled={sensors.size === 0}
+            >
+              Restart All
+            </Button>
           </Stack>
         </Toolbar>
         {(connectionStatus === 'connecting' || connectionStatus === 'reconnecting') && <LinearProgress />}

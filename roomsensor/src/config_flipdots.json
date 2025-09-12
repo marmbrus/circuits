@@ -1,0 +1,46 @@
+{
+  "device": {
+    "type": "leds_0.2"
+  },
+  "wifi": {
+    "statusGPIO": 40
+  },
+  "led1": {
+    "dataGPIO": 11,
+    "enabledGPIO": 15,
+    "chip": "FLIPDOT",
+    "num_columns": 16,
+    "num_rows": 16,
+    "segment_rows": 8,
+    "layout": "FLIPDOT_GRID",
+    "pattern": "CALENDAR",
+    "R": 18,
+    "brightness": 13
+  },
+  "led2": {
+    "dataGPIO": 12,
+    "enabledGPIO": 16,
+    "chip": "WS2812",
+    "num_columns": 32,
+    "num_rows": 32,
+    "segment_rows": 8,
+    "layout": "SERPENTINE_ROW",
+    "pattern": "LIFE",
+    "brightness": 15,
+    "speed": 100
+  },
+  "led3": {
+    "dataGPIO": 13,
+    "enabledGPIO": 17
+  },
+  "led4": {
+    "dataGPIO": 14,
+    "enabledGPIO": 18
+  },
+  "a2d1": {
+    "ch1.sensor": "BTS7002",
+    "ch2.sensor": "BTS7002",
+    "ch3.sensor": "BTS7002",
+    "ch4.sensor": "BTS7002"
+  }
+}

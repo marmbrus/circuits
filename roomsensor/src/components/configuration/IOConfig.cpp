@@ -18,6 +18,12 @@ IOConfig::IOConfig(const char* instance_name) : name_(instance_name ? instance_n
         snprintf(key, sizeof(key), "pin%dname", i);
         descriptors_.push_back({strdup(key), ConfigValueType::String, nullptr, true});
     }
+    // Non-persisted runtime values: pin1contact..pin8contact (accepted for reset and runtime)
+    for (int i = 1; i <= 8; ++i) {
+        char key[16];
+        snprintf(key, sizeof(key), "pin%dcontact", i);
+        descriptors_.push_back({strdup(key), ConfigValueType::Bool, nullptr, false});
+    }
     // Non-persisted runtime values: switch1..switch8
     for (int i = 1; i <= 8; ++i) {
         char key[12];
@@ -97,6 +103,29 @@ esp_err_t IOConfig::apply_update(const char* key, const char* value_str) {
             }
             switch_states_[idx - 1] = v;
             switch_state_set_[idx - 1] = true;
+            return ESP_OK;
+        }
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    // pinNcontact (non-persisted, but emitted in to_json; accept on input)
+    if (strncmp(key, "pin", 3) == 0 && strstr(key, "contact") != nullptr) {
+        int idx = 0;
+        if (sscanf(key, "pin%dcontact", &idx) == 1 && idx >= 1 && idx <= 8) {
+            bool v = false;
+            if (value_str) {
+                if (strcasecmp(value_str, "1") == 0 || strcasecmp(value_str, "true") == 0 ||
+                    strcasecmp(value_str, "on") == 0 || strcasecmp(value_str, "yes") == 0) {
+                    v = true;
+                } else if (strcasecmp(value_str, "0") == 0 || strcasecmp(value_str, "false") == 0 ||
+                           strcasecmp(value_str, "off") == 0 || strcasecmp(value_str, "no") == 0) {
+                    v = false;
+                } else {
+                    return ESP_ERR_INVALID_ARG;
+                }
+            }
+            contact_states_[idx - 1] = v;
+            contact_state_set_[idx - 1] = true;
             return ESP_OK;
         }
         return ESP_ERR_INVALID_ARG;

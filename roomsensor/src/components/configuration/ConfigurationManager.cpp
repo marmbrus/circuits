@@ -1,6 +1,7 @@
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
 #include "TagsConfig.h"
+#include "DeviceConfig.h"
 #include "LEDConfig.h"
 #include "A2DConfig.h"
 #include "IOConfig.h"
@@ -12,6 +13,7 @@
 #include "esp_mac.h"
 #include <string.h>
 #include <strings.h>
+#include <algorithm>
 
 namespace config {
 
@@ -27,6 +29,8 @@ void ConfigurationManager::register_modules() {
     modules_.push_back(wifi_module_.get());
     tags_module_.reset(new TagsConfig());
     modules_.push_back(tags_module_.get());
+    device_module_.reset(new DeviceConfig());
+    modules_.push_back(device_module_.get());
     led1_module_.reset(new LEDConfig("led1"));
     modules_.push_back(led1_module_.get());
     led2_module_.reset(new LEDConfig("led2"));
@@ -75,6 +79,10 @@ WifiConfig& ConfigurationManager::wifi() {
 
 TagsConfig& ConfigurationManager::tags() {
     return *tags_module_;
+}
+
+DeviceConfig& ConfigurationManager::device() {
+    return *device_module_;
 }
 
 LEDConfig& ConfigurationManager::led1() { return *led1_module_; }
@@ -363,10 +371,125 @@ std::string ConfigurationManager::get_mqtt_subscription_topic() const {
     return "sensor/" + mac_to_string() + "/config/+/+";
 }
 
+std::string ConfigurationManager::get_mqtt_reset_subscription_topic() const {
+    return "sensor/" + mac_to_string() + "/config/reset";
+}
+
+esp_err_t ConfigurationManager::handle_config_reset(const char* payload) {
+    cJSON* root = cJSON_Parse(payload);
+    if (!root) {
+        ESP_LOGE(TAG, "Failed to parse config reset JSON");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    ESP_LOGI(TAG, "Starting full configuration reset from MQTT");
+
+    for (ConfigurationModule* mod : modules_) {
+        nvs_handle_t handle;
+        esp_err_t err = nvs_open(mod->name(), NVS_READWRITE, &handle);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to open NVS for module %s, skipping reset for it.", mod->name());
+            continue;
+        }
+
+        // Erase all previously persisted values for this module.
+        for (const auto& desc : mod->descriptors()) {
+            if (desc.persisted) {
+                nvs_erase_key(handle, desc.name);
+            }
+        }
+
+        cJSON* module_json = cJSON_GetObjectItem(root, mod->name());
+        if (module_json) {
+            cJSON* item = nullptr;
+            cJSON_ArrayForEach(item, module_json) {
+                const char* key = item->string;
+                char* value_str = cJSON_Print(item); // Note: cJSON_Print returns a string representation of the value.
+                if (value_str) {
+                    // For string values, cJSON_Print adds quotes, which we need to remove.
+                    char* effective_value = value_str;
+                    if (item->type == cJSON_String) {
+                        size_t len = strlen(value_str);
+                        if (len >= 2 && value_str[0] == '"' && value_str[len - 1] == '"') {
+                            value_str[len - 1] = '\0';
+                            effective_value = value_str + 1;
+                        }
+                    }
+                    
+                    err = mod->apply_update(key, effective_value);
+                    if (err != ESP_OK) {
+                        ESP_LOGW(TAG, "Config reset failed to apply: %s.%s -> %s", mod->name(), key, esp_err_to_name(err));
+                    } else {
+                        // Persist this value, bypassing the 'persisted' flag.
+                        const auto& descriptors = mod->descriptors();
+                        auto it = std::find_if(descriptors.begin(), descriptors.end(), [&](const ConfigurationValueDescriptor& d) {
+                            return strcmp(d.name, key) == 0;
+                        });
+
+                        if (it != descriptors.end()) {
+                            const auto& desc = *it;
+                            switch (desc.type) {
+                                case ConfigValueType::String:
+                                    err = nvs_set_str(handle, key, effective_value);
+                                    break;
+                                case ConfigValueType::Bool: {
+                                    bool v = (strcasecmp(effective_value, "1") == 0 || strcasecmp(effective_value, "true") == 0 ||
+                                              strcasecmp(effective_value, "on") == 0 || strcasecmp(effective_value, "yes") == 0);
+                                    err = nvs_set_u8(handle, key, v ? 1 : 0);
+                                    break;
+                                }
+                                case ConfigValueType::I32:
+                                    err = nvs_set_i32(handle, key, atoi(effective_value));
+                                    break;
+                                case ConfigValueType::U32:
+                                    err = nvs_set_u32(handle, key, (uint32_t)strtoul(effective_value, nullptr, 10));
+                                    break;
+                                case ConfigValueType::I64:
+                                    err = nvs_set_i64(handle, key, (int64_t)strtoll(effective_value, nullptr, 10));
+                                    break;
+                                default:
+                                    // Types not supported for persistence.
+                                    break;
+                            }
+                            if (err != ESP_OK) {
+                                ESP_LOGE(TAG, "Failed to persist %s.%s during reset: %s", mod->name(), key, esp_err_to_name(err));
+                            }
+                        }
+                    }
+                    cJSON_free(value_str);
+                }
+            }
+        }
+        
+        esp_err_t cmt_err = nvs_commit(handle);
+        if (cmt_err == ESP_OK) {
+            ESP_LOGD(TAG, "Persisted config for module: %s", mod->name());
+        } else {
+            ESP_LOGE(TAG, "Failed to commit NVS for %s: %s", mod->name(), esp_err_to_name(cmt_err));
+        }
+
+        nvs_close(handle);
+        mod->mark_updated();
+    }
+
+    cJSON_Delete(root);
+    ESP_LOGI(TAG, "Full configuration reset complete.");
+
+    // Publish the new full configuration
+    return publish_full_configuration();
+}
+
 esp_err_t ConfigurationManager::handle_mqtt_message(const char* full_topic, const char* payload) {
     // Expect topic: sensor/$mac/config/$module/$key
+    // Or: sensor/$mac/config/reset
     if (!full_topic) return ESP_ERR_INVALID_ARG;
     ESP_LOGD(TAG, "MQTT config message: topic='%s' payload='%s'", full_topic, payload ? payload : "");
+
+    // Check for reset topic first
+    if (strstr(full_topic, "/config/reset")) {
+        return handle_config_reset(payload);
+    }
+
     const char* p = strstr(full_topic, "/config/");
     if (!p) {
         ESP_LOGW(TAG, "Ignoring MQTT message without /config/ segment: %s", full_topic);

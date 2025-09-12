@@ -49,7 +49,15 @@ cat > \"${CMAKE_SOURCE_DIR}/fsdata/webapp.json\" << EOF
 }
 EOF
 
-echo -n \"\$VERSION_STRING\" > \"${CMAKE_SOURCE_DIR}/fsdata/firmware_version.txt\"
+cat > \"${CMAKE_SOURCE_DIR}/fsdata/firmware.json\" << EOF
+{
+  \"local_version\": \"\$VERSION_STRING\",
+  \"local_git_describe\": \"\$VERSION_STRING\",
+  \"local_build_timestamp\": \"\$NOW_ISO\",
+  \"local_build_timestamp_epoch\": \$NOW_EPOCH
+}
+EOF
+
 echo \"Updated version to: \$VERSION_STRING\"
 ")
 

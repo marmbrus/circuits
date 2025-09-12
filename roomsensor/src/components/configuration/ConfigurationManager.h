@@ -14,6 +14,7 @@ namespace config {
 
 class WifiConfig;
 class TagsConfig;
+class DeviceConfig;
 class LEDConfig;
 class A2DConfig;
 class IOConfig;
@@ -36,6 +37,7 @@ public:
     // Accessors for modules
     WifiConfig& wifi();
     TagsConfig& tags();
+    DeviceConfig& device();
     LEDConfig& led1();
     LEDConfig& led2();
     LEDConfig& led3();
@@ -61,9 +63,13 @@ public:
 
     // MQTT integration helpers
     std::string get_mqtt_subscription_topic() const; // sensor/$mac/config/+/+
+    std::string get_mqtt_reset_subscription_topic() const; // sensor/$mac/config/reset
     esp_err_t handle_mqtt_message(const char* full_topic, const char* payload);
 
 private:
+    // Handle full config reset from JSON payload.
+    esp_err_t handle_config_reset(const char* payload);
+
     // Registers all statically known modules
     void register_modules();
 
@@ -76,6 +82,7 @@ private:
     // Owned module instances
     std::unique_ptr<WifiConfig> wifi_module_;
     std::unique_ptr<TagsConfig> tags_module_;
+    std::unique_ptr<DeviceConfig> device_module_;
     std::unique_ptr<LEDConfig> led1_module_;
     std::unique_ptr<LEDConfig> led2_module_;
     std::unique_ptr<LEDConfig> led3_module_;

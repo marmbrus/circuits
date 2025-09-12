@@ -389,6 +389,10 @@ static void mqtt_event_handler(void* arg, esp_event_base_t event_base,
             std::string topic = mgr.get_mqtt_subscription_topic();
             int msg_id = esp_mqtt_client_subscribe(mqtt_client, topic.c_str(), 1);
             ESP_LOGI(TAG, "Subscribed to config topic %s (msg_id=%d)", topic.c_str(), msg_id);
+
+            std::string reset_topic = mgr.get_mqtt_reset_subscription_topic();
+            msg_id = esp_mqtt_client_subscribe(mqtt_client, reset_topic.c_str(), 1);
+            ESP_LOGI(TAG, "Subscribed to config reset topic %s (msg_id=%d)", reset_topic.c_str(), msg_id);
         }
 
         // Subscribe to restart topic for this device: sensor/<mac>/device/restart

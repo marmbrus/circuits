@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Source ESP-IDF environment if IDF_PATH is set
+if [ -n "$IDF_PATH" ]; then
+    echo "Sourcing IDF environment from $IDF_PATH/export.sh"
+    source "$IDF_PATH/export.sh"
+fi
+
 # Configuration
 SERVER="gaia"
 REMOTE_DIR="/mnt/containers/data/updates"
@@ -18,12 +24,20 @@ if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check for uncommitted changes
-if [[ -n $(git status --porcelain) ]]; then
-    echo "Error: Git working directory is not clean. Please commit or stash your changes first."
-    echo "Uncommitted changes:"
-    git status --short
-    exit 1
+# Channel selection: default to dev unless 'prod' specified
+CHANNEL="dev"
+if [[ "$1" == "prod" ]]; then
+  CHANNEL="prod"
+fi
+
+# Check for uncommitted changes only for prod
+if [[ "$CHANNEL" == "prod" ]]; then
+  if [[ -n $(git status --porcelain) ]]; then
+      echo "Error: Git working directory is not clean. Please commit or stash your changes first."
+      echo "Uncommitted changes:"
+      git status --short
+      exit 1
+  fi
 fi
 
 # Get git information
@@ -36,10 +50,12 @@ fi
 # Get the full git describe output and format it uniformly
 RAW_GIT_DESCRIBE=$(git describe --tags --always --dirty 2>/dev/null || echo "v0.0-g$GIT_HASH")
 
-# Check if Git describe contains "dirty"
-if [[ "$RAW_GIT_DESCRIBE" == *-dirty ]]; then
-    echo "Error: Git working directory contains uncommitted changes. Please commit all changes first."
-    exit 1
+# For prod, enforce clean; for dev, allow dirty
+if [[ "$CHANNEL" == "prod" ]]; then
+  if [[ "$RAW_GIT_DESCRIBE" == *-dirty ]]; then
+      echo "Error: Git working directory contains uncommitted changes. Please commit all changes first."
+      exit 1
+  fi
 fi
 
 # Format versions consistently: git hash for clean, revYYYYMMDDHHMMSS-shortHash-dirty for dirty
@@ -56,10 +72,42 @@ fi
 echo "Git describe: $GIT_DESCRIBE"
 echo "Version for manifest: $VERSION_FOR_MANIFEST"
 
-# Build firmware first to embed BUILD_TIMESTAMP used by both firmware and web manifest
+# Choose artifact suffix: use full rev timestamp form for dirty builds, short hash for clean
+if [[ "$RAW_GIT_DESCRIBE" == *-dirty ]]; then
+    ARTIFACT_SUFFIX="$VERSION_FOR_MANIFEST"
+else
+    ARTIFACT_SUFFIX="$GIT_HASH"
+fi
+
+# Reset sdkconfig to defaults to ensure a clean, reproducible build
+echo "Resetting sdkconfig to defaults for esp32s3 target..."
+rm -f sdkconfig
+idf.py set-target esp32s3 > /dev/null
+
+# Build firmware first, which runs update_version.sh to generate version JSON files
 echo "Building project (firmware) with idf.py..."
-idf.py fullclean build || { echo "Error: Build failed"; exit 1; }
+idf.py build || { echo "Error: Build failed"; exit 1; }
 echo "Firmware build successful"
+
+# Now that the build is done, read the generated version info from the JSON files
+if [ ! -f "fsdata/firmware.json" ] || [ ! -f "fsdata/webapp.json" ]; then
+    echo "Error: Version JSON files not found in fsdata/ after build."
+    exit 1
+fi
+
+# Use jq to extract values to ensure robustness
+VERSION_FOR_MANIFEST=$(jq -r '.local_version' fsdata/firmware.json)
+BUILD_TIMESTAMP=$(jq -r '.local_build_timestamp_epoch' fsdata/firmware.json)
+BUILD_ISO_TIME=$(jq -r '.local_build_timestamp' fsdata/firmware.json)
+GIT_DESCRIBE=$(jq -r '.local_git_describe' fsdata/firmware.json)
+
+WEB_VERSION=$(jq -r '.local_version' fsdata/webapp.json)
+WEB_BUILD_TIMESTAMP=$(jq -r '.local_build_timestamp_epoch' fsdata/webapp.json)
+WEB_BUILD_ISO_TIME=$(jq -r '.local_build_timestamp' fsdata/webapp.json)
+WEB_GIT_DESCRIBE=$(jq -r '.local_git_describe' fsdata/webapp.json)
+
+echo "Using firmware version: $VERSION_FOR_MANIFEST ($BUILD_ISO_TIME)"
+echo "Using webapp version: $WEB_VERSION ($WEB_BUILD_ISO_TIME)"
 
 # Build web app (Vite) and gzip index.html
 echo "Building web app..."
@@ -74,28 +122,6 @@ if [ ! -f "$INDEX_HTML" ]; then
     exit 1
 fi
 
-# Read the build timestamp that was written by CMake during build
-TIMESTAMP_FILE="build/firmware_build_timestamp.txt"
-
-if [ ! -f "$TIMESTAMP_FILE" ]; then
-    echo "Error: Build timestamp file not found at $TIMESTAMP_FILE"
-    echo "Make sure to run 'idf.py build' first"
-    exit 1
-fi
-
-BUILD_TIMESTAMP=$(cat "$TIMESTAMP_FILE")
-
-if [ -z "$BUILD_TIMESTAMP" ]; then
-    echo "Error: Build timestamp file is empty"
-    exit 1
-fi
-
-echo "Using firmware build timestamp: $BUILD_TIMESTAMP"
-
-# Generate ISO format time from the timestamp
-BUILD_ISO_TIME=$(date -u -r $BUILD_TIMESTAMP +"%Y-%m-%dT%H:%M:%SZ")
-echo "Using embedded build timestamp (UTC): $BUILD_ISO_TIME ($BUILD_TIMESTAMP)"
-
 # Check if the binary exists
 if [ ! -f "$BIN_FILE" ]; then
     echo "Error: Could not find firmware binary file at $BIN_FILE"
@@ -107,39 +133,46 @@ BIN_SIZE=$(stat -f%z "$BIN_FILE")
 echo "Using binary: $BIN_FILE (size: $BIN_SIZE bytes)"
 
 # Create filenames with git hash
-BIN_FILENAME="firmware-${GIT_HASH}.bin"
-WEB_FILENAME="index-${GIT_HASH}.html.gz"
+BIN_FILENAME="firmware-${ARTIFACT_SUFFIX}.bin"
+WEB_FILENAME="index-${ARTIFACT_SUFFIX}.html.gz"
 MANIFEST_FILE="manifest.json"
 
 # Produce gzipped web asset in repo root for upload
 gzip -c -9 "$INDEX_HTML" > "$WEB_FILENAME"
 
-# Create manifest.json with firmware and web information
-cat > ${MANIFEST_FILE} << EOF
+MANIFEST_NAME="manifest.json"
+if [[ "$CHANNEL" != "prod" ]]; then
+  MANIFEST_NAME="manifest-${CHANNEL}.json"
+fi
+
+# Create manifest with firmware and web information
+cat > ${MANIFEST_NAME} << EOF
 {
     "version": "${VERSION_FOR_MANIFEST}",
     "build_timestamp": "${BUILD_ISO_TIME}",
     "build_timestamp_epoch": ${BUILD_TIMESTAMP},
     "git_describe": "${GIT_DESCRIBE}",
     "url": "${BASE_URL}/${BIN_FILENAME}",
-    "web_version": "${VERSION_FOR_MANIFEST}",
-    "web_build_timestamp": "${BUILD_ISO_TIME}",
-    "web_build_timestamp_epoch": ${BUILD_TIMESTAMP},
-    "web_git_describe": "${GIT_DESCRIBE}",
+    "web_version": "${WEB_VERSION}",
+    "web_build_timestamp": "${WEB_BUILD_ISO_TIME}",
+    "web_build_timestamp_epoch": ${WEB_BUILD_TIMESTAMP},
+    "web_git_describe": "${WEB_GIT_DESCRIBE}",
     "web_url": "${BASE_URL}/${WEB_FILENAME}"
 }
 EOF
 
-echo "Created manifest file with version ${VERSION_FOR_MANIFEST}, timestamp ${BUILD_ISO_TIME} (UTC)"
+echo "Created manifest file ${MANIFEST_NAME} with version ${VERSION_FOR_MANIFEST}, timestamp ${BUILD_ISO_TIME} (UTC)"
+
+# The firmware.json is already correctly in fsdata/ from the build step, no need to overwrite
 
 # Copy bin file to a new name with git hash
 cp "${BIN_FILE}" "${BIN_FILENAME}"
 
 # Upload files to server
-echo "Uploading firmware, web asset, and manifest to ${SERVER}:${REMOTE_DIR}..."
-scp "${BIN_FILENAME}" "${WEB_FILENAME}" "${MANIFEST_FILE}" "${SERVER}:${REMOTE_DIR}/"
+echo "Uploading firmware, web asset, and manifest to ${SERVER}:${REMOTE_DIR} (channel=${CHANNEL})..."
+scp "${BIN_FILENAME}" "${WEB_FILENAME}" "${MANIFEST_NAME}" "${SERVER}:${REMOTE_DIR}/"
 
 # Clean up local temporary files
-rm "${BIN_FILENAME}" "${WEB_FILENAME}" "${MANIFEST_FILE}"
+rm "${BIN_FILENAME}" "${WEB_FILENAME}" "${MANIFEST_NAME}"
 
-echo "Deployment complete. OTA update is available at ${BASE_URL}/${MANIFEST_FILE}"
+echo "Deployment complete. OTA update is available at ${BASE_URL}/${MANIFEST_NAME}"
