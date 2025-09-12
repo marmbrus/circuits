@@ -14,6 +14,7 @@ namespace config {
 
 class WifiConfig;
 class TagsConfig;
+class DeviceConfig;
 class LEDConfig;
 class A2DConfig;
 class IOConfig;
@@ -36,6 +37,7 @@ public:
     // Accessors for modules
     WifiConfig& wifi();
     TagsConfig& tags();
+    DeviceConfig& device();
     LEDConfig& led1();
     LEDConfig& led2();
     LEDConfig& led3();
@@ -76,6 +78,7 @@ private:
     // Owned module instances
     std::unique_ptr<WifiConfig> wifi_module_;
     std::unique_ptr<TagsConfig> tags_module_;
+    std::unique_ptr<DeviceConfig> device_module_;
     std::unique_ptr<LEDConfig> led1_module_;
     std::unique_ptr<LEDConfig> led2_module_;
     std::unique_ptr<LEDConfig> led3_module_;

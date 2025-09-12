@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Source ESP-IDF environment if IDF_PATH is set
+if [ -n "$IDF_PATH" ]; then
+    echo "Sourcing IDF environment from $IDF_PATH/export.sh"
+    source "$IDF_PATH/export.sh"
+fi
+
 # Configuration
 SERVER="gaia"
 REMOTE_DIR="/mnt/containers/data/updates"
@@ -72,6 +78,11 @@ if [[ "$RAW_GIT_DESCRIBE" == *-dirty ]]; then
 else
     ARTIFACT_SUFFIX="$GIT_HASH"
 fi
+
+# Reset sdkconfig to defaults to ensure a clean, reproducible build
+echo "Resetting sdkconfig to defaults for esp32s3 target..."
+rm -f sdkconfig
+idf.py set-target esp32s3 > /dev/null
 
 # Build firmware first, which runs update_version.sh to generate version JSON files
 echo "Building project (firmware) with idf.py..."

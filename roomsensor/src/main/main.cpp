@@ -148,8 +148,10 @@ extern "C" void app_main(void)
         ESP_LOGI(TAG, "OTA system initialized successfully");
     }
 
+    ESP_LOGI(TAG, "Startup sequence complete.");
+
     // Idle loop to keep app_main task alive while yielding CPU
     while (true) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(100000));
     }
 }

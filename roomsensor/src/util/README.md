@@ -1,0 +1,38 @@
+RoomSensor Serial Utilities
+===========================
+
+Python utilities to interact with the RoomSensor ESP32S3 over the serial console for programming, debugging, and testing.
+
+Quickstart
+----------
+
+1) Create and activate a virtual environment
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+2) Install package (editable) and dev deps
+
+```bash
+pip install -e .
+```
+
+3) Run tests
+
+```bash
+pytest -q
+```
+
+Port selection
+--------------
+
+By default the library auto-selects the first serial port whose name or description contains "usbserial". You can override with environment variable `ROOMSENSOR_SERIAL_PORT` or by passing `port="/dev/tty.usbserial-XXXX"` to the class.
+
+Notes
+-----
+
+- On connect, the library performs a hardware reset using RTS/DTR to place the device in a known state.
+- All output is captured in an in-memory buffer and also logged to the console for debugging.
+

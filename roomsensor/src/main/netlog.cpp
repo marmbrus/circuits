@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include "console_buffer.h"
 
 // Small log queue. Each item stores level, tag and a message string.
 // We keep messages reasonably small to avoid memory pressure.
@@ -189,6 +190,9 @@ static int netlog_vprintf_hook(const char* fmt, va_list args) {
     size_t copy_len = len < sizeof(item.msg) - 1 ? len : sizeof(item.msg) - 1;
     memcpy(item.msg, buffer, copy_len);
     item.msg[copy_len] = '\0';
+
+    // Also append to console circular buffer as OUT
+    console_buffer_append(item.msg, copy_len, CONSOLE_DIR_OUT);
 
     // Avoid recursion when we publish logs (publishing may log internally). Non-blocking.
     if (!s_in_publish) {

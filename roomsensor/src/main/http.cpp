@@ -9,6 +9,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <cstdio>
+#include "console_buffer.h"
 
 static const char *TAG = "http_server";
 
@@ -251,10 +252,46 @@ static const httpd_uri_t mqttconfig = {
     .user_ctx  = NULL
 };
 
+// Handler for /console GET request: returns JSON array of entries
+static esp_err_t console_get_handler(httpd_req_t *req)
+{
+    cJSON *root = cJSON_CreateObject();
+    cJSON *entries = cJSON_AddArrayToObject(root, "entries");
+
+    struct Ctx { cJSON* arr; } ctx = { .arr = entries };
+    auto cb = [](uint64_t ts_ms, console_dir_t dir, const char* data, size_t len, void* vctx) -> int {
+        Ctx* c = (Ctx*)vctx;
+        cJSON* obj = cJSON_CreateObject();
+        cJSON_AddNumberToObject(obj, "ts_ms", (double)ts_ms);
+        cJSON_AddStringToObject(obj, "dir", dir == CONSOLE_DIR_IN ? "in" : "out");
+        // Best effort: data may contain binary; treat as string and rely on JSON escaping
+        cJSON_AddStringToObject(obj, "data", data);
+        cJSON_AddItemToArray(c->arr, obj);
+        return 0;
+    };
+    console_buffer_iterate(cb, &ctx);
+
+    char *json_response = cJSON_PrintUnformatted(root);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req, json_response);
+    cJSON_Delete(root);
+    free(json_response);
+    return ESP_OK;
+}
+
 static const httpd_uri_t index_page = {
     .uri       = "/*",
     .method    = HTTP_GET,
     .handler   = index_get_handler,
+    .user_ctx  = NULL
+};
+
+static const httpd_uri_t console_route = {
+    .uri       = "/console",
+    .method    = HTTP_GET,
+    .handler   = console_get_handler,
     .user_ctx  = NULL
 };
 
@@ -275,6 +312,7 @@ esp_err_t start_webserver(void)
         httpd_register_uri_handler(server, &ping);
         httpd_register_uri_handler(server, &metrics);
         httpd_register_uri_handler(server, &mqttconfig);
+        httpd_register_uri_handler(server, &console_route);
         httpd_register_uri_handler(server, &index_page);
         return ESP_OK;
     }

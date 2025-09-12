@@ -1,6 +1,7 @@
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
 #include "TagsConfig.h"
+#include "DeviceConfig.h"
 #include "LEDConfig.h"
 #include "A2DConfig.h"
 #include "IOConfig.h"
@@ -27,6 +28,8 @@ void ConfigurationManager::register_modules() {
     modules_.push_back(wifi_module_.get());
     tags_module_.reset(new TagsConfig());
     modules_.push_back(tags_module_.get());
+    device_module_.reset(new DeviceConfig());
+    modules_.push_back(device_module_.get());
     led1_module_.reset(new LEDConfig("led1"));
     modules_.push_back(led1_module_.get());
     led2_module_.reset(new LEDConfig("led2"));
@@ -75,6 +78,10 @@ WifiConfig& ConfigurationManager::wifi() {
 
 TagsConfig& ConfigurationManager::tags() {
     return *tags_module_;
+}
+
+DeviceConfig& ConfigurationManager::device() {
+    return *device_module_;
 }
 
 LEDConfig& ConfigurationManager::led1() { return *led1_module_; }

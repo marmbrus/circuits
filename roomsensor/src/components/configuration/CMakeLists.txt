@@ -3,6 +3,7 @@ idf_component_register(
         "ConfigurationManager.cpp"
         "WifiConfig.cpp"
         "TagsConfig.cpp"
+        "DeviceConfig.cpp"
         "LEDConfig.cpp"
         "A2DConfig.cpp"
         "IOConfig.cpp"

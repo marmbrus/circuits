@@ -56,3 +56,5 @@ js/pnpm-debug.log*
 js/.env
 js/.env.*
 js/.vercel/
+
+.venv/
