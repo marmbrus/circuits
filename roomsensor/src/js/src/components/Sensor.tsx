@@ -1,9 +1,12 @@
 import { Card, CardContent, CardHeader, Chip, CircularProgress, Dialog, DialogContent, DialogTitle, IconButton, Link, Stack, Tooltip, Typography, Accordion, AccordionSummary, AccordionDetails, Box, Collapse, FormControl, InputLabel, MenuItem, Select, Button } from '@mui/material'
+import DialogActions from '@mui/material/DialogActions'
+import TextField from '@mui/material/TextField'
 import AnsiText from './AnsiText'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import RestartAltIcon from '@mui/icons-material/RestartAlt'
+import FileCopyIcon from '@mui/icons-material/FileCopy'
 import ClearIcon from '@mui/icons-material/Clear'
 import { useEffect, useMemo, useState } from 'react'
 import type { SensorState } from '../types'
@@ -22,7 +25,7 @@ type Props = {
 
 export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceLogsExpanded, onLogsExpandedChange }: Props) {
 	const cfg = sensor.config
-	const { publishConfig, deleteRetainedForSensor, clearSensorLogs, restartSensor } = useSensors()
+	const { sensors: allSensors, publishConfig, deleteRetainedForSensor, clearSensorLogs, restartSensor, resetConfig } = useSensors()
 	const id = cfg?.tags.id ?? sensor.mac
 	const macShort = sensor.mac.slice(-4)
 	const ip = sensor.ip
@@ -36,6 +39,12 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 	const expanded = forceExpanded ?? internalExpanded
   const [internalLogsExpanded, setInternalLogsExpanded] = useState(false)
 	const logsExpanded = forceLogsExpanded ?? internalLogsExpanded
+
+	// Clone dialog state
+	const [cloneOpen, setCloneOpen] = useState(false)
+	const [cloneSourceMac, setCloneSourceMac] = useState<string>('')
+	const [draftJson, setDraftJson] = useState<string>('')
+	const [draftError, setDraftError] = useState<string>('')
 
 	const [nowMs, setNowMs] = useState<number>(Date.now())
 	useEffect(() => {
@@ -75,6 +84,62 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 			setTimeout(() => setCopied(false), 1200)
 		} catch {
 			// ignore
+		}
+	}
+
+	const candidates = useMemo(() => {
+		const arr = Array.from(allSensors.values()).filter(s => s.mac !== sensor.mac && s.config)
+		// Prefer sensors that have a known area (not 'unknown') first
+		return arr.sort((a, b) => {
+			const aUnknown = String(a.config?.tags?.area || 'unknown') === 'unknown'
+			const bUnknown = String(b.config?.tags?.area || 'unknown') === 'unknown'
+			return Number(aUnknown) - Number(bUnknown)
+		})
+	}, [allSensors, sensor.mac])
+
+	function deepMergePreferB(a: any, b: any): any {
+		if (Array.isArray(a) && Array.isArray(b)) {
+			return b.length > 0 ? b : a
+		}
+		if (a && typeof a === 'object' && b && typeof b === 'object') {
+			const out: any = { ...a }
+			for (const k of Object.keys(b)) {
+				out[k] = deepMergePreferB(a?.[k], b[k])
+			}
+			return out
+		}
+		return b !== undefined ? b : a
+	}
+
+	const openCloneDialog = () => {
+		setCloneOpen(true)
+		setCloneSourceMac('')
+		setDraftJson('')
+		setDraftError('')
+	}
+
+	const onSelectCloneSource = (mac: string) => {
+		setCloneSourceMac(mac)
+		try {
+			const src = Array.from(allSensors.values()).find(s => s.mac === mac)
+			const targetCfg = sensor.config || {}
+			const srcCfg = (src?.config || {}) as any
+			// Merge where unknown/target takes precedence
+			const merged = deepMergePreferB(srcCfg, targetCfg)
+			setDraftJson(JSON.stringify(merged, null, 2))
+			setDraftError('')
+		} catch (e: any) {
+			setDraftError(String(e?.message || e))
+		}
+	}
+
+	const onConfirmClone = () => {
+		try {
+			const parsed = JSON.parse(draftJson)
+			resetConfig(sensor.mac, parsed)
+			setCloneOpen(false)
+		} catch (e: any) {
+			setDraftError(`Invalid JSON: ${String(e?.message || e)}`)
 		}
 	}
 	return (
@@ -123,6 +188,13 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 						<Box sx={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 							<CircularProgress size={16} sx={{ visibility: sensor.pendingConfig ? 'visible' : 'hidden' }} />
 						</Box>
+						{String(cfg?.tags?.area || 'unknown') === 'unknown' && (
+							<Tooltip title="Clone config from another sensor">
+								<IconButton size="small" onClick={openCloneDialog} aria-label="clone">
+									<FileCopyIcon fontSize="inherit" />
+								</IconButton>
+							</Tooltip>
+						)}
 						<IconButton
 							size="small"
 							onClick={() => {
@@ -376,6 +448,48 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 				<DialogContent>
 					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(i2cOpen.device ?? {}, null, 2)}</pre>
 				</DialogContent>
+			</Dialog>
+
+			<Dialog open={cloneOpen} onClose={() => setCloneOpen(false)} fullWidth maxWidth="md">
+				<DialogTitle>Clone configuration</DialogTitle>
+				<DialogContent>
+					<Stack spacing={1} sx={{ mt: 1 }}>
+						<FormControl size="small" sx={{ minWidth: 240 }}>
+							<InputLabel id={`clone-source-${sensor.mac}`}>Clone from</InputLabel>
+							<Select
+								labelId={`clone-source-${sensor.mac}`}
+								label="Clone from"
+								value={cloneSourceMac}
+								onChange={(e) => onSelectCloneSource(String(e.target.value))}
+							>
+								{candidates.map(s => {
+									const label = String(s.config?.tags?.id || s.mac)
+									const area = String(s.config?.tags?.area || 'unknown')
+									const room = String(s.config?.tags?.room || 'unknown')
+									return (
+										<MenuItem key={s.mac} value={s.mac}>{label} — {area}/{room}</MenuItem>
+									)
+								})}
+							</Select>
+						</FormControl>
+						<TextField
+							label="Merged configuration (editable JSON)"
+							value={draftJson}
+							onChange={(e) => setDraftJson(e.target.value)}
+							multiline
+							minRows={12}
+							maxRows={24}
+							fullWidth
+							placeholder="Select a source sensor to generate a merged configuration"
+							error={Boolean(draftError)}
+							helperText={draftError || 'Original/unknown sensor values take precedence'}
+						/>
+					</Stack>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setCloneOpen(false)}>Cancel</Button>
+					<Button variant="contained" disabled={!cloneSourceMac || !draftJson} onClick={onConfirmClone}>Apply</Button>
+				</DialogActions>
 			</Dialog>
 		</Card>
 	)

@@ -63,9 +63,13 @@ public:
 
     // MQTT integration helpers
     std::string get_mqtt_subscription_topic() const; // sensor/$mac/config/+/+
+    std::string get_mqtt_reset_subscription_topic() const; // sensor/$mac/config/reset
     esp_err_t handle_mqtt_message(const char* full_topic, const char* payload);
 
 private:
+    // Handle full config reset from JSON payload.
+    esp_err_t handle_config_reset(const char* payload);
+
     // Registers all statically known modules
     void register_modules();
 

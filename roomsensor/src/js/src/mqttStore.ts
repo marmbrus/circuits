@@ -11,6 +11,7 @@ export type UseSensorsResult = {
   clearSensorLogs: (mac: string) => void
   restartSensor: (mac: string) => void
   restartAllSensors: () => void
+  resetConfig: (mac: string, fullConfig: unknown) => void
 }
 
 // Development-only fallback endpoints; in production we fetch from the device
@@ -470,6 +471,28 @@ class MqttManager {
     }
   }
 
+  resetConfig = (mac: string, fullConfig: unknown) => {
+    if (!this.client) return
+    const topic = `sensor/${mac.toLowerCase()}/config/reset`
+    let payload = ''
+    try {
+      payload = typeof fullConfig === 'string' ? fullConfig : JSON.stringify(fullConfig)
+    } catch (e) {
+      this.setError('resetConfig: failed to stringify payload')
+      return
+    }
+    try {
+      this.client.publish(topic, payload)
+      this.dlog('Publish', topic, `(len=${payload.length})`)
+      const s = this.ensureSensor(mac)
+      s.pendingConfig = true
+      this.notify()
+    } catch (e) {
+      this.setError((e as Error).message)
+      this.dlog('Publish error', (e as Error).message)
+    }
+  }
+
   restartSensor = (mac: string) => {
     if (!this.client) return
     const topic = `sensor/${mac.toLowerCase()}/device/restart`
@@ -544,6 +567,7 @@ export function useSensors(): UseSensorsResult {
     clearSensorLogs: manager.clearSensorLogs,
     restartSensor: manager.restartSensor,
     restartAllSensors: manager.restartAllSensors,
+    resetConfig: manager.resetConfig,
   }
 }
 
