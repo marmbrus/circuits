@@ -57,7 +57,7 @@ private:
     esp_err_t readRegister(uint8_t reg, uint8_t &value);
 
     void configureGpio0AsInput();
-    void configureFromConfig();
+    void configureFromConfig(bool force_write = false);
     int addrToIndex(uint8_t addr) const;
 
     uint8_t _i2c_addr;

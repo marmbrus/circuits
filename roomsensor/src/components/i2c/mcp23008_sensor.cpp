@@ -3,6 +3,7 @@
 #include "esp_log.h"
 #include "ConfigurationManager.h"
 #include "IOConfig.h"
+#include "mcp23088_keypad.h"
 
 static const char *TAG = "MCP23008Sensor";
 
@@ -88,8 +89,11 @@ bool MCP23008Sensor::init(i2c_master_bus_handle_t bus_handle) {
         }
     }
 
-    // Configure device registers from configuration
-    configureFromConfig();
+    // Ensure effective matches base before first apply, then force-write configuration to hardware
+    if (_config_ptr) {
+        _config_ptr->reset_effective_switches_to_base();
+    }
+    configureFromConfig(true);
 
     _tag_collection = create_tag_collection();
     if (_tag_collection == nullptr) {
@@ -110,7 +114,7 @@ int MCP23008Sensor::addrToIndex(uint8_t addr) const {
     return (addr - 0x20) + 1; // 0x20->1, ... 0x27->8
 }
 
-void MCP23008Sensor::configureFromConfig() {
+void MCP23008Sensor::configureFromConfig(bool force_write) {
     // Start from reset defaults
     uint8_t iodir = 0xFF; // all inputs
     uint8_t gppu  = 0x00; // pull-ups disabled
@@ -120,18 +124,22 @@ void MCP23008Sensor::configureFromConfig() {
     if (_config_ptr) {
         for (int i = 0; i < 8; ++i) {
             auto mode = _config_ptr->pin_mode(i + 1);
-            if (mode == config::IOConfig::PinMode::SWITCH) {
+            if (mode == config::IOConfig::PinMode::SWITCH ||
+                mode == config::IOConfig::PinMode::SWITCH_HIGH ||
+                mode == config::IOConfig::PinMode::SWITCH_LOW) {
                 // Output
                 iodir &= (uint8_t)~(1u << i); // bit=0 => output
                 // pull-up irrelevant for output
                 bool desired = _config_ptr->switch_state(i + 1);
-                if (_config_ptr->is_switch_state_set(i + 1)) {
-                    // Invert drive: ON => drive LOW, OFF => drive HIGH
-                    if (desired) olat &= (uint8_t)~(1u << i); else olat |= (uint8_t)(1u << i);
-                } else {
-                    // Default to OFF when unspecified: drive HIGH
-                    olat |= (uint8_t)(1u << i);
+                bool is_set = _config_ptr->is_switch_state_set(i + 1);
+                // Determine electrical level for ON based on mode
+                bool on_drives_low = (mode == config::IOConfig::PinMode::SWITCH || mode == config::IOConfig::PinMode::SWITCH_LOW);
+                if (!is_set) {
+                    // Default OFF
+                    desired = false;
                 }
+                bool drive_low = desired ? on_drives_low : !on_drives_low;
+                if (drive_low) olat &= (uint8_t)~(1u << i); else olat |= (uint8_t)(1u << i);
             } else if (mode == config::IOConfig::PinMode::SENSOR) {
                 // Input with pull-up
                 iodir |= (uint8_t)(1u << i); // bit=1 => input
@@ -143,10 +151,10 @@ void MCP23008Sensor::configureFromConfig() {
         gppu = 0xFF;
     }
 
-    // Only write registers if changes detected
-    if (iodir != _iodir_cached) { writeRegister(REG_IODIR, iodir); _iodir_cached = iodir; }
-    if (gppu  != _gppu_cached)  { writeRegister(REG_GPPU,  gppu);  _gppu_cached  = gppu; }
-    if (olat  != _olat_cached)  { writeRegister(REG_OLAT,  olat);  _olat_cached  = olat; }
+    // Only write registers if changes detected, unless force_write requests full sync
+    if (force_write || iodir != _iodir_cached) { writeRegister(REG_IODIR, iodir); _iodir_cached = iodir; }
+    if (force_write || gppu  != _gppu_cached)  { writeRegister(REG_GPPU,  gppu);  _gppu_cached  = gppu; }
+    if (force_write || olat  != _olat_cached)  { writeRegister(REG_OLAT,  olat);  _olat_cached  = olat; }
 }
 
 void MCP23008Sensor::poll() {
@@ -195,11 +203,57 @@ void MCP23008Sensor::poll() {
     // Maintain _level for backward compatibility with existing callers
     _level = (gpio & 0x01) ? 1.0f : 0.0f;
 
-    // Publish once at startup with initial states, and thereafter on any contact change.
+    // Apply base->effective reset before logic on each poll so overrides are transient
+    bool logic_changed_outputs = false;
+    if (_config_ptr) {
+        _config_ptr->reset_effective_switches_to_base();
+    }
+    // Apply optional per-module logic and re-apply outputs if it changed anything
+    if (_config_ptr && _config_ptr->is_logic_set()) {
+        switch (_config_ptr->logic()) {
+            case config::IOConfig::Logic::LOCK_KEYPAD: {
+                char modname[16]; snprintf(modname, sizeof(modname), "io%d", _io_index);
+                bool changed = i2c_logic::apply_lock_keypad_logic(*_config_ptr, modname);
+                if (changed) {
+                    ESP_LOGI(TAG, "Logic LOCK_KEYPAD changed switch states on %s; reapplying outputs", modname);
+                    configureFromConfig();
+                    logic_changed_outputs = true;
+                }
+                break;
+            }
+            case config::IOConfig::Logic::NONE:
+            default:
+                break;
+        }
+    }
+
+    // Verify outputs if logic changed anything
+    if (logic_changed_outputs) {
+        uint8_t olat_read = 0;
+        if (readRegister(REG_OLAT, olat_read) == ESP_OK) {
+            ESP_LOGD(TAG, "io%d OLAT after logic: 0x%02X", _io_index, olat_read);
+        } else {
+            ESP_LOGW(TAG, "io%d failed to read back OLAT after logic", _io_index);
+        }
+    }
+
+    // Publish once at startup with initial states, and thereafter on any contact change or effective switch change.
+    bool any_effective_change = false;
+    if (_config_ptr) {
+        static uint8_t last_set_mask = 0, last_on_mask = 0;
+        uint8_t set_mask = 0, on_mask = 0;
+        _config_ptr->get_effective_switch_snapshot(set_mask, on_mask);
+        if (set_mask != last_set_mask || on_mask != last_on_mask) {
+            any_effective_change = true;
+            last_set_mask = set_mask;
+            last_on_mask = on_mask;
+        }
+    }
+
     if (!_initial_state_published) {
         config::GetConfigurationManager().publish_full_configuration();
         _initial_state_published = true;
-    } else if (any_contact_change) {
+    } else if (any_contact_change || any_effective_change) {
         config::GetConfigurationManager().publish_full_configuration();
     }
 }

@@ -18,13 +18,15 @@ IOConfig::IOConfig(const char* instance_name) : name_(instance_name ? instance_n
         snprintf(key, sizeof(key), "pin%dname", i);
         descriptors_.push_back({strdup(key), ConfigValueType::String, nullptr, true});
     }
+    // Persisted descriptor: logic (optional)
+    descriptors_.push_back({strdup("logic"), ConfigValueType::String, nullptr, true});
     // Non-persisted runtime values: pin1contact..pin8contact (accepted for reset and runtime)
     for (int i = 1; i <= 8; ++i) {
         char key[16];
         snprintf(key, sizeof(key), "pin%dcontact", i);
         descriptors_.push_back({strdup(key), ConfigValueType::Bool, nullptr, false});
     }
-    // Non-persisted runtime values: switch1..switch8
+    // Non-persisted runtime values: switch1..switch8 (effective state)
     for (int i = 1; i <= 8; ++i) {
         char key[12];
         snprintf(key, sizeof(key), "switch%d", i);
@@ -45,6 +47,8 @@ const std::vector<ConfigurationValueDescriptor>& IOConfig::descriptors() const {
 IOConfig::PinMode IOConfig::parse_pin_mode(const char* value) {
     if (!value) return PinMode::INVALID;
     if (strcmp(value, "SWITCH") == 0) return PinMode::SWITCH;
+    if (strcmp(value, "SWITCH_HIGH") == 0) return PinMode::SWITCH_HIGH;
+    if (strcmp(value, "SWITCH_LOW") == 0) return PinMode::SWITCH_LOW;
     if (strcmp(value, "SENSOR") == 0) return PinMode::SENSOR;
     return PinMode::INVALID;
 }
@@ -52,8 +56,24 @@ IOConfig::PinMode IOConfig::parse_pin_mode(const char* value) {
 const char* IOConfig::pin_mode_to_string(IOConfig::PinMode mode) {
     switch (mode) {
         case PinMode::SWITCH: return "SWITCH";
+        case PinMode::SWITCH_HIGH: return "SWITCH_HIGH";
+        case PinMode::SWITCH_LOW: return "SWITCH_LOW";
         case PinMode::SENSOR: return "SENSOR";
         case PinMode::INVALID: default: return "";
+    }
+}
+
+IOConfig::Logic IOConfig::parse_logic(const char* value) {
+    if (!value || value[0] == '\0') return Logic::NONE;
+    if (strcmp(value, "LOCK_KEYPAD") == 0) return Logic::LOCK_KEYPAD;
+    if (strcmp(value, "NONE") == 0) return Logic::NONE;
+    return Logic::NONE;
+}
+
+const char* IOConfig::logic_to_string(IOConfig::Logic lgc) {
+    switch (lgc) {
+        case Logic::LOCK_KEYPAD: return "LOCK_KEYPAD";
+        case Logic::NONE: default: return "NONE";
     }
 }
 
@@ -84,7 +104,19 @@ esp_err_t IOConfig::apply_update(const char* key, const char* value_str) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    // switchN or pinNswitch (non-persisted)
+    // logic (persisted)
+    if (strcmp(key, "logic") == 0) {
+        if (value_str == nullptr || value_str[0] == '\0') {
+            logic_ = Logic::NONE;
+            logic_set_ = false;
+            return ESP_OK;
+        }
+        logic_ = parse_logic(value_str);
+        logic_set_ = true;
+        return ESP_OK;
+    }
+
+    // switchN or pinNswitch (non-persisted). Treat as base and effective input from external APIs
     if (strncmp(key, "switch", 6) == 0 || (strncmp(key, "pin", 3) == 0 && strstr(key, "switch") != nullptr)) {
         int idx = 0;
         if ((sscanf(key, "switch%d", &idx) == 1 || sscanf(key, "pin%dswitch", &idx) == 1) && idx >= 1 && idx <= 8) {
@@ -101,6 +133,9 @@ esp_err_t IOConfig::apply_update(const char* key, const char* value_str) {
                     return ESP_ERR_INVALID_ARG;
                 }
             }
+            // Update base and effective states
+            base_switch_states_[idx - 1] = v;
+            base_switch_state_set_[idx - 1] = true;
             switch_states_[idx - 1] = v;
             switch_state_set_[idx - 1] = true;
             return ESP_OK;
@@ -142,9 +177,13 @@ esp_err_t IOConfig::to_json(cJSON* root_object) const {
     for (int i = 0; i < 8; ++i) {
         if (pin_mode_set_[i] || pin_name_set_[i] || switch_state_set_[i] || contact_state_set_[i]) { any = true; break; }
     }
+    if (!any && logic_set_) any = true;
     if (!any) return ESP_OK;
 
     cJSON* obj = cJSON_CreateObject();
+    if (logic_set_) {
+        cJSON_AddStringToObject(obj, "logic", logic_to_string(logic_));
+    }
     for (int i = 0; i < 8; ++i) {
         if (pin_mode_set_[i]) {
             char key[16]; snprintf(key, sizeof(key), "pin%dconfig", i + 1);
@@ -154,8 +193,8 @@ esp_err_t IOConfig::to_json(cJSON* root_object) const {
             char key[16]; snprintf(key, sizeof(key), "pin%dname", i + 1);
             cJSON_AddStringToObject(obj, key, pin_names_[i].c_str());
         }
-        // Always show a switch default for pins configured as SWITCH
-        if (switch_state_set_[i] || (pin_mode_set_[i] && pin_modes_[i] == PinMode::SWITCH)) {
+        // Always show a switch default for pins configured as SWITCH variants
+        if (switch_state_set_[i] || (pin_mode_set_[i] && (pin_modes_[i] == PinMode::SWITCH || pin_modes_[i] == PinMode::SWITCH_HIGH || pin_modes_[i] == PinMode::SWITCH_LOW))) {
             char key[16]; snprintf(key, sizeof(key), "pin%dswitch", i + 1);
             bool val = switch_state_set_[i] ? switch_states_[i] : false; // default OFF
             cJSON_AddBoolToObject(obj, key, val);
@@ -190,6 +229,16 @@ bool IOConfig::is_switch_state_set(int pin_index) const {
     return switch_state_set_[pin_index - 1];
 }
 
+bool IOConfig::base_switch_state(int pin_index) const {
+    if (pin_index < 1 || pin_index > 8) return false;
+    return base_switch_states_[pin_index - 1];
+}
+
+bool IOConfig::is_base_switch_state_set(int pin_index) const {
+    if (pin_index < 1 || pin_index > 8) return false;
+    return base_switch_state_set_[pin_index - 1];
+}
+
 const char* IOConfig::pin_name(int pin_index) const {
     if (pin_index < 1 || pin_index > 8) return "";
     return pin_names_[pin_index - 1].c_str();
@@ -214,6 +263,38 @@ bool IOConfig::contact_state(int pin_index) const {
 bool IOConfig::is_contact_state_set(int pin_index) const {
     if (pin_index < 1 || pin_index > 8) return false;
     return contact_state_set_[pin_index - 1];
+}
+
+void IOConfig::set_switch_state(int pin_index, bool on) {
+    if (pin_index < 1 || pin_index > 8) return;
+    switch_states_[pin_index - 1] = on;
+    switch_state_set_[pin_index - 1] = true;
+}
+
+void IOConfig::clear_switch_state(int pin_index) {
+    if (pin_index < 1 || pin_index > 8) return;
+    switch_state_set_[pin_index - 1] = false;
+}
+
+void IOConfig::reset_effective_switches_to_base() {
+    for (int i = 0; i < 8; ++i) {
+        if (base_switch_state_set_[i]) {
+            switch_states_[i] = base_switch_states_[i];
+            switch_state_set_[i] = true;
+        } else {
+            switch_state_set_[i] = false;
+        }
+    }
+}
+
+void IOConfig::get_effective_switch_snapshot(uint8_t &set_mask_out, uint8_t &on_mask_out) const {
+    set_mask_out = 0; on_mask_out = 0;
+    for (int i = 0; i < 8; ++i) {
+        if (switch_state_set_[i]) {
+            set_mask_out |= (1u << i);
+            if (switch_states_[i]) on_mask_out |= (1u << i);
+        }
+    }
 }
 
 } // namespace config
