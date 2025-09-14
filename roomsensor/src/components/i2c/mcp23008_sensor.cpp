@@ -203,11 +203,7 @@ void MCP23008Sensor::poll() {
     // Maintain _level for backward compatibility with existing callers
     _level = (gpio & 0x01) ? 1.0f : 0.0f;
 
-    // Apply base->effective reset before logic on each poll so overrides are transient
     bool logic_changed_outputs = false;
-    if (_config_ptr) {
-        _config_ptr->reset_effective_switches_to_base();
-    }
     // Apply optional per-module logic and re-apply outputs if it changed anything
     if (_config_ptr && _config_ptr->is_logic_set()) {
         switch (_config_ptr->logic()) {

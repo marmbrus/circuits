@@ -64,20 +64,20 @@ bool apply_lock_keypad_logic(config::IOConfig& cfg, const char* module_name) {
 
         bool active = is_override_active_for_base(cfg, base);
         ESP_LOGD(TAG, "%s override for base '%s' is %s", module_name, base.c_str(), active ? "ACTIVE" : "inactive");
-        if (active) {
-            if (is_unlock) {
-                if (!cfg.switch_state(i) || !cfg.is_switch_state_set(i)) {
-                    ESP_LOGI(TAG, "%s setting '%s' ON (unlock)", module_name, name);
-                    cfg.set_switch_state(i, true);
-                    any_change = true;
-                }
-            } else if (is_lock) {
-                if (cfg.switch_state(i) || !cfg.is_switch_state_set(i)) {
-                    ESP_LOGI(TAG, "%s setting '%s' OFF (unlock state)", module_name, name);
-                    cfg.set_switch_state(i, false);
-                    any_change = true;
-                }
-            }
+
+        // Determine desired effective state: override wins while active; otherwise mirror base
+        bool desired_on = false;
+        bool has_base = cfg.is_base_switch_state_set(i);
+        if (is_unlock) {
+            desired_on = active ? true : (has_base ? cfg.base_switch_state(i) : false);
+        } else if (is_lock) {
+            desired_on = active ? false : (has_base ? cfg.base_switch_state(i) : false);
+        }
+
+        if (!cfg.is_switch_state_set(i) || cfg.switch_state(i) != desired_on) {
+            cfg.set_switch_state(i, desired_on);
+            any_change = true;
+            ESP_LOGI(TAG, "%s setting '%s' %s", module_name, name, desired_on ? "ON" : "OFF");
         }
     }
 

@@ -13,7 +13,8 @@ type Props = {
 // IOConfig supports pin1config..pin8config (persisted enum: SWITCH|SENSOR) and pin1switch..pin8switch (non-persisted boolean)
 export default function IOConfigSection({ modules, config, onEdit, publish }: Props) {
   if (modules.length === 0) return null
-  const pinModes = ['', 'SWITCH', 'SENSOR']
+  const pinModes = ['', 'SWITCH', 'SWITCH_HIGH', 'SWITCH_LOW', 'SENSOR']
+  const logicOptions = ['', 'NONE', 'LOCK_KEYPAD']
   return (
     <MuiBox sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1, width: '100%' }}>
       {modules.map((mod) => {
@@ -23,6 +24,13 @@ export default function IOConfigSection({ modules, config, onEdit, publish }: Pr
           <MuiBox key={mod} sx={{ width: '100%' }}>
             <Box sx={{ border: '1px solid', borderColor: 'divider', p: 1, borderRadius: 1, width: '100%' }}>
               <Typography variant="body2" fontWeight={600}>{mod}</Typography>
+              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.5 }}>
+                <Chip
+                  label={`logic: ${io['logic'] ?? '(unset)'}`}
+                  size="small"
+                  onClick={(e) => { (e.currentTarget as HTMLDivElement).blur?.(); onEdit(mod, 'logic', io['logic'] ?? '', { type: 'select', options: logicOptions, label: 'logic' }) }}
+                />
+              </Stack>
               <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                 {pins.map((idx) => {
                   const pinKey = `pin${idx}config`
@@ -36,7 +44,7 @@ export default function IOConfigSection({ modules, config, onEdit, publish }: Pr
                       <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>pin{idx}</Typography>
                       <Chip label={`name: ${pname ?? '(unset)'}`} size="small" onClick={(e) => { (e.currentTarget as HTMLDivElement).blur?.(); onEdit(mod, nameKey, pname ?? '', { type: 'text', label: nameKey }) }} />
                       <Chip label={`mode: ${mode ?? '(unset)'}`} size="small" onClick={(e) => { (e.currentTarget as HTMLDivElement).blur?.(); onEdit(mod, pinKey, mode ?? '', { type: 'select', options: pinModes, label: pinKey }) }} />
-                      {mode === 'SWITCH' ? (
+                      {mode === 'SWITCH' || mode === 'SWITCH_HIGH' || mode === 'SWITCH_LOW' ? (
                         <FormControlLabel
                           sx={{ ml: 1, whiteSpace: 'nowrap' }}
                           control={<Switch size="small" checked={Boolean(sw)} onChange={(e) => publish(mod, switchKey, e.target.checked)} />}
