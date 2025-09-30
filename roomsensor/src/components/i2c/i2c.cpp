@@ -8,6 +8,9 @@
 #include "opt3001_sensor.h"
 #include "mcp23008_sensor.h"
 #include "i2c_telemetry.h"
+#include "ConfigurationManager.h"
+#include "I2CConfig.h"
+#include <algorithm>
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -156,28 +159,77 @@ bool init_i2c() {
             // Check if this address matches any of our known sensors
             bool recognized = false;
 
+            // Consult configuration for explicit driver selection
+            config::ConfigurationManager &cfg_mgr = config::GetConfigurationManager();
+            const std::string configured_driver = cfg_mgr.i2cmap().get_driver_for_address(addr);
+            if (!configured_driver.empty()) {
+                std::string dlow; dlow.resize(configured_driver.size());
+                std::transform(configured_driver.begin(), configured_driver.end(), dlow.begin(), [](unsigned char c){ return (char)tolower(c); });
+                if (dlow == "none") {
+                    ESP_LOGI(TAG, "I2C address 0x%02X is explicitly disabled by config", addr);
+                    // Skip probing for any drivers at this address
+                    continue;
+                }
+            }
+
+            // Collect candidate indices matching this address
+            int first_match_index = -1;
+            int match_count = 0;
+
             for (int i = 0; i < s_sensor_count; i++) {
                 if (s_sensors[i]->addr() == addr) {
-                    recognized = true;
-                    recognized_flags[i] = true;
-                    ESP_LOGI(TAG, "Found device at address 0x%02X: %s", addr, s_sensors[i]->name().c_str());
+                    if (first_match_index < 0) first_match_index = i;
+                    match_count++;
+                }
+            }
 
-                    // Try to initialize the sensor if it's not already initialized
-                    if (!s_sensors[i]->isInitialized()) {
-                        // Use the base class init method with bus handle
-                        bool initialized = s_sensors[i]->init(s_i2c_bus);
+            if (match_count > 0) {
+                recognized = true;
+                int chosen_index = -1;
 
+                if (!configured_driver.empty()) {
+                    // Prefer the driver whose name().find(configured_driver) case-insensitive matches
+                    for (int i = 0; i < s_sensor_count; i++) {
+                        if (s_sensors[i]->addr() == addr) {
+                            std::string n = s_sensors[i]->name();
+                            // Normalize to lowercase
+                            std::string nlow; nlow.resize(n.size());
+                            std::transform(n.begin(), n.end(), nlow.begin(), [](unsigned char c){ return (char)tolower(c); });
+                            std::string dlow; dlow.resize(configured_driver.size());
+                            std::transform(configured_driver.begin(), configured_driver.end(), dlow.begin(), [](unsigned char c){ return (char)tolower(c); });
+                            if (nlow.find(dlow) != std::string::npos) { chosen_index = i; break; }
+                        }
+                    }
+                    if (chosen_index < 0) {
+                        ESP_LOGW(TAG, "I2C address 0x%02X has configured driver '%s' but no candidate matches by name; falling back.", addr, configured_driver.c_str());
+                    }
+                }
+
+                if (chosen_index < 0) {
+                    if (match_count == 1) {
+                        chosen_index = first_match_index; // unambiguous
+                    } else {
+                        ESP_LOGW(TAG, "Multiple drivers match I2C address 0x%02X but no explicit config in i2c.%02x; please configure.", addr, addr);
+                        // Do not auto-initialize ambiguous address without config
+                    }
+                }
+
+                if (chosen_index >= 0) {
+                    recognized_flags[chosen_index] = true;
+                    ESP_LOGI(TAG, "Found device at address 0x%02X: %s", addr, s_sensors[chosen_index]->name().c_str());
+
+                    if (!s_sensors[chosen_index]->isInitialized()) {
+                        bool initialized = s_sensors[chosen_index]->init(s_i2c_bus);
                         if (initialized) {
-                            ESP_LOGI(TAG, "Successfully initialized %s", s_sensors[i]->name().c_str());
+                            ESP_LOGI(TAG, "Successfully initialized %s", s_sensors[chosen_index]->name().c_str());
                             initialized_count++;
                         } else {
-                            ESP_LOGW(TAG, "Failed to initialize %s", s_sensors[i]->name().c_str());
+                            ESP_LOGW(TAG, "Failed to initialize %s", s_sensors[chosen_index]->name().c_str());
                         }
                     } else {
-                        ESP_LOGI(TAG, "%s already initialized", s_sensors[i]->name().c_str());
+                        ESP_LOGI(TAG, "%s already initialized", s_sensors[chosen_index]->name().c_str());
                         initialized_count++;
                     }
-                    break;
                 }
             }
 

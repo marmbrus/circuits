@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { SensorState } from '../types'
 import { useSensors } from '../mqttStore'
 import SensorConfigView from './SensorConfig'
+import I2CConfigSection from './I2CConfig'
 import FriendlyDuration, { formatDuration } from './FriendlyDuration'
 
 
@@ -271,23 +272,7 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 								presentIOModules={presentIO}
 							/>
 						)}
-					{sensor.i2c && sensor.i2c.devices?.length ? (
-						<Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
-							<AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
-								<Stack direction="row" spacing={1} alignItems="center">
-									<Typography variant="subtitle2">I2C devices</Typography>
-									<Chip label={String(sensor.i2c.devices.length)} size="small" />
-								</Stack>
-							</AccordionSummary>
-							<AccordionDetails>
-								<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-									{sensor.i2c.devices.map((d, idx) => (
-										<Chip key={`${d.addr}-${idx}`} size="small" label={`${d.addr}${d.driver ? ` ${d.driver}` : ''}`} onClick={() => setI2cOpen({ open: true, device: d })} />
-									))}
-								</Stack>
-							</AccordionDetails>
-						</Accordion>
-					) : null}
+                    <I2CConfigSection sensor={sensor} publishConfig={publishConfig} />
 					<Accordion disableGutters elevation={0} defaultExpanded={false} sx={{ border: '1px solid', borderColor: 'divider', '&:before': { display: 'none' } }}>
 						<AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
 							<Stack direction="row" spacing={1} alignItems="center">

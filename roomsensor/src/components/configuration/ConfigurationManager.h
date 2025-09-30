@@ -19,6 +19,7 @@ class LEDConfig;
 class A2DConfig;
 class IOConfig;
 class MotionConfig;
+class I2CConfig;
 
 class ConfigurationManager {
 public:
@@ -57,6 +58,8 @@ public:
     IOConfig& io6();
     IOConfig& io7();
     IOConfig& io8();
+    // I2C address->driver mapping
+    I2CConfig& i2cmap();
 
     // Returns all LED configs that are active (dataGPIO is set)
     std::vector<LEDConfig*> active_leds() const;
@@ -100,6 +103,7 @@ private:
     std::unique_ptr<IOConfig> io6_module_;
     std::unique_ptr<IOConfig> io7_module_;
     std::unique_ptr<IOConfig> io8_module_;
+    std::unique_ptr<I2CConfig> i2cmap_module_;
     std::vector<ConfigurationModule*> modules_;
 };
 

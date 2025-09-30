@@ -7,6 +7,7 @@
 #include "IOConfig.h"
 #include "MotionConfig.h"
 #include "cJSON.h"
+#include "I2CConfig.h"
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -63,6 +64,10 @@ void ConfigurationManager::register_modules() {
     io6_module_.reset(new IOConfig("io6")); modules_.push_back(io6_module_.get());
     io7_module_.reset(new IOConfig("io7")); modules_.push_back(io7_module_.get());
     io8_module_.reset(new IOConfig("io8")); modules_.push_back(io8_module_.get());
+
+    // I2C address mapping module
+    i2cmap_module_.reset(new I2CConfig());
+    modules_.push_back(i2cmap_module_.get());
 }
 
 ConfigurationModule* ConfigurationManager::find_module(const char* module_name) {
@@ -105,6 +110,8 @@ IOConfig& ConfigurationManager::io7() { return *io7_module_; }
 IOConfig& ConfigurationManager::io8() { return *io8_module_; }
 
 MotionConfig& ConfigurationManager::motion() { return *motion_module_; }
+
+I2CConfig& ConfigurationManager::i2cmap() { return *i2cmap_module_; }
 
 std::vector<LEDConfig*> ConfigurationManager::active_leds() const {
     std::vector<LEDConfig*> result;

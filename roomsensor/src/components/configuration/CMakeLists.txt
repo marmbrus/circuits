@@ -8,6 +8,7 @@ idf_component_register(
         "A2DConfig.cpp"
         "IOConfig.cpp"
         "MotionConfig.cpp"
+        "I2CConfig.cpp"
     INCLUDE_DIRS "." "../common"
     REQUIRES nvs_flash json
 )
