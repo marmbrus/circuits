@@ -7,6 +7,7 @@
 #include "i2c_master_ext.h"
 #include "opt3001_sensor.h"
 #include "mcp23008_sensor.h"
+#include "lmp91000_sensor.h"
 #include "i2c_telemetry.h"
 #include "ConfigurationManager.h"
 #include "I2CConfig.h"
@@ -31,6 +32,8 @@ static I2CSensor* s_sensors[] = {
     new ADS1115Sensor(0x49),
     new ADS1115Sensor(0x4A),
     new ADS1115Sensor(0x4B),
+    // LMP91000 potentiostat (default address often 0x48)
+    new LMP91000Sensor(0x48),
     // MCP23008 GPIO expanders at all valid addresses (0x20-0x27)
     new MCP23008Sensor(0x20), //Conflicts with PD controller
     new MCP23008Sensor(0x21),

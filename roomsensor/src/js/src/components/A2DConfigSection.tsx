@@ -12,7 +12,7 @@ type Props = {
 export default function A2DConfigSection({ modules, config, onEdit }: Props) {
   if (modules.length === 0) return null
   const gains = ['FULL','FSR_6V144','FSR_4V096','FSR_2V048','FSR_1V024','FSR_0V512','FSR_0V256']
-  const sensors = ['', 'BTS7002', 'RSUV']
+  const sensors = ['', 'BTS7002', 'RSUV', 'CO_SPEC']
   return (
     <MuiBox sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
       {modules.map((mod) => {

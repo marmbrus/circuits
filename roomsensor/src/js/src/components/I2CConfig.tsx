@@ -13,6 +13,7 @@ type Props = {
 const AVAILABLE_DRIVERS = [
 	// Keep in sync with firmware driver names used in tags and logs
 	'mcp23008',
+	'lmp91000',
 	'sen55',
 	'scd4x',
 	'bme280',

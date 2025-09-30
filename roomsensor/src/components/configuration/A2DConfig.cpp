@@ -17,7 +17,7 @@ static bool is_valid_gain(const char* g) {
 
 static bool is_valid_sensor(const char* s) {
 	if (!s) return false;
-	return strcmp(s, "BTS7002") == 0 || strcmp(s, "RSUV") == 0;
+    return strcmp(s, "BTS7002") == 0 || strcmp(s, "RSUV") == 0 || strcmp(s, "CO_SPEC") == 0;
 }
 
 A2DConfig::A2DConfig(const char* instance_name) : name_(instance_name ? instance_name : "a2d") {

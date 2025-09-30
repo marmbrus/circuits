@@ -11,6 +11,7 @@ idf_component_register(
         "ads1115_sensor.cpp"
         "opt3001_sensor.cpp"
         "mcp23008_sensor.cpp"
+        "lmp91000_sensor.cpp"
         "mcp23088_keypad.cpp"
         "i2c_telemetry.cpp"
         "metrics_tags.cpp"

@@ -173,7 +173,7 @@ void ADS1115Sensor::poll() {
 	}
 
 	// Read all 4 single-ended channels in sequence; report as metrics
-	static const char* METRIC_NAME = "volts";
+    static const char* METRIC_NAME = "volts";
 	const uint16_t mux_opts[4] = { CFG_MUX_AIN0_GND, CFG_MUX_AIN1_GND, CFG_MUX_AIN2_GND, CFG_MUX_AIN3_GND };
 
 	// Select A2D configuration module for this device address
@@ -231,7 +231,7 @@ void ADS1115Sensor::poll() {
 			}
 		}
 
-		float volts = (float)raw / 32768.0f * fs; // scale signed value to volts
+        float volts = (float)raw / 32768.0f * fs; // scale signed value to volts
 
 		ESP_LOGD(TAG, "addr=0x%02X ch=%d raw=0x%04X(%d) -> %.6f V", _i2c_addr, ch + 1, raw_be, raw, volts);
 
@@ -242,7 +242,33 @@ void ADS1115Sensor::poll() {
 			remove_tag_from_collection(_channel_tags[ch], "name");
 		}
 
-		report_metric(METRIC_NAME, volts, _channel_tags[ch]);
+        report_metric(METRIC_NAME, volts, _channel_tags[ch]);
+
+        // If configured as SPEC CO sensor, compute ppm
+        if (sensor_str == "CO_SPEC") {
+            // SPEC 110-102 CO sensor with LMP91000 potentiostat
+            // Sensitivity: typically 4.75 nA/ppm (0.475 mV/ppm at 100kΩ RTIA)
+            const float default_s_nA_per_ppm = 4.75f;
+            float s_amps_per_ppm = default_s_nA_per_ppm * 1e-9f;
+
+            // Reference voltage: LMP91000 INT_Z=50% of 3.3V supply = 1.65 V
+            const float v_ref = 1.65f;
+
+            // TIA feedback resistor: LMP91000 internal RTIA = 120 kΩ (per sensor spec)
+            const float r_f_ohms = 120000.0f;
+
+            // Convert volts -> sensor current
+            float i_meas = (volts - v_ref) / r_f_ohms; // Amperes
+
+            // Baseline removal: simplistic zero (improve later with calibration/temperature comp)
+            float i_co = i_meas; // A
+
+            // ppm = I / S
+            float ppm = i_co / s_amps_per_ppm;
+
+            // Report CO ppm as separate metric
+            report_metric("co_ppm", ppm, _channel_tags[ch]);
+        }
 
 		// Derived metrics for configured sensors
 		if (!sensor_str.empty()) {
