@@ -1261,6 +1261,149 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "easyeda2kicad:73412-0110"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "RF"
+				(at 0 20.32 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "73412-0110"
+				(at 0 -15.24 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:ANT-SMD_73412-0110"
+				(at 0 -17.78 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/RF-Connectors-Coaxial-Connectors_MOLEX-73412-0110_C434806.html"
+				(at 0 -20.32 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "LCSC Part" "C434806"
+				(at 0 -22.86 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "73412-0110_0_1"
+				(rectangle
+					(start -7.62 10.16)
+					(end 7.62 -5.08)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin unspecified line
+					(at -12.7 5.08 0)
+					(length 5.08)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 0 15.24 270)
+					(length 5.08)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 0 -10.16 90)
+					(length 5.08)
+					(name "SIG"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 12.7 5.08 180)
+					(length 5.08)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "power:+VDC"
 			(power)
 			(pin_numbers
@@ -1500,10 +1643,40 @@
 		)
 	)
 	(junction
+		(at 92.71 36.83)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "24cf5e2a-b8a8-4273-af7b-77118d4fdaca")
+	)
+	(junction
+		(at 138.43 41.91)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "28f450b4-5d0d-4194-bf21-fca46f795f8b")
+	)
+	(junction
 		(at 97.79 29.21)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "728ea755-9fc1-4793-b90c-9bae1251b40e")
+	)
+	(junction
+		(at 138.43 36.83)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "9b595964-32b1-47e0-a7b1-720e3c5105f9")
+	)
+	(junction
+		(at 105.41 69.85)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "be0cc099-7e7a-46c0-8461-2ed908d33f91")
+	)
+	(junction
+		(at 105.41 41.91)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "c490a4d2-7fe8-4d0b-b695-9eec237ddba0")
 	)
 	(junction
 		(at 39.37 29.21)
@@ -1523,25 +1696,91 @@
 		(color 0 0 0 0)
 		(uuid "ed22a996-99fc-4426-8f80-1f42f3d01371")
 	)
-	(wire
-		(pts
-			(xy 97.79 36.83) (xy 97.79 29.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1dfc3bef-44e1-441d-a041-2e5f6cf3a991")
+	(junction
+		(at 92.71 80.01)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "f1974262-d437-47db-a15b-f9ded9a25a1a")
 	)
 	(wire
 		(pts
-			(xy 143.51 36.83) (xy 97.79 36.83)
+			(xy 80.01 80.01) (xy 92.71 80.01)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "568a4421-c4aa-4f5f-8a11-586945f1c97e")
+		(uuid "19ed4953-7dc1-44d1-9dcb-f8ca68207834")
+	)
+	(wire
+		(pts
+			(xy 138.43 39.37) (xy 138.43 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1b4c01f1-aa93-433a-9062-35f6a0585e04")
+	)
+	(wire
+		(pts
+			(xy 138.43 36.83) (xy 143.51 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1b9b1625-5ec8-411b-ac4c-6b733536215a")
+	)
+	(wire
+		(pts
+			(xy 92.71 36.83) (xy 138.43 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "29cd6033-fb82-42c7-bce5-018f0865eeeb")
+	)
+	(wire
+		(pts
+			(xy 105.41 41.91) (xy 105.41 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2c811671-b31b-438d-8c85-a294e63e520b")
+	)
+	(wire
+		(pts
+			(xy 143.51 44.45) (xy 138.43 44.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2e5cf084-822a-4b95-90f1-c304d2580bd7")
+	)
+	(wire
+		(pts
+			(xy 97.79 29.21) (xy 97.79 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "517d16fb-4c3c-4fa8-b5ce-5fd0196f2aec")
+	)
+	(wire
+		(pts
+			(xy 143.51 39.37) (xy 138.43 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "52489a1a-cb24-4bc5-9705-6917bbf1b2d3")
 	)
 	(wire
 		(pts
@@ -1555,13 +1794,33 @@
 	)
 	(wire
 		(pts
-			(xy 143.51 41.91) (xy 52.07 41.91)
+			(xy 92.71 80.01) (xy 105.41 80.01)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "665c1155-0310-4e89-9b68-97c7c1193300")
+		(uuid "7563e628-4cee-400f-95c5-3d5c3842ae48")
+	)
+	(wire
+		(pts
+			(xy 92.71 36.83) (xy 92.71 54.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7b437a7e-e3f5-4a53-982e-e52db3299cc6")
+	)
+	(wire
+		(pts
+			(xy 138.43 41.91) (xy 143.51 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7c053e37-7a06-423a-aa56-20bf6442692c")
 	)
 	(wire
 		(pts
@@ -1575,6 +1834,16 @@
 	)
 	(wire
 		(pts
+			(xy 105.41 69.85) (xy 105.41 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9caf441f-d346-4686-afcf-d8ec6097c5f3")
+	)
+	(wire
+		(pts
 			(xy 39.37 29.21) (xy 52.07 29.21)
 		)
 		(stroke
@@ -1582,6 +1851,56 @@
 			(type default)
 		)
 		(uuid "b85dad0e-820a-459a-a586-e4c3a1d226a6")
+	)
+	(wire
+		(pts
+			(xy 52.07 36.83) (xy 92.71 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ba88674c-5214-477a-9c3d-9d8118ca160b")
+	)
+	(wire
+		(pts
+			(xy 52.07 36.83) (xy 52.07 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bd8c0d51-74fc-4800-92dc-a2d931ed25b8")
+	)
+	(wire
+		(pts
+			(xy 105.41 41.91) (xy 138.43 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c81d6da8-9b46-4a8d-b7e1-99426c7d2e47")
+	)
+	(wire
+		(pts
+			(xy 97.79 41.91) (xy 105.41 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cb82aaa2-c286-4861-85be-445c01df1954")
+	)
+	(wire
+		(pts
+			(xy 138.43 44.45) (xy 138.43 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dea0d0c4-5cb1-40c1-b571-4a555ea1cae7")
 	)
 	(wire
 		(pts
@@ -1595,13 +1914,13 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 41.91) (xy 52.07 29.21)
+			(xy 80.01 69.85) (xy 80.01 80.01)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "efd3eec2-6871-41c0-9a11-6aa930dcfef0")
+		(uuid "f7156d13-e08c-448f-b440-1c6f3a8a5f42")
 	)
 	(symbol
 		(lib_id "Mechanical:MountingHole")
@@ -1662,6 +1981,70 @@
 			(project ""
 				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
 					(reference "H7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 50.8 62.23 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "44f73765-f2e8-41e8-b2d6-84cddb9e7ecb")
+		(property "Reference" "H6"
+			(at 53.34 60.9599 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 53.34 63.4999 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "MountingHole:MountingHole_3.7mm"
+			(at 50.8 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 50.8 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 50.8 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "UHP200-Conn"
+				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
+					(reference "H6")
 					(unit 1)
 				)
 			)
@@ -1874,6 +2257,153 @@
 			(project ""
 				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
 					(reference "J1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 22.86 62.23 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "9c0c8136-1c51-40be-a187-08cdae3ba6e7")
+		(property "Reference" "H5"
+			(at 25.4 60.9599 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 25.4 63.4999 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "MountingHole:MountingHole_3.7mm"
+			(at 22.86 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 22.86 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 22.86 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "UHP200-Conn"
+				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
+					(reference "H5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:73412-0110")
+		(at 92.71 64.77 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "9ee94442-f2d1-44c4-9642-534d9cd932bc")
+		(property "Reference" "RF1"
+			(at 107.95 64.4046 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "73412-0110"
+			(at 107.95 66.9446 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:ANT-SMD_73412-0110"
+			(at 92.71 46.99 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/RF-Connectors-Coaxial-Connectors_MOLEX-73412-0110_C434806.html"
+			(at 92.71 44.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 92.71 64.77 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C434806"
+			(at 92.71 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "3"
+			(uuid "7f8f3681-9683-411e-b8a7-e2b9e0cee1c5")
+		)
+		(pin "1"
+			(uuid "fc6103d0-6cab-4f37-b49a-13dd9aa61e61")
+		)
+		(pin "4"
+			(uuid "65555c26-6094-466f-a6d5-cf4ec19c2437")
+		)
+		(pin "2"
+			(uuid "3a8e4e71-11d7-4bdb-b4a2-df745d40774c")
+		)
+		(instances
+			(project ""
+				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
+					(reference "RF1")
 					(unit 1)
 				)
 			)

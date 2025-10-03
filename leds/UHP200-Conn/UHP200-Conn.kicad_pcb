@@ -813,6 +813,7 @@
 		(property "Reference" "RF1"
 			(at 0 -5.4 0)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "a5085f8b-8a4e-4065-911e-311627833531")
 			(effects
 				(font
@@ -1517,6 +1518,7 @@
 		(property "Reference" "H5"
 			(at 0 -4.65 0)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "944a652d-18ed-46b8-accd-ebe7d21b1344")
 			(effects
 				(font
@@ -1616,6 +1618,7 @@
 		(property "Reference" "H6"
 			(at 0 -4.65 0)
 			(layer "F.SilkS")
+			(hide yes)
 			(uuid "9e09366e-5111-48ae-a76d-8d3a873a5027")
 			(effects
 				(font
@@ -1884,6 +1887,32 @@
 		(fill no)
 		(layer "Edge.Cuts")
 		(uuid "7ca092d2-813d-47c0-869a-5ac87a13093c")
+	)
+	(gr_text "UHP-200-CONN v0.1"
+		(at 38.15 125.25 0)
+		(layer "F.SilkS")
+		(uuid "1999bf34-9dab-4861-8f20-323266298d2a")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "V+"
+		(at 39.15 121.65 0)
+		(layer "F.SilkS")
+		(uuid "2b1f635f-9e0a-47a3-b864-11ae722a3aba")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
 	)
 	(gr_text "V+"
 		(at 48.25 100.75 0)
