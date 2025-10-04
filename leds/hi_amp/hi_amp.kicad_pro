@@ -124,7 +124,7 @@
       },
       "rules": {
         "max_error": 0.005,
-        "min_clearance": 0.127,
+        "min_clearance": 0.16,
         "min_connection": 0.0,
         "min_copper_edge_clearance": 0.5,
         "min_groove_width": 0.0,
@@ -137,8 +137,8 @@
         "min_text_height": 0.8,
         "min_text_thickness": 0.08,
         "min_through_hole_diameter": 0.15,
-        "min_track_width": 0.127,
-        "min_via_annular_width": 0.05,
+        "min_track_width": 0.15,
+        "min_via_annular_width": 0.254,
         "min_via_diameter": 0.25,
         "solder_mask_to_copper_clearance": 0.005,
         "use_height_for_length_calcs": true
@@ -476,7 +476,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "leds.kicad_pro",
+    "filename": "hi_amp.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -648,10 +648,6 @@
     [
       "971439fe-c8ce-4450-821c-537e8691d398",
       "esp32"
-    ],
-    [
-      "60655049-fbf3-4dfc-8be5-e92116ff6bf0",
-      "usbcpd"
     ],
     [
       "aa9739d0-05d8-4c74-a4fd-846c263eed0b",

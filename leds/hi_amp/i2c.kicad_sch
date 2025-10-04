@@ -1056,7 +1056,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "48ec50f3-b6f7-462d-8f5f-038ece5b95f0")
-		(property "Reference" "CN1"
+		(property "Reference" "CN4"
 			(at 193.04 71.1199 0)
 			(effects
 				(font
@@ -1128,7 +1128,7 @@
 		(instances
 			(project "espamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/35a4a023-801a-4ad8-aaa9-651a71e86f56"
-					(reference "CN1")
+					(reference "CN4")
 					(unit 1)
 				)
 			)
@@ -1144,7 +1144,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "59b95353-e257-4039-adab-1a20358e620c")
-		(property "Reference" "#PWR028"
+		(property "Reference" "#PWR016"
 			(at 170.18 67.31 0)
 			(effects
 				(font
@@ -1195,7 +1195,7 @@
 		(instances
 			(project "espamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/35a4a023-801a-4ad8-aaa9-651a71e86f56"
-					(reference "#PWR028")
+					(reference "#PWR016")
 					(unit 1)
 				)
 			)
@@ -1211,7 +1211,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7bf62a04-4c06-404d-98a9-364b9287ec7f")
-		(property "Reference" "R22"
+		(property "Reference" "R14"
 			(at 156.21 64.7699 0)
 			(effects
 				(font
@@ -1265,7 +1265,7 @@
 		(instances
 			(project "espamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/35a4a023-801a-4ad8-aaa9-651a71e86f56"
-					(reference "R22")
+					(reference "R14")
 					(unit 1)
 				)
 			)
@@ -1281,7 +1281,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a47437cd-72e1-4213-9450-b774623eb34b")
-		(property "Reference" "R21"
+		(property "Reference" "R13"
 			(at 143.51 64.7699 0)
 			(effects
 				(font
@@ -1335,7 +1335,7 @@
 		(instances
 			(project "espamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/35a4a023-801a-4ad8-aaa9-651a71e86f56"
-					(reference "R21")
+					(reference "R13")
 					(unit 1)
 				)
 			)
