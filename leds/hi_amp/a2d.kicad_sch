@@ -521,6 +521,12 @@
 		(uuid "151c09c2-8061-4a9e-a14e-123d115ae938")
 	)
 	(junction
+		(at 62.23 62.23)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "55e44a5c-3d4c-4c6d-91c5-9d0161864f8a")
+	)
+	(junction
 		(at 38.1 50.8)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -549,6 +555,16 @@
 			(type default)
 		)
 		(uuid "9b2b0f4a-9688-4751-ad85-fc27d3a2efee")
+	)
+	(wire
+		(pts
+			(xy 22.86 62.23) (xy 62.23 62.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0419d89c-361b-4626-aeb5-427a392b1267")
 	)
 	(wire
 		(pts
@@ -592,7 +608,7 @@
 	)
 	(wire
 		(pts
-			(xy 62.23 58.42) (xy 62.23 71.12)
+			(xy 62.23 58.42) (xy 62.23 62.23)
 		)
 		(stroke
 			(width 0)
@@ -662,6 +678,26 @@
 	)
 	(wire
 		(pts
+			(xy 62.23 62.23) (xy 62.23 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9558687c-e620-4011-acb7-aea363f62c03")
+	)
+	(wire
+		(pts
+			(xy 22.86 35.56) (xy 22.86 62.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9c40efa7-58e3-4504-8eb8-89a1546d74dc")
+	)
+	(wire
+		(pts
 			(xy 50.8 50.8) (xy 66.04 50.8)
 		)
 		(stroke
@@ -669,6 +705,16 @@
 			(type default)
 		)
 		(uuid "bd0f6ce9-6763-4eee-ae21-ed61d7bebb73")
+	)
+	(wire
+		(pts
+			(xy 66.04 35.56) (xy 22.86 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c9330203-5995-488e-a3f6-b9e7ca46bd79")
 	)
 	(wire
 		(pts
@@ -874,7 +920,6 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "4fb243f7-cd6a-4a6f-b227-8cf232958ae7")
 		(property "Reference" "U5"
 			(at 78.74 33.02 0)
@@ -885,7 +930,7 @@
 			)
 		)
 		(property "Value" "ADS1115IDGSR"
-			(at 78.74 35.56 0)
+			(at 78.486 29.718 0)
 			(effects
 				(font
 					(size 1.27 1.27)

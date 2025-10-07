@@ -720,6 +720,12 @@
 		(color 0 0 0 0)
 		(uuid "fad84a7e-a6a8-4d1b-a2bb-8b8c1bb3cd1a")
 	)
+	(junction
+		(at 49.53 36.83)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "fb048a95-9f9b-4bf1-9183-2a5c2a66aa9a")
+	)
 	(wire
 		(pts
 			(xy 175.26 27.94) (xy 198.12 27.94)
@@ -1412,7 +1418,7 @@
 	)
 	(wire
 		(pts
-			(xy 49.53 36.83) (xy 45.72 36.83)
+			(xy 45.72 36.83) (xy 49.53 36.83)
 		)
 		(stroke
 			(width 0)
@@ -1449,6 +1455,16 @@
 			(type default)
 		)
 		(uuid "cb9374d0-890e-4bfc-b35d-238a43e5a2fc")
+	)
+	(wire
+		(pts
+			(xy 49.53 36.83) (xy 60.96 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ceaf6f4e-9b83-427c-a337-7805d839eb55")
 	)
 	(wire
 		(pts
@@ -1579,6 +1595,16 @@
 			(justify left bottom)
 		)
 		(uuid "04bf00f7-056b-45b0-861d-57aa40ebbcbc")
+	)
+	(label "VSYS"
+		(at 36.83 36.83 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "171fcd78-fca2-42fd-9865-3dafd8e99c9a")
 	)
 	(symbol
 		(lib_id "easyeda2kicad:LabeledTestPoint")
@@ -2160,6 +2186,82 @@
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
 					(reference "CN3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:LabeledTestPoint")
+		(at 49.53 36.83 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "7475c450-e6c7-41fe-8772-32ba25b6aec5")
+		(property "Reference" "TP101"
+			(at 49.53 29.972 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "LabeledTestPoint"
+			(at 49.53 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
+			(at 54.61 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 54.61 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 49.53 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" "VSYS"
+			(at 52.07 33.5279 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "a660e2dd-a952-4310-bbb5-970065a92e18")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "TP101")
 					(unit 1)
 				)
 			)
@@ -3736,8 +3838,8 @@
 		)
 	)
 	(sheet
-		(at 49.53 24.13)
-		(size 26.67 25.4)
+		(at 60.96 31.75)
+		(size 15.24 10.16)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
@@ -3752,7 +3854,7 @@
 		)
 		(uuid "aa9739d0-05d8-4c74-a4fd-846c263eed0b")
 		(property "Sheetname" "buckconverter"
-			(at 49.53 23.4184 0)
+			(at 60.96 31.0384 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3761,7 +3863,7 @@
 			)
 		)
 		(property "Sheetfile" "buckconverter.kicad_sch"
-			(at 49.53 49.4796 0)
+			(at 60.96 42.4946 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3770,7 +3872,7 @@
 			)
 		)
 		(pin "VIN" input
-			(at 49.53 36.83 180)
+			(at 60.96 36.83 180)
 			(uuid "930f4030-57da-4afc-acaf-9d365a8b6e51")
 			(effects
 				(font
