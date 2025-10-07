@@ -35,6 +35,8 @@ private:
     std::vector<uint8_t> prev2_;
     uint64_t last_step_us_ = 0;
     uint64_t repeat_start_us_ = 0;
+    uint32_t generation_count_ = 0;
+    bool steady_reported_ = false;
     int speed_percent_ = 50; // 0..100
     int brightness_percent_ = 100; // 0..100
     uint8_t base_r_ = 255, base_g_ = 255, base_b_ = 255, base_w_ = 0;

@@ -2,8 +2,43 @@
 #include "LEDStrip.h"
 #include <algorithm>
 #include <strings.h>
+#include "communication.h"
+#include "esp_log.h"
+#include "cJSON.h"
+
+// External declarations provided by wifi.cpp (keep local to this TU)
+extern const uint8_t* get_device_mac(void);
 
 namespace leds {
+
+static const char* TAG = "life";
+
+static void publish_life_complete_json(uint32_t generations) {
+    const uint8_t* mac = get_device_mac();
+    if (!mac) return;
+    char mac_nosep[13];
+    snprintf(mac_nosep, sizeof(mac_nosep), "%02x%02x%02x%02x%02x%02x",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    char topic[80];
+    snprintf(topic, sizeof(topic), "sensor/%s/life/complete", mac_nosep);
+
+    cJSON* root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "generations", (double)generations);
+    char* json = cJSON_PrintUnformatted(root);
+    if (json) {
+        publish_to_topic(topic, json, 1, 0);
+        cJSON_free(json);
+    }
+    cJSON_Delete(root);
+}
+
+static void report_generations_metric(uint32_t generations) {
+    TagCollection* tags = create_tag_collection();
+    if (!tags) return;
+    (void)add_tag_to_collection(tags, "type", "steady");
+    report_metric("generations", (float)generations, tags);
+    free_tag_collection(tags);
+}
 
 void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
     (void)now_us;
@@ -12,6 +47,8 @@ void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
     const size_t total = rows * cols;
     current_.assign(total, 0);
     next_.assign(total, 0);
+    generation_count_ = 0;
+    steady_reported_ = false;
     // Seed based on start_string_
     bool use_simple = false;
     if (!start_string_.empty()) {
@@ -90,6 +127,20 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
 
     // Detect repeats and extinct states in RANDOM mode; re-seed if extinct or after 10s of repetition
     bool any_alive = std::any_of(next_.begin(), next_.end(), [](uint8_t v){ return v != 0; });
+    // Check for repeating next state (period 1 or 2), regardless of mode for metrics purposes
+    bool eq1 = (!prev1_.empty() && prev1_.size() == next_.size() && std::equal(next_.begin(), next_.end(), prev1_.begin()));
+    bool eq2 = (!prev2_.empty() && prev2_.size() == next_.size() && std::equal(next_.begin(), next_.end(), prev2_.begin()));
+    bool repeating_next_any_mode = eq1 || eq2;
+
+    // On first time we detect a steady condition (extinction or repetition), publish metrics
+    if (!steady_reported_ && (!any_alive || repeating_next_any_mode)) {
+        uint32_t gens_to_report = generation_count_ + 1; // next_ would be applied next
+        ESP_LOGI(TAG, "life steady detected after %u generations", (unsigned)gens_to_report);
+        publish_life_complete_json(gens_to_report);
+        report_generations_metric(gens_to_report);
+        steady_reported_ = true;
+    }
+
     if (!simple_mode_ && !any_alive) {
         // Immediate reseed on extinction
         uint32_t seed = static_cast<uint32_t>((now_us ^ (now_us >> 32)) + 0x9E3779B9u);
@@ -97,13 +148,13 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
         prev1_.clear();
         prev2_.clear();
         repeat_start_us_ = 0;
+        generation_count_ = 0;
+        steady_reported_ = false;
     } else {
         // Check if next frame will repeat with period 1 or 2
         bool repeating_next = false;
         if (!simple_mode_) {
-            bool eq1 = (!prev1_.empty() && prev1_.size() == next_.size() && std::equal(next_.begin(), next_.end(), prev1_.begin()));
-            bool eq2 = (!prev2_.empty() && prev2_.size() == next_.size() && std::equal(next_.begin(), next_.end(), prev2_.begin()));
-            repeating_next = eq1 || eq2;
+            repeating_next = repeating_next_any_mode;
             if (repeating_next) {
                 if (repeat_start_us_ == 0) repeat_start_us_ = now_us;
                 if ((now_us - repeat_start_us_) >= 10ull * 1000 * 1000) {
@@ -112,6 +163,8 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
                     prev1_.clear();
                     prev2_.clear();
                     repeat_start_us_ = 0;
+                    generation_count_ = 0;
+                    steady_reported_ = false;
                     // After reseed, render and return
                     render_current(strip);
                     return;
@@ -125,6 +178,7 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
         prev2_ = prev1_;
         prev1_ = current_;
         current_.swap(next_);
+        generation_count_++;
     }
 
     render_current(strip);

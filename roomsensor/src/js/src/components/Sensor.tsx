@@ -413,6 +413,30 @@ export default function Sensor({ sensor, forceExpanded, onExpandedChange, forceL
 							</div>
 						)
 					})()}
+					<Stack spacing={2} sx={{ mt: 2, mb: 2 }}>
+						<FormControl size="small" sx={{ minWidth: 200 }}>
+							<InputLabel id={`ota-channel-${sensor.mac}`}>OTA Channel</InputLabel>
+							<Select
+								labelId={`ota-channel-${sensor.mac}`}
+								label="OTA Channel"
+								value={String(sensor.config?.wifi?.channel || 'prod')}
+								onChange={(e) => {
+									const newChannel = String(e.target.value)
+									if (newChannel === 'prod') {
+										// Clear channel to use default prod
+										publishConfig(sensor.mac, 'wifi', 'channel', '')
+									} else {
+										publishConfig(sensor.mac, 'wifi', 'channel', newChannel)
+									}
+								}}
+							>
+								<MenuItem value="prod">prod (default)</MenuItem>
+								<MenuItem value="dev">dev</MenuItem>
+								<MenuItem value="beta">beta</MenuItem>
+								<MenuItem value="staging">staging</MenuItem>
+							</Select>
+						</FormControl>
+					</Stack>
 					<pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{JSON.stringify(sensor.otaStatus ?? {}, null, 2)}</pre>
 				</DialogContent>
 			</Dialog>
