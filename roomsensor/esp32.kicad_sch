@@ -1867,6 +1867,221 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "easyeda2kicad:BM06B-SRSS-TB(LF)(SN)"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "U"
+				(at 0 12.7 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "BM06B-SRSS-TB(LF)(SN)"
+				(at 0 -7.62 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:CONN-SMD-6P-P1.00_BM06B-SRSS-TB-LF-SN"
+				(at 0 -10.16 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/Others_JST-Sales-America__JST-Sales-America-BM06B-SRSS-TB-LF-SN_C160392.html"
+				(at 0 -12.7 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "LCSC Part" "C160392"
+				(at 0 -15.24 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "BM06B-SRSS-TB(LF)(SN)_0_1"
+				(rectangle
+					(start -10.16 2.54)
+					(end 7.62 -5.08)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin unspecified line
+					(at -15.24 -2.54 0)
+					(length 5.08)
+					(name "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at -7.62 7.62 270)
+					(length 5.08)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at -5.08 7.62 270)
+					(length 5.08)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at -2.54 7.62 270)
+					(length 5.08)
+					(name "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 0 7.62 270)
+					(length 5.08)
+					(name "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 2.54 7.62 270)
+					(length 5.08)
+					(name "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 5.08 7.62 270)
+					(length 5.08)
+					(name "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 12.7 -2.54 180)
+					(length 5.08)
+					(name "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "easyeda2kicad:LabeledTestPoint"
 			(pin_numbers
 				(hide yes)
@@ -2093,28 +2308,34 @@
 		(uuid "036a97d0-5835-4c62-a6c0-ace6d19b488c")
 	)
 	(junction
-		(at 100.33 95.25)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "090b9d1f-0fb9-43c4-8653-3bb8f484a9f8")
-	)
-	(junction
 		(at 87.63 72.39)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "20ff528a-44aa-4778-9f44-32dcbdccb970")
 	)
 	(junction
-		(at 92.71 97.79)
+		(at 22.86 88.9)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "231f8b87-76c1-42c0-ad7d-ef030a0a1b0c")
+		(uuid "2622a03b-b1e8-4e99-b432-e5416a844647")
 	)
 	(junction
 		(at 109.22 52.07)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "41f03a8a-663d-4821-9f3a-3a67c3764e13")
+	)
+	(junction
+		(at 147.32 121.92)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4e32c789-9979-497c-a47c-daee8d0f83f1")
+	)
+	(junction
+		(at 91.44 95.25)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "57bbe318-0a22-4215-aee6-a152effd6d35")
 	)
 	(junction
 		(at 73.66 52.07)
@@ -2213,6 +2434,12 @@
 		(uuid "e7b40cd3-233a-4309-8451-2783a145a1be")
 	)
 	(junction
+		(at 90.17 97.79)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "f47ae07d-be58-4384-91b5-82168f54ebac")
+	)
+	(junction
 		(at 86.36 97.79)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -2241,10 +2468,6 @@
 	(no_connect
 		(at 162.56 74.93)
 		(uuid "49ddebf9-6285-4b80-8079-0c4ac788f9df")
-	)
-	(no_connect
-		(at 132.08 74.93)
-		(uuid "50d13616-bb2e-40e9-b315-fc26d332d5da")
 	)
 	(no_connect
 		(at 162.56 107.95)
@@ -2357,16 +2580,6 @@
 	)
 	(wire
 		(pts
-			(xy 100.33 95.25) (xy 132.08 95.25)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "04f433ae-22a2-4dc9-a00a-bdf3502f89a7")
-	)
-	(wire
-		(pts
 			(xy 53.34 67.31) (xy 53.34 68.58)
 		)
 		(stroke
@@ -2377,7 +2590,17 @@
 	)
 	(wire
 		(pts
-			(xy 147.32 118.11) (xy 147.32 125.73)
+			(xy 113.03 111.76) (xy 125.73 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "05ae4646-663f-410a-9925-3230b2665a37")
+	)
+	(wire
+		(pts
+			(xy 147.32 118.11) (xy 147.32 121.92)
 		)
 		(stroke
 			(width 0)
@@ -2407,6 +2630,16 @@
 	)
 	(wire
 		(pts
+			(xy 110.49 90.17) (xy 132.08 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "08bb6a83-597e-4b75-944b-fac7a7e14662")
+	)
+	(wire
+		(pts
 			(xy 205.74 92.71) (xy 205.74 52.07)
 		)
 		(stroke
@@ -2414,16 +2647,6 @@
 			(type default)
 		)
 		(uuid "0978e78d-1cd0-4732-95c6-3a0a5ca76ba9")
-	)
-	(wire
-		(pts
-			(xy 132.08 87.63) (xy 109.22 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0cff1c2b-2b6d-43c2-9b7c-c31f99e20322")
 	)
 	(wire
 		(pts
@@ -2437,7 +2660,7 @@
 	)
 	(wire
 		(pts
-			(xy 132.08 82.55) (xy 93.98 82.55)
+			(xy 132.08 82.55) (xy 102.87 82.55)
 		)
 		(stroke
 			(width 0)
@@ -2487,7 +2710,17 @@
 	)
 	(wire
 		(pts
-			(xy 92.71 92.71) (xy 92.71 97.79)
+			(xy 91.44 95.25) (xy 132.08 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "196ae37d-72f4-450f-a4c5-7c7c7443b163")
+	)
+	(wire
+		(pts
+			(xy 90.17 88.9) (xy 90.17 97.79)
 		)
 		(stroke
 			(width 0)
@@ -2537,6 +2770,16 @@
 	)
 	(wire
 		(pts
+			(xy 125.73 121.92) (xy 147.32 121.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2105e5bf-18a8-481f-8180-8a1f5d5d1888")
+	)
+	(wire
+		(pts
 			(xy 129.54 29.21) (xy 73.66 29.21)
 		)
 		(stroke
@@ -2544,16 +2787,6 @@
 			(type default)
 		)
 		(uuid "2368fb5c-768b-43db-88d8-f0036b9da8a9")
-	)
-	(wire
-		(pts
-			(xy 101.6 85.09) (xy 132.08 85.09)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "24ca66ab-b894-4f3b-a9d4-5fe8d0c1dc59")
 	)
 	(wire
 		(pts
@@ -2677,7 +2910,7 @@
 	)
 	(wire
 		(pts
-			(xy 100.33 92.71) (xy 100.33 95.25)
+			(xy 91.44 91.44) (xy 91.44 95.25)
 		)
 		(stroke
 			(width 0)
@@ -2704,6 +2937,16 @@
 			(type default)
 		)
 		(uuid "37de55e2-9a78-4a3c-ab7b-e28aea62cac2")
+	)
+	(wire
+		(pts
+			(xy 105.41 85.09) (xy 105.41 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3c16dc5e-3bb8-4ddc-8f5a-88504b49c83e")
 	)
 	(wire
 		(pts
@@ -2747,16 +2990,6 @@
 	)
 	(wire
 		(pts
-			(xy 92.71 97.79) (xy 132.08 97.79)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "42c3cfc0-b8ff-4c7a-ab80-7e03f2da9328")
-	)
-	(wire
-		(pts
 			(xy 86.36 88.9) (xy 86.36 97.79)
 		)
 		(stroke
@@ -2784,16 +3017,6 @@
 			(type default)
 		)
 		(uuid "473d65f6-bada-46aa-8e0e-7a695d071e7e")
-	)
-	(wire
-		(pts
-			(xy 109.22 87.63) (xy 109.22 80.01)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "47e96a50-7af7-4463-b0af-13f6b707f60e")
 	)
 	(wire
 		(pts
@@ -2827,6 +3050,26 @@
 	)
 	(wire
 		(pts
+			(xy 22.86 111.76) (xy 22.86 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "609441de-43b8-49cb-b7ae-666268e98e67")
+	)
+	(wire
+		(pts
+			(xy 90.17 97.79) (xy 132.08 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "66d70cb2-d4f9-43e1-a72f-c494afdd0e88")
+	)
+	(wire
+		(pts
 			(xy 181.61 35.56) (xy 181.61 69.85)
 		)
 		(stroke
@@ -2847,13 +3090,13 @@
 	)
 	(wire
 		(pts
-			(xy 101.6 85.09) (xy 101.6 80.01)
+			(xy 102.87 82.55) (xy 102.87 111.76)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "7d356a51-30ee-4f4e-b399-9a47e934e06a")
+		(uuid "7e4b99a6-0a6e-486e-8624-bc735a2ddebc")
 	)
 	(wire
 		(pts
@@ -2897,6 +3140,16 @@
 	)
 	(wire
 		(pts
+			(xy 147.32 121.92) (xy 147.32 125.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "927b54bf-ef13-4be7-a1cf-859cebbd00e9")
+	)
+	(wire
+		(pts
 			(xy 162.56 69.85) (xy 181.61 69.85)
 		)
 		(stroke
@@ -2907,7 +3160,7 @@
 	)
 	(wire
 		(pts
-			(xy 88.9 95.25) (xy 100.33 95.25)
+			(xy 88.9 95.25) (xy 91.44 95.25)
 		)
 		(stroke
 			(width 0)
@@ -2924,6 +3177,16 @@
 			(type default)
 		)
 		(uuid "99dadb5d-51f0-40c4-9e5f-8c9c89ca4c73")
+	)
+	(wire
+		(pts
+			(xy 110.49 111.76) (xy 110.49 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a17b26e-ae85-41b5-8ef6-2da1a3e96f08")
 	)
 	(wire
 		(pts
@@ -2954,6 +3217,16 @@
 			(type default)
 		)
 		(uuid "a2807e3b-f3c8-440c-8f8f-058a646348b6")
+	)
+	(wire
+		(pts
+			(xy 115.57 74.93) (xy 132.08 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a31576b4-5db9-4f84-b960-569422a8f2c1")
 	)
 	(wire
 		(pts
@@ -2997,16 +3270,6 @@
 	)
 	(wire
 		(pts
-			(xy 132.08 90.17) (xy 116.84 90.17)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b283fa44-9d81-473d-b17e-f3ab7378b9ac")
-	)
-	(wire
-		(pts
 			(xy 142.24 29.21) (xy 142.24 49.53)
 		)
 		(stroke
@@ -3027,6 +3290,16 @@
 	)
 	(wire
 		(pts
+			(xy 107.95 111.76) (xy 107.95 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bad1a4a5-2657-47eb-8a2d-a0a44ab16066")
+	)
+	(wire
+		(pts
 			(xy 137.16 29.21) (xy 137.16 41.91)
 		)
 		(stroke
@@ -3034,6 +3307,16 @@
 			(type default)
 		)
 		(uuid "bd59575d-0822-4191-8b8e-48b78f47ed9e")
+	)
+	(wire
+		(pts
+			(xy 100.33 111.76) (xy 22.86 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "be8cb3a7-ee1b-492e-ab9e-b86f7a8878bd")
 	)
 	(wire
 		(pts
@@ -3107,13 +3390,23 @@
 	)
 	(wire
 		(pts
-			(xy 86.36 97.79) (xy 92.71 97.79)
+			(xy 86.36 97.79) (xy 90.17 97.79)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "ccf1bd2d-a117-4b45-81cc-331cac5fcf8d")
+	)
+	(wire
+		(pts
+			(xy 107.95 87.63) (xy 132.08 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cf64deea-7286-4cf9-82a8-1e17b7fd1a96")
 	)
 	(wire
 		(pts
@@ -3134,6 +3427,16 @@
 			(type default)
 		)
 		(uuid "d982b15a-ee37-4109-9cd1-347ffd421ba5")
+	)
+	(wire
+		(pts
+			(xy 105.41 85.09) (xy 132.08 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "db206117-0b24-400d-9d43-9739b604bbf0")
 	)
 	(wire
 		(pts
@@ -3227,16 +3530,6 @@
 	)
 	(wire
 		(pts
-			(xy 93.98 80.01) (xy 93.98 82.55)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ecc2d2d7-4749-47a0-a3ee-12837be429c7")
-	)
-	(wire
-		(pts
 			(xy 26.67 69.85) (xy 26.67 72.39)
 		)
 		(stroke
@@ -3267,16 +3560,6 @@
 	)
 	(wire
 		(pts
-			(xy 116.84 90.17) (xy 116.84 80.01)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fa51fb07-089d-4390-9b04-c098d121dd77")
-	)
-	(wire
-		(pts
 			(xy 125.73 59.69) (xy 137.16 59.69)
 		)
 		(stroke
@@ -3284,6 +3567,16 @@
 			(type default)
 		)
 		(uuid "fc310ee5-4780-478d-8afe-59201e3d9f42")
+	)
+	(wire
+		(pts
+			(xy 125.73 111.76) (xy 125.73 121.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fe2fc53b-af43-436e-901c-038c282e48ed")
 	)
 	(wire
 		(pts
@@ -3792,7 +4085,7 @@
 	)
 	(symbol
 		(lib_id "easyeda2kicad:LabeledTestPoint")
-		(at 100.33 92.71 0)
+		(at 91.44 91.44 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
@@ -3801,7 +4094,7 @@
 		(fields_autoplaced yes)
 		(uuid "1b3b4f48-2a73-4200-b8c0-df8e21e17ab6")
 		(property "Reference" "TP11"
-			(at 100.33 85.852 0)
+			(at 91.44 84.582 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3810,7 +4103,7 @@
 			)
 		)
 		(property "Value" "LabeledTestPoint"
-			(at 100.33 87.63 0)
+			(at 91.44 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3819,7 +4112,7 @@
 			)
 		)
 		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
-			(at 105.41 92.71 0)
+			(at 96.52 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3828,7 +4121,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 105.41 92.71 0)
+			(at 96.52 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3837,7 +4130,7 @@
 			)
 		)
 		(property "Description" "test point"
-			(at 100.33 92.71 0)
+			(at 91.44 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3846,7 +4139,7 @@
 			)
 		)
 		(property "Label" "SCL"
-			(at 102.87 89.4079 0)
+			(at 93.98 88.1379 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4081,7 +4374,7 @@
 	)
 	(symbol
 		(lib_id "easyeda2kicad:LabeledTestPoint")
-		(at 92.71 92.71 0)
+		(at 90.17 88.9 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom no)
@@ -4090,7 +4383,7 @@
 		(fields_autoplaced yes)
 		(uuid "4e0194a3-040b-461c-b9c6-b70796fc2e74")
 		(property "Reference" "TP10"
-			(at 92.71 85.852 0)
+			(at 90.17 82.042 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4099,7 +4392,7 @@
 			)
 		)
 		(property "Value" "LabeledTestPoint"
-			(at 92.71 87.63 0)
+			(at 90.17 83.82 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4108,7 +4401,7 @@
 			)
 		)
 		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
-			(at 97.79 92.71 0)
+			(at 95.25 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4117,7 +4410,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 97.79 92.71 0)
+			(at 95.25 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4126,7 +4419,7 @@
 			)
 		)
 		(property "Description" "test point"
-			(at 92.71 92.71 0)
+			(at 90.17 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4135,7 +4428,7 @@
 			)
 		)
 		(property "Label" "SDA"
-			(at 95.25 89.4079 0)
+			(at 92.71 85.5979 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4150,6 +4443,72 @@
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/4b5bbb7b-58fe-4016-8754-12480b330a98"
 					(reference "TP10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 97.79 74.93 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "4f3c70e0-ebc7-484a-9a9f-ebd6b57db4a5")
+		(property "Reference" "#PWR057"
+			(at 97.79 81.28 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 97.79 80.01 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 97.79 74.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 97.79 74.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 97.79 74.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "fb78f59b-21c2-4940-80b3-819cfd86cfea")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/4b5bbb7b-58fe-4016-8754-12480b330a98"
+					(reference "#PWR057")
 					(unit 1)
 				)
 			)
@@ -4226,17 +4585,36 @@
 		)
 	)
 	(symbol
-		(lib_id "easyeda2kicad:LabeledTestPoint")
-		(at 93.98 80.01 0)
+		(lib_name "B3U-1000P_1")
+		(lib_id "easyeda2kicad:B3U-1000P")
+		(at 106.68 74.93 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "84997cb4-447a-46e8-9757-3b74695e76a1")
-		(property "Reference" "TP6"
-			(at 93.98 73.152 0)
+		(uuid "727d8db4-935a-4ec5-ac71-432bab0a0100")
+		(property "Reference" "SW3"
+			(at 106.5551 76.2 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "KEY-SMD_B3U-1000PM"
+			(at 104.0151 76.2 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:KEY-SMD_B3U-1000PM"
+			(at 106.68 82.55 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4244,8 +4622,8 @@
 				(hide yes)
 			)
 		)
-		(property "Value" "LabeledTestPoint"
-			(at 93.98 74.93 0)
+		(property "Datasheet" "https://lcsc.com/product-detail/Others_Omron-Electronics_B3U-1000P_Omron-Electronics-B3U-1000P_C231329.html"
+			(at 106.68 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4253,8 +4631,8 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
-			(at 99.06 80.01 0)
+		(property "Description" "Reset"
+			(at 105.156 71.882 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4262,8 +4640,8 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "~"
-			(at 99.06 80.01 0)
+		(property "LCSC Part" "C231329"
+			(at 106.68 87.63 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4271,8 +4649,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "test point"
-			(at 93.98 80.01 0)
+		(property "Field6" "Reset"
+			(at 106.68 74.93 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4280,22 +4658,24 @@
 				(hide yes)
 			)
 		)
-		(property "Label" "IO4"
-			(at 96.52 76.7079 0)
+		(property "Label" "Safe"
+			(at 114.046 76.454 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
 			)
+		)
+		(pin "2"
+			(uuid "4021a53e-c648-4068-9e0b-753dd18d6d4d")
 		)
 		(pin "1"
-			(uuid "3191abe2-9732-4fc4-b11f-3c990a2db3b6")
+			(uuid "92459f8d-f101-4dd9-8c1a-289484176157")
 		)
 		(instances
-			(project ""
+			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/4b5bbb7b-58fe-4016-8754-12480b330a98"
-					(reference "TP6")
+					(reference "SW3")
 					(unit 1)
 				)
 			)
@@ -5081,158 +5461,6 @@
 		)
 	)
 	(symbol
-		(lib_id "easyeda2kicad:LabeledTestPoint")
-		(at 116.84 80.01 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "c82999f4-c533-4117-b574-781c10890ade")
-		(property "Reference" "TP9"
-			(at 116.84 73.152 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "LabeledTestPoint"
-			(at 116.84 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
-			(at 121.92 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 121.92 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 116.84 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Label" "IO7"
-			(at 119.38 76.7079 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(pin "1"
-			(uuid "5d48cb49-6450-4e40-989e-80a2a40909c3")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/4b5bbb7b-58fe-4016-8754-12480b330a98"
-					(reference "TP9")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:LabeledTestPoint")
-		(at 109.22 80.01 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "cb2a7997-742c-428e-ae37-da1c1ca0043e")
-		(property "Reference" "TP8"
-			(at 109.22 73.152 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "LabeledTestPoint"
-			(at 109.22 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
-			(at 114.3 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 114.3 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 109.22 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Label" "IO6"
-			(at 111.76 76.7079 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(pin "1"
-			(uuid "fc047356-47de-4f4b-855b-19b0a528ac65")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/4b5bbb7b-58fe-4016-8754-12480b330a98"
-					(reference "TP8")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:C")
 		(at 123.19 55.88 0)
 		(unit 1)
@@ -5418,6 +5646,101 @@
 		)
 	)
 	(symbol
+		(lib_id "easyeda2kicad:BM06B-SRSS-TB(LF)(SN)")
+		(at 107.95 119.38 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "de5a5e3c-bf4c-4e03-9c10-09cbeda92d97")
+		(property "Reference" "U12"
+			(at 106.68 127 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "BM06B-SRSS-TB(LF)(SN)"
+			(at 106.68 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:CONN-SMD-6P-P1.00_BM06B-SRSS-TB-LF-SN"
+			(at 107.95 129.54 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Others_JST-Sales-America__JST-Sales-America-BM06B-SRSS-TB-LF-SN_C160392.html"
+			(at 107.95 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 107.95 119.38 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C160392"
+			(at 107.95 134.62 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "8"
+			(uuid "3575b8d2-bc8c-4895-bf92-a6408eee4c75")
+		)
+		(pin "1"
+			(uuid "4728c358-e12b-49df-b253-09d67100d9d3")
+		)
+		(pin "2"
+			(uuid "70dffa51-e105-40eb-b225-63ca4cb9ae28")
+		)
+		(pin "3"
+			(uuid "a3b1daa8-54f4-45e1-96b4-deb307540a57")
+		)
+		(pin "4"
+			(uuid "7910b038-f937-4e7d-b356-4f11200abc7a")
+		)
+		(pin "5"
+			(uuid "37982ecd-320e-4a47-bbdc-064f5ea2907b")
+		)
+		(pin "6"
+			(uuid "1f294220-d777-4767-bf46-7399b3d40b82")
+		)
+		(pin "7"
+			(uuid "7359b850-fe5e-4200-b6cb-6cd345b2afb4")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/4b5bbb7b-58fe-4016-8754-12480b330a98"
+					(reference "U12")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:R")
 		(at 82.55 80.01 90)
 		(unit 1)
@@ -5480,82 +5803,6 @@
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/4b5bbb7b-58fe-4016-8754-12480b330a98"
 					(reference "R4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "easyeda2kicad:LabeledTestPoint")
-		(at 101.6 80.01 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ee4e2579-853f-4ce2-9aa2-e85c70ed7872")
-		(property "Reference" "TP7"
-			(at 101.6 73.152 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "LabeledTestPoint"
-			(at 101.6 74.93 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
-			(at 106.68 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 106.68 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 101.6 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Label" "IO5"
-			(at 104.14 76.7079 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(pin "1"
-			(uuid "ba85ccce-0779-4616-a5ef-532420206208")
-		)
-		(instances
-			(project "roomsensor"
-				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/4b5bbb7b-58fe-4016-8754-12480b330a98"
-					(reference "TP7")
 					(unit 1)
 				)
 			)

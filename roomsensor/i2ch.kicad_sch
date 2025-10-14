@@ -1141,7 +1141,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "41a7f2b7-5ba6-459d-9eb7-953957bdb7a1")
-		(property "Reference" "R11"
+		(property "Reference" "R7"
 			(at 125.73 63.4999 0)
 			(effects
 				(font
@@ -1187,15 +1187,19 @@
 			)
 		)
 		(pin "1"
-			(uuid "a7a06bac-14f9-4368-9c25-58e5bb121ba6")
+			(uuid "a7f733e2-9988-4164-84e5-db0ddb2d78b2")
 		)
 		(pin "2"
-			(uuid "edfe5464-5087-4a04-8d67-791b460d96e7")
+			(uuid "a696a21a-0f45-4066-9d54-12464babcc40")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3cc44d0c-e264-478d-af3c-4020850071bf"
 					(reference "R11")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/61fdcce6-fb1c-45a7-a9b4-487f02a07d2e"
+					(reference "R7")
 					(unit 1)
 				)
 			)
@@ -1211,7 +1215,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "5d2d5391-63f4-4bcc-b14e-fde64110e4c6")
-		(property "Reference" "Q4"
+		(property "Reference" "Q2"
 			(at 113.03 74.93 90)
 			(effects
 				(font
@@ -1258,18 +1262,22 @@
 			)
 		)
 		(pin "2"
-			(uuid "6f59da4d-b310-4f27-8fd8-24d00efd3ec2")
+			(uuid "89a187ff-1227-46db-9b6e-cd48ce3389c7")
 		)
 		(pin "1"
-			(uuid "02b8e378-e0bc-4d7e-b158-bd4ae5a26549")
+			(uuid "d55521ac-f8d6-4d00-a609-3f34e6a7ceba")
 		)
 		(pin "3"
-			(uuid "3d7ce5a5-5837-412b-8823-05aa19e9687b")
+			(uuid "273d566e-cf94-4672-9b80-fa669a741900")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3cc44d0c-e264-478d-af3c-4020850071bf"
 					(reference "Q4")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/61fdcce6-fb1c-45a7-a9b4-487f02a07d2e"
+					(reference "Q2")
 					(unit 1)
 				)
 			)
@@ -1285,7 +1293,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "869bbdce-e37f-4f2e-9709-40f483c7f233")
-		(property "Reference" "CN2"
+		(property "Reference" "CN1"
 			(at 172.72 73.6599 90)
 			(effects
 				(font
@@ -1340,27 +1348,31 @@
 			)
 		)
 		(pin "4"
-			(uuid "469769ac-5f77-4e2e-a50e-7feef38e5905")
+			(uuid "9b70997b-078c-40db-b2f8-9b29347e12e3")
 		)
 		(pin "5"
-			(uuid "1998c1e4-290a-467b-b6fa-93d23cc546e3")
+			(uuid "f8fecee1-3925-41bf-9713-107c6b28b185")
 		)
 		(pin "1"
-			(uuid "79f4bc5e-64a8-4fbb-9a1c-08d2fbe27fc1")
+			(uuid "c0872130-51e6-4256-b155-a18531db8517")
 		)
 		(pin "2"
-			(uuid "f028f7b8-244f-468f-8056-ce8a247c08c6")
+			(uuid "f9178e15-27da-4b83-9a69-48f3f770a8ab")
 		)
 		(pin "3"
-			(uuid "463eea74-fb80-49c3-b9e2-02bf38c782f8")
+			(uuid "51373f75-1e94-4e61-9414-c91cec9bc40d")
 		)
 		(pin "6"
-			(uuid "5a777251-f961-4439-be36-9913b56defcc")
+			(uuid "d821cfe7-5c9f-4571-9a3d-90f0b204f22e")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3cc44d0c-e264-478d-af3c-4020850071bf"
 					(reference "CN2")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/61fdcce6-fb1c-45a7-a9b4-487f02a07d2e"
+					(reference "CN1")
 					(unit 1)
 				)
 			)
@@ -1376,7 +1388,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a22b412c-d919-4f8d-bb88-233ceff9e527")
-		(property "Reference" "Q3"
+		(property "Reference" "Q1"
 			(at 102.87 83.82 90)
 			(effects
 				(font
@@ -1423,18 +1435,22 @@
 			)
 		)
 		(pin "2"
-			(uuid "c2959027-cf42-42d5-a17b-1093553d0c40")
+			(uuid "9076bd6c-faf8-48e5-83d6-a903babd2815")
 		)
 		(pin "1"
-			(uuid "3a4481ef-3b61-49b9-86b7-0053aedd1846")
+			(uuid "4aaa3914-db23-43f5-a03a-ff273c064406")
 		)
 		(pin "3"
-			(uuid "ccbf9331-8c64-4153-a6ba-af494a121b4b")
+			(uuid "baacebc8-38e6-42fe-b183-d9cf54ba9600")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3cc44d0c-e264-478d-af3c-4020850071bf"
 					(reference "Q3")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/61fdcce6-fb1c-45a7-a9b4-487f02a07d2e"
+					(reference "Q1")
 					(unit 1)
 				)
 			)
@@ -1450,7 +1466,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d12d4f51-7556-4035-af4b-a254ee9e2f4f")
-		(property "Reference" "#PWR015"
+		(property "Reference" "#PWR011"
 			(at 153.67 90.17 0)
 			(effects
 				(font
@@ -1495,12 +1511,16 @@
 			)
 		)
 		(pin "1"
-			(uuid "f5d10b4f-0746-4055-b36c-5d6ae59d88a4")
+			(uuid "a7e54dec-9c9f-4d4c-b2c7-d7bacad5433f")
 		)
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3cc44d0c-e264-478d-af3c-4020850071bf"
 					(reference "#PWR015")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/61fdcce6-fb1c-45a7-a9b4-487f02a07d2e"
+					(reference "#PWR011")
 					(unit 1)
 				)
 			)
@@ -1516,7 +1536,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "f45edcd0-34e0-456d-98e6-66edba95e524")
-		(property "Reference" "R12"
+		(property "Reference" "R8"
 			(at 138.43 63.4999 0)
 			(effects
 				(font
@@ -1562,15 +1582,19 @@
 			)
 		)
 		(pin "1"
-			(uuid "01f8693f-6794-4e19-b2bf-2a08c297d40d")
+			(uuid "aaf95d33-ceb8-4e58-ae95-3c5c9c89311a")
 		)
 		(pin "2"
-			(uuid "efa4cbe2-a839-4140-81d5-8cef15f2c419")
+			(uuid "11c4dcc5-2389-47d2-bfaa-652519a1ea6d")
 		)
 		(instances
 			(project "roomsensor"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/3cc44d0c-e264-478d-af3c-4020850071bf"
 					(reference "R12")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/61fdcce6-fb1c-45a7-a9b4-487f02a07d2e"
+					(reference "R8")
 					(unit 1)
 				)
 			)

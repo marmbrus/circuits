@@ -869,7 +869,6 @@
 		(in_bom no)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "3b2e3b2a-447f-49b1-b794-bf52f65d8299")
 		(property "Reference" "TP5"
 			(at 89.408 39.37 0)
