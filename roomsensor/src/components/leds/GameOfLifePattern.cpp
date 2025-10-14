@@ -5,15 +5,46 @@
 #include "communication.h"
 #include "esp_log.h"
 #include "cJSON.h"
+#include "esp_timer.h"
+#include "esp_heap_caps.h"
 
 // External declarations provided by wifi.cpp (keep local to this TU)
 extern const uint8_t* get_device_mac(void);
 
 namespace leds {
+GameOfLifePattern::Hash256 GameOfLifePattern::compute_state_hash() const {
+    // 256-bit non-cryptographic hash: mix state bits into 4x64 lanes
+    Hash256 h{};
+    h.x[0] = 0x6a09e667f3bcc909ULL;
+    h.x[1] = 0xbb67ae8584caa73bULL;
+    h.x[2] = 0x3c6ef372fe94f82bULL;
+    h.x[3] = 0xa54ff53a5f1d36f1ULL;
+    const size_t n = current_.size();
+    uint64_t lane = 0;
+    for (size_t i = 0; i < n; ++i) {
+        uint64_t bit = static_cast<uint64_t>(current_[i] & 1u);
+        // spread bit with index-dependent rotation
+        uint64_t mix = (bit ? 0x9e3779b97f4a7c15ULL : 0ULL) ^ (static_cast<uint64_t>(i) * 0x9e3779b97f4a7c15ULL);
+        uint32_t r = static_cast<uint32_t>((i * 13u) & 63u);
+        mix = (mix << r) | (mix >> (64 - r));
+        h.x[lane] ^= mix;
+        // avalanche per step
+        h.x[lane] *= 0xbf58476d1ce4e5b9ULL;
+        h.x[lane] = (h.x[lane] << 31) | (h.x[lane] >> 33);
+        lane = (lane + 1) & 3u;
+    }
+    // final mix across lanes
+    uint64_t t0 = h.x[0] ^ (h.x[1] + 0x94d049bb133111ebULL);
+    uint64_t t1 = h.x[1] ^ (h.x[2] + 0x2545f4914f6cdd1dULL);
+    uint64_t t2 = h.x[2] ^ (h.x[3] + 0x9e3779b97f4a7c15ULL);
+    uint64_t t3 = h.x[3] ^ (h.x[0] + 0x632be59bd9b4e019ULL);
+    h.x[0] = t0; h.x[1] = t1; h.x[2] = t2; h.x[3] = t3;
+    return h;
+}
 
 static const char* TAG = "life";
 
-static void publish_life_complete_json(uint32_t generations) {
+static void publish_life_complete_json(uint32_t generations, uint32_t seed, bool simple_mode, uint32_t period = 0) {
     const uint8_t* mac = get_device_mac();
     if (!mac) return;
     char mac_nosep[13];
@@ -24,6 +55,11 @@ static void publish_life_complete_json(uint32_t generations) {
 
     cJSON* root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "generations", (double)generations);
+    cJSON_AddNumberToObject(root, "seed", (double)seed);
+    cJSON_AddStringToObject(root, "mode", simple_mode ? "SIMPLE" : "RANDOM");
+    if (period > 0) {
+        cJSON_AddNumberToObject(root, "period", (double)period);
+    }
     char* json = cJSON_PrintUnformatted(root);
     if (json) {
         publish_to_topic(topic, json, 1, 0);
@@ -32,12 +68,38 @@ static void publish_life_complete_json(uint32_t generations) {
     cJSON_Delete(root);
 }
 
+static TagCollection* get_generations_tags() {
+    static TagCollection* tags = nullptr;
+    if (!tags) {
+        tags = create_tag_collection();
+        if (tags) {
+            (void)add_tag_to_collection(tags, "type", "steady");
+        }
+    }
+    return tags;
+}
+
 static void report_generations_metric(uint32_t generations) {
-    TagCollection* tags = create_tag_collection();
+    TagCollection* tags = get_generations_tags();
     if (!tags) return;
-    (void)add_tag_to_collection(tags, "type", "steady");
     report_metric("generations", (float)generations, tags);
-    free_tag_collection(tags);
+}
+
+static TagCollection* get_period_tags() {
+    static TagCollection* tags = nullptr;
+    if (!tags) {
+        tags = create_tag_collection();
+        if (tags) {
+            (void)add_tag_to_collection(tags, "type", "cycle");
+        }
+    }
+    return tags;
+}
+
+static void report_period_metric(uint32_t period) {
+    TagCollection* tags = get_period_tags();
+    if (!tags) return;
+    report_metric("period", (float)period, tags);
 }
 
 void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
@@ -49,6 +111,15 @@ void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
     next_.assign(total, 0);
     generation_count_ = 0;
     steady_reported_ = false;
+    // Allocate ring buffers in SPI RAM on first use
+    if (!hash_ring_) {
+        hash_ring_ = (Hash256*)heap_caps_calloc(kHashRingCapacity, sizeof(Hash256), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    }
+    if (!gen_ring_) {
+        gen_ring_ = (uint32_t*)heap_caps_calloc(kHashRingCapacity, sizeof(uint32_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    }
+    ring_count_ = 0;
+    ring_pos_ = 0;
     // Seed based on start_string_
     bool use_simple = false;
     if (!start_string_.empty()) {
@@ -66,8 +137,10 @@ void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
         current_[idx_of(r, c    )] = 1;
         current_[idx_of(r, c + 1)] = 1;
     } else {
-        // RANDOM
-        uint32_t seed = static_cast<uint32_t>(now_us ^ (now_us >> 32) ^ static_cast<uint32_t>(strip.pin() * 2654435761u));
+        // RANDOM - seed from current time
+        uint64_t t = esp_timer_get_time();
+        uint32_t seed = static_cast<uint32_t>(t ^ (t >> 32));
+        initial_seed_ = seed;
         randomize_state(rows, cols, seed);
     }
     last_step_us_ = now_us;
@@ -103,7 +176,9 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
         next_.assign(total, 0);
         prev1_.clear();
         prev2_.clear();
-        uint32_t seed = static_cast<uint32_t>(now_us ^ (now_us >> 32) ^ static_cast<uint32_t>(strip.pin() * 2654435761u));
+        uint64_t t = esp_timer_get_time();
+        uint32_t seed = static_cast<uint32_t>(t ^ (t >> 32));
+        initial_seed_ = seed;
         randomize_state(rows, cols, seed);
     }
 
@@ -136,14 +211,16 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
     if (!steady_reported_ && (!any_alive || repeating_next_any_mode)) {
         uint32_t gens_to_report = generation_count_ + 1; // next_ would be applied next
         ESP_LOGI(TAG, "life steady detected after %u generations", (unsigned)gens_to_report);
-        publish_life_complete_json(gens_to_report);
+        publish_life_complete_json(gens_to_report, initial_seed_, simple_mode_, 0);
         report_generations_metric(gens_to_report);
         steady_reported_ = true;
     }
 
     if (!simple_mode_ && !any_alive) {
         // Immediate reseed on extinction
-        uint32_t seed = static_cast<uint32_t>((now_us ^ (now_us >> 32)) + 0x9E3779B9u);
+        uint64_t t = esp_timer_get_time();
+        uint32_t seed = static_cast<uint32_t>(t ^ (t >> 32));
+        initial_seed_ = seed;
         randomize_state(rows, cols, seed);
         prev1_.clear();
         prev2_.clear();
@@ -158,7 +235,9 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
             if (repeating_next) {
                 if (repeat_start_us_ == 0) repeat_start_us_ = now_us;
                 if ((now_us - repeat_start_us_) >= 10ull * 1000 * 1000) {
-                    uint32_t seed = static_cast<uint32_t>((now_us ^ (now_us >> 32)) + 0x9E3779B9u);
+                    uint64_t t = esp_timer_get_time();
+                    uint32_t seed = static_cast<uint32_t>(t ^ (t >> 32));
+                    initial_seed_ = seed;
                     randomize_state(rows, cols, seed);
                     prev1_.clear();
                     prev2_.clear();
@@ -179,6 +258,49 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
         prev1_ = current_;
         current_.swap(next_);
         generation_count_++;
+
+        // Cycle detection using 256-bit hash and 100-slot circular buffer
+        Hash256 h = compute_state_hash();
+        // Check for repeats in the buffer. We want the most recent repeat distance for logging,
+        // and the total number of historical matches for cycle thresholding.
+        uint32_t most_recent_distance = 0;
+        uint32_t repeat_hits = 0;
+        for (size_t i = 0; i < ring_count_; ++i) {
+            size_t idx = (ring_pos_ + kHashRingCapacity - i - 1) % kHashRingCapacity; // iterate from most recent backwards
+            if (hashes_equal(hash_ring_[idx], h)) {
+                // Count every match
+                repeat_hits++;
+                // Capture distance to the most recent match (first one we encounter)
+                if (most_recent_distance == 0) {
+                    uint32_t past_gen = gen_ring_[idx];
+                    if (generation_count_ > past_gen) {
+                        most_recent_distance = generation_count_ - past_gen;
+                    }
+                }
+            }
+        }
+        if (most_recent_distance > 0) {
+            ESP_LOGI(TAG, "life hash repeat: distance=%u", (unsigned)most_recent_distance);
+        }
+        // Add current hash to buffer
+        if (hash_ring_ && gen_ring_) {
+            hash_ring_[ring_pos_] = h;
+            gen_ring_[ring_pos_] = generation_count_;
+            ring_pos_ = (ring_pos_ + 1) % kHashRingCapacity;
+            if (ring_count_ < kHashRingCapacity) ring_count_++;
+        }
+
+        // If we have seen the same hash more than 4 times, consider cycle detected
+        if (repeat_hits >= 4) {
+            uint32_t period = most_recent_distance;
+            ESP_LOGI(TAG, "life cycle detected: period=%u after gen=%u", (unsigned)period, (unsigned)generation_count_);
+            report_period_metric(period);
+            publish_life_complete_json(generation_count_, initial_seed_, simple_mode_, period);
+            // Restart (reseeding if RANDOM, or just resetting SIMPLE blinker)
+            reset(strip, now_us);
+            render_current(strip);
+            return;
+        }
     }
 
     render_current(strip);

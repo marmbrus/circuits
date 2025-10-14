@@ -28,6 +28,11 @@ private:
     void randomize_state(size_t rows, size_t cols, uint32_t seed);
     unsigned count_live_neighbors(size_t rows, size_t cols, size_t r, size_t c) const;
     void render_current(LEDStrip& strip) const;
+    struct Hash256 { uint64_t x[4]; };
+    Hash256 compute_state_hash() const;
+    static bool hashes_equal(const Hash256& a, const Hash256& b) {
+        return a.x[0] == b.x[0] && a.x[1] == b.x[1] && a.x[2] == b.x[2] && a.x[3] == b.x[3];
+    }
 
     std::vector<uint8_t> current_; // 0 or 1 per cell
     std::vector<uint8_t> next_;
@@ -42,6 +47,13 @@ private:
     uint8_t base_r_ = 255, base_g_ = 255, base_b_ = 255, base_w_ = 0;
     std::string start_string_;
     bool simple_mode_ = false;
+    uint32_t initial_seed_ = 0; // seed used to create the run's initial random state
+    // Cycle detection ring buffer allocated in SPI RAM (stores hashes and generation indices)
+    static constexpr size_t kHashRingCapacity = 1000;
+    Hash256* hash_ring_ = nullptr;
+    uint32_t* gen_ring_ = nullptr;
+    size_t ring_count_ = 0; // number of valid entries (<= kHashRingCapacity)
+    size_t ring_pos_ = 0;   // next position to write
 };
 
 } // namespace leds
