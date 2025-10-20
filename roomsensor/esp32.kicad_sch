@@ -2314,12 +2314,6 @@
 		(uuid "20ff528a-44aa-4778-9f44-32dcbdccb970")
 	)
 	(junction
-		(at 22.86 88.9)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "2622a03b-b1e8-4e99-b432-e5416a844647")
-	)
-	(junction
 		(at 109.22 52.07)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3040,6 +3034,16 @@
 	)
 	(wire
 		(pts
+			(xy 100.33 106.68) (xy 100.33 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "59ac7af2-c0ab-4286-a6eb-8fd228f308d9")
+	)
+	(wire
+		(pts
 			(xy 205.74 52.07) (xy 147.32 52.07)
 		)
 		(stroke
@@ -3047,16 +3051,6 @@
 			(type default)
 		)
 		(uuid "60466acb-9469-4c11-ad58-6860594e38fa")
-	)
-	(wire
-		(pts
-			(xy 22.86 111.76) (xy 22.86 88.9)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "609441de-43b8-49cb-b7ae-666268e98e67")
 	)
 	(wire
 		(pts
@@ -3307,16 +3301,6 @@
 			(type default)
 		)
 		(uuid "bd59575d-0822-4191-8b8e-48b78f47ed9e")
-	)
-	(wire
-		(pts
-			(xy 100.33 111.76) (xy 22.86 111.76)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "be8cb3a7-ee1b-492e-ab9e-b86f7a8878bd")
 	)
 	(wire
 		(pts
@@ -3697,6 +3681,17 @@
 			(justify left bottom)
 		)
 		(uuid "fac0d274-6129-405f-b0be-f987a7a2c4db")
+	)
+	(hierarchical_label "5V"
+		(shape input)
+		(at 100.33 106.68 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "14181e11-5dd9-46ab-96d2-289c6236de32")
 	)
 	(hierarchical_label "LED"
 		(shape input)
