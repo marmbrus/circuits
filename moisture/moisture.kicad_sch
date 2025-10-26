@@ -1441,10 +1441,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "ca4f7b81-abbd-4919-baae-2f4e50f9b55c")
+			(uuid "ca4f7b81-abbd-4919-baae-2f4e50f9b55d")
 		)
 		(pin "2"
-			(uuid "f1060c8c-f9dc-4942-bfc0-85ed28a7bd1e")
+			(uuid "f1060c8c-f9dc-4942-bfc0-85ed28a7bd1f")
 		)
 		(instances
 			(project ""
@@ -1481,7 +1481,7 @@
 				)
 			)
 		)
-		(property "Footprint" "easyeda2kicad:MSOP-10"
+		(property "Footprint" "Package_SO:MSOP-10_3x3mm_P0.5mm"
 			(at 195.58 50.8 0)
 			(effects
 				(font
@@ -1510,6 +1510,15 @@
 		)
 		(property "LCSC Part" "C2865994"
 			(at 195.58 48.26 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" ""
+			(at 195.58 63.5 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1760,10 +1769,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "ca4f7b81-abbd-4919-baae-2f4e50f9b55c")
+			(uuid "ca4f7b81-abbd-4919-baae-2f4e50f9b55e")
 		)
 		(pin "2"
-			(uuid "f1060c8c-f9dc-4942-bfc0-85ed28a7bd1e")
+			(uuid "f1060c8c-f9dc-4942-bfc0-85ed28a7bd20")
 		)
 		(instances
 			(project ""
@@ -1830,10 +1839,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "ca4f7b81-abbd-4919-baae-2f4e50f9b55c")
+			(uuid "ca4f7b81-abbd-4919-baae-2f4e50f9b55f")
 		)
 		(pin "2"
-			(uuid "f1060c8c-f9dc-4942-bfc0-85ed28a7bd1e")
+			(uuid "f1060c8c-f9dc-4942-bfc0-85ed28a7bd21")
 		)
 		(instances
 			(project ""
