@@ -291,6 +291,149 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "easyeda2kicad:73412-0110"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "RF"
+				(at 0 20.32 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "73412-0110"
+				(at 0 -15.24 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:ANT-SMD_73412-0110"
+				(at 0 -17.78 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/RF-Connectors-Coaxial-Connectors_MOLEX-73412-0110_C434806.html"
+				(at 0 -20.32 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "LCSC Part" "C434806"
+				(at 0 -22.86 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "73412-0110_0_1"
+				(rectangle
+					(start -7.62 10.16)
+					(end 7.62 -5.08)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin unspecified line
+					(at -12.7 5.08 0)
+					(length 5.08)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 0 15.24 270)
+					(length 5.08)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 0 -10.16 90)
+					(length 5.08)
+					(name "SIG"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 12.7 5.08 180)
+					(length 5.08)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "easyeda2kicad:LabeledTestPoint"
 			(pin_numbers
 				(hide yes)
@@ -565,6 +708,12 @@
 		(uuid "3c655e30-c1e7-4033-b8c1-f79c77d4aaed")
 	)
 	(junction
+		(at 31.75 123.19)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4262598d-bab1-4803-a9c9-d9cd750d4357")
+	)
+	(junction
 		(at 118.11 102.87)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -625,10 +774,22 @@
 		(uuid "8b8d8bf9-077b-49bc-a3b1-665295a106f3")
 	)
 	(junction
+		(at 33.02 139.7)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "8e044092-6fda-481d-b552-b7d6672a2216")
+	)
+	(junction
 		(at 114.3 36.83)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "8ff2ede1-64e5-4847-8abb-6228cd98d7a7")
+	)
+	(junction
+		(at 76.2 123.19)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "97eb438f-d1c5-4bc2-88e8-ce320c093599")
 	)
 	(junction
 		(at 118.11 78.74)
@@ -647,6 +808,18 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "b87c6f6d-77af-4863-bab8-551b2374c969")
+	)
+	(junction
+		(at 33.02 135.89)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "ba8ec206-e2c7-4a69-9cfa-cd3b8995e974")
+	)
+	(junction
+		(at 81.28 148.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "c0a247af-cc30-4b30-92e8-52de828ac1f0")
 	)
 	(junction
 		(at 81.28 76.2)
@@ -683,6 +856,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "debe577d-47dc-40e6-bbba-a1efc6476eb5")
+	)
+	(junction
+		(at 31.75 152.4)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "e0d37502-e22c-4fc8-ba97-ea0ff124632f")
 	)
 	(junction
 		(at 81.28 38.1)
@@ -726,6 +905,12 @@
 		(color 0 0 0 0)
 		(uuid "fb048a95-9f9b-4bf1-9183-2a5c2a66aa9a")
 	)
+	(junction
+		(at 41.91 110.49)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "fe1d68f0-0a0b-4cf1-aeca-160915f640b1")
+	)
 	(wire
 		(pts
 			(xy 175.26 27.94) (xy 198.12 27.94)
@@ -735,6 +920,16 @@
 			(type default)
 		)
 		(uuid "00ab4833-1d26-47d6-852d-220f2ffc92b4")
+	)
+	(wire
+		(pts
+			(xy 41.91 110.49) (xy 41.91 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "016a1ade-b0c5-4616-8930-fe5d3000389b")
 	)
 	(wire
 		(pts
@@ -795,6 +990,16 @@
 			(type default)
 		)
 		(uuid "05d6ea37-7487-4373-9d47-28eb0121a971")
+	)
+	(wire
+		(pts
+			(xy 31.75 110.49) (xy 31.75 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0706e877-6806-49fb-9ac9-592701745d88")
 	)
 	(wire
 		(pts
@@ -948,6 +1153,16 @@
 	)
 	(wire
 		(pts
+			(xy 31.75 139.7) (xy 33.02 139.7)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2cf344e9-9304-49a2-974c-548a8756b9a3")
+	)
+	(wire
+		(pts
 			(xy 88.9 85.09) (xy 76.2 85.09)
 		)
 		(stroke
@@ -968,6 +1183,16 @@
 	)
 	(wire
 		(pts
+			(xy 41.91 110.49) (xy 31.75 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2f7e9ff1-0a07-457f-a02a-d7512fa9d259")
+	)
+	(wire
+		(pts
 			(xy 33.02 36.83) (xy 45.72 36.83)
 		)
 		(stroke
@@ -975,6 +1200,26 @@
 			(type default)
 		)
 		(uuid "2f8d5d70-b38f-475e-961e-070d553c7dfc")
+	)
+	(wire
+		(pts
+			(xy 31.75 165.1) (xy 41.91 165.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3056c2b3-7f81-440f-8c27-b4f3b9ad813c")
+	)
+	(wire
+		(pts
+			(xy 76.2 123.19) (xy 76.2 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3467c928-07ba-4fcb-85a9-75d947c0c636")
 	)
 	(wire
 		(pts
@@ -1028,6 +1273,26 @@
 	)
 	(wire
 		(pts
+			(xy 81.28 152.4) (xy 81.28 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4168b7cf-281b-4a7b-a78f-6ab36e662476")
+	)
+	(wire
+		(pts
+			(xy 33.02 139.7) (xy 41.91 139.7)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "42bd51d6-bbca-4929-9d2d-1108c6e4abe9")
+	)
+	(wire
+		(pts
 			(xy 156.21 52.07) (xy 156.21 170.18)
 		)
 		(stroke
@@ -1075,6 +1340,16 @@
 			(type default)
 		)
 		(uuid "511b9ad8-0b2a-4c50-afdb-7d9ab722e36c")
+	)
+	(wire
+		(pts
+			(xy 57.15 123.19) (xy 76.2 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "518233b2-c49e-45b8-a94c-8107cf6a06d6")
 	)
 	(wire
 		(pts
@@ -1138,6 +1413,16 @@
 	)
 	(wire
 		(pts
+			(xy 33.02 135.89) (xy 41.91 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6a867e86-db09-4a60-9729-627a6f51f75c")
+	)
+	(wire
+		(pts
 			(xy 88.9 157.48) (xy 76.2 157.48)
 		)
 		(stroke
@@ -1155,6 +1440,16 @@
 			(type default)
 		)
 		(uuid "728ca165-07bb-411b-b86b-ff22171d4faf")
+	)
+	(wire
+		(pts
+			(xy 31.75 139.7) (xy 31.75 152.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "78c4cdd4-260c-45d7-93c8-71bfd7acbf19")
 	)
 	(wire
 		(pts
@@ -1218,6 +1513,16 @@
 	)
 	(wire
 		(pts
+			(xy 57.15 152.4) (xy 81.28 152.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8a837617-05b9-484b-a7a7-c568c2a6b4d3")
+	)
+	(wire
+		(pts
 			(xy 33.02 92.71) (xy 33.02 95.25)
 		)
 		(stroke
@@ -1248,7 +1553,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 107.95) (xy 76.2 133.35)
+			(xy 76.2 107.95) (xy 76.2 123.19)
 		)
 		(stroke
 			(width 0)
@@ -1265,6 +1570,26 @@
 			(type default)
 		)
 		(uuid "96bf9614-5d63-4f80-99c6-2c9f0a208d06")
+	)
+	(wire
+		(pts
+			(xy 41.91 95.25) (xy 33.02 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a2a4674-da95-4ff1-b0e4-2865aaee236f")
+	)
+	(wire
+		(pts
+			(xy 31.75 135.89) (xy 33.02 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9bc87c32-452f-4c26-afee-5496934ebb37")
 	)
 	(wire
 		(pts
@@ -1436,6 +1761,16 @@
 		)
 		(uuid "c6b986f3-3ac0-47d0-bf53-c0ce60cbd70c")
 	)
+	(wire
+		(pts
+			(xy 31.75 123.19) (xy 31.75 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c928faca-150b-45ee-91a1-85dbf6669091")
+	)
 	(bus
 		(pts
 			(xy 125.73 27.94) (xy 119.38 27.94)
@@ -1475,6 +1810,16 @@
 			(type default)
 		)
 		(uuid "d1fd8dd8-cf76-4e80-bd98-3a44bb09aa54")
+	)
+	(wire
+		(pts
+			(xy 31.75 152.4) (xy 31.75 165.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d481f849-224e-4f04-9c0a-817880abca06")
 	)
 	(wire
 		(pts
@@ -1558,6 +1903,16 @@
 	)
 	(wire
 		(pts
+			(xy 33.02 135.89) (xy 33.02 139.7)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ee9db14b-cbbf-4cdc-a19a-48f880b88744")
+	)
+	(wire
+		(pts
 			(xy 130.81 82.55) (xy 167.64 82.55)
 		)
 		(stroke
@@ -1616,7 +1971,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "01ca9ced-6fa4-4096-b522-012b709913bd")
-		(property "Reference" "TP11"
+		(property "Reference" "TP12"
 			(at 146.558 163.83 0)
 			(effects
 				(font
@@ -1676,7 +2031,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP11")
+					(reference "TP12")
 					(unit 1)
 				)
 			)
@@ -1891,7 +2246,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2849577a-99b7-4808-be6a-5552da8218e9")
-		(property "Reference" "TP8"
+		(property "Reference" "TP9"
 			(at 134.62 113.538 0)
 			(effects
 				(font
@@ -1951,7 +2306,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP8")
+					(reference "TP9")
 					(unit 1)
 				)
 			)
@@ -1967,7 +2322,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "353e072a-4a72-443f-893c-1b9202fb51cf")
-		(property "Reference" "TP6"
+		(property "Reference" "TP7"
 			(at 130.81 89.408 0)
 			(effects
 				(font
@@ -2027,7 +2382,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP6")
+					(reference "TP7")
 					(unit 1)
 				)
 			)
@@ -2105,9 +2460,9 @@
 		(at 27.94 91.44 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "720b97fc-cda3-4085-b113-6c1414a0e0c4")
 		(property "Reference" "CN3"
@@ -2201,7 +2556,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7475c450-e6c7-41fe-8772-32ba25b6aec5")
-		(property "Reference" "TP101"
+		(property "Reference" "TP1"
 			(at 49.53 29.972 0)
 			(effects
 				(font
@@ -2261,7 +2616,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP101")
+					(reference "TP1")
 					(unit 1)
 				)
 			)
@@ -2434,7 +2789,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "922a37ec-f3d1-4bdb-9e74-4bca5bc9b199")
-		(property "Reference" "TP5"
+		(property "Reference" "TP6"
 			(at 135.128 93.98 0)
 			(effects
 				(font
@@ -2494,7 +2849,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP5")
+					(reference "TP6")
 					(unit 1)
 				)
 			)
@@ -2601,7 +2956,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "958c5298-a094-42c1-b8c5-ff9df897983c")
-		(property "Reference" "TP1"
+		(property "Reference" "TP2"
 			(at 118.11 71.882 0)
 			(effects
 				(font
@@ -2661,7 +3016,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP1")
+					(reference "TP2")
 					(unit 1)
 				)
 			)
@@ -2677,7 +3032,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "9693d92d-681c-4c89-8d6b-09a27e06455e")
-		(property "Reference" "TP3"
+		(property "Reference" "TP4"
 			(at 118.11 120.142 0)
 			(effects
 				(font
@@ -2737,7 +3092,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP3")
+					(reference "TP4")
 					(unit 1)
 				)
 			)
@@ -2753,7 +3108,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a6100903-6afe-41df-9f5a-7604c259d9f9")
-		(property "Reference" "TP4"
+		(property "Reference" "TP5"
 			(at 118.11 144.272 0)
 			(effects
 				(font
@@ -2813,7 +3168,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP4")
+					(reference "TP5")
 					(unit 1)
 				)
 			)
@@ -2829,7 +3184,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "b3f6b6ad-3030-4df5-9b12-f9da696b812f")
-		(property "Reference" "TP10"
+		(property "Reference" "TP11"
 			(at 138.43 137.668 0)
 			(effects
 				(font
@@ -2889,7 +3244,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP10")
+					(reference "TP11")
 					(unit 1)
 				)
 			)
@@ -2972,7 +3327,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "cbb4aec3-b73b-4619-8c5a-6ce6638ebe0a")
-		(property "Reference" "TP7"
+		(property "Reference" "TP8"
 			(at 138.938 118.11 0)
 			(effects
 				(font
@@ -3032,7 +3387,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP7")
+					(reference "TP8")
 					(unit 1)
 				)
 			)
@@ -3048,7 +3403,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "de8845f7-8197-4122-a9be-2a4f30040244")
-		(property "Reference" "TP12"
+		(property "Reference" "TP13"
 			(at 142.24 161.798 0)
 			(effects
 				(font
@@ -3108,7 +3463,90 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP12")
+					(reference "TP13")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:73412-0110")
+		(at 46.99 123.19 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "de99db5f-d590-41fe-9825-c493936bffae")
+		(property "Reference" "RF1"
+			(at 59.69 117.7446 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "73412-0110"
+			(at 59.69 120.2846 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:ANT-SMD_73412-0110"
+			(at 64.77 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/RF-Connectors-Coaxial-Connectors_MOLEX-73412-0110_C434806.html"
+			(at 67.31 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 46.99 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C434806"
+			(at 69.85 123.19 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "3"
+			(uuid "3cc9bbd9-a708-4c2c-91e6-da155b91f916")
+		)
+		(pin "2"
+			(uuid "9b28da11-810f-4cbd-911f-17ff4f3f23ff")
+		)
+		(pin "4"
+			(uuid "a97ef916-0291-4de1-9f81-045f1824de25")
+		)
+		(pin "1"
+			(uuid "147c6410-e646-4dcf-a3af-d1e2da256831")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "RF1")
 					(unit 1)
 				)
 			)
@@ -3181,6 +3619,89 @@
 		)
 	)
 	(symbol
+		(lib_id "easyeda2kicad:73412-0110")
+		(at 46.99 152.4 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(fields_autoplaced yes)
+		(uuid "e183681f-4e6b-4ce2-892b-921f6c7e244b")
+		(property "Reference" "RF2"
+			(at 59.69 146.9546 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "73412-0110"
+			(at 59.69 149.4946 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:ANT-SMD_73412-0110"
+			(at 64.77 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/RF-Connectors-Coaxial-Connectors_MOLEX-73412-0110_C434806.html"
+			(at 67.31 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 46.99 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C434806"
+			(at 69.85 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "3"
+			(uuid "0673bb4d-8df7-4c48-8d82-667600c9599d")
+		)
+		(pin "2"
+			(uuid "889783db-3620-46a3-9312-f411b2e16b27")
+		)
+		(pin "4"
+			(uuid "508ed496-da54-41a1-a57a-7a1d7e844ea6")
+		)
+		(pin "1"
+			(uuid "4cb8b369-c8e0-481a-8d26-24ee1f08e582")
+		)
+		(instances
+			(project "hi_amp"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "RF2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "easyeda2kicad:LabeledTestPoint")
 		(at 118.11 102.87 0)
 		(unit 1)
@@ -3190,7 +3711,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e7539dcd-51f8-4104-89e3-56c43c9e0662")
-		(property "Reference" "TP2"
+		(property "Reference" "TP3"
 			(at 118.11 96.012 0)
 			(effects
 				(font
@@ -3250,7 +3771,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP2")
+					(reference "TP3")
 					(unit 1)
 				)
 			)
@@ -3333,7 +3854,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "f80239f1-ea9b-4a56-99ef-0d1a0ec13f8e")
-		(property "Reference" "TP9"
+		(property "Reference" "TP10"
 			(at 142.748 140.97 0)
 			(effects
 				(font
@@ -3393,7 +3914,7 @@
 		(instances
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
-					(reference "TP9")
+					(reference "TP10")
 					(unit 1)
 				)
 			)

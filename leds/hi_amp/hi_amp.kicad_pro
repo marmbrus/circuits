@@ -650,6 +650,10 @@
       "esp32"
     ],
     [
+      "772be983-e44d-4c4a-89d9-f3db961d0077",
+      "driver1"
+    ],
+    [
       "aa9739d0-05d8-4c74-a4fd-846c263eed0b",
       "buckconverter"
     ],
@@ -666,12 +670,24 @@
       "a2d"
     ],
     [
+      "bb6c7cb0-a55e-486a-88be-2d55f5ff5760",
+      "driver2"
+    ],
+    [
+      "0d1848eb-b141-43a5-963f-85d692eaf09f",
+      "driver3"
+    ],
+    [
       "f2bbebe1-7e19-419b-a0b6-59692ffc8a76",
       "led_channel"
     ],
     [
       "12e1977d-52a8-4b65-9b00-e4fe663befea",
       "led_channel1"
+    ],
+    [
+      "f8c7c778-e0ba-4002-9de8-bdb439119e38",
+      "driver"
     ],
     [
       "ec821e09-438d-4557-b77c-9ca8e64b8f3a",

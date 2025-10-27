@@ -1328,7 +1328,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "01e1a0d3-92c1-4cbb-8f17-f0eed65ecca9")
-		(property "Reference" "#PWR015"
+		(property "Reference" "#PWR016"
 			(at 143.51 76.2 0)
 			(effects
 				(font
@@ -1378,7 +1378,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "#PWR015")
+					(reference "#PWR016")
 					(unit 1)
 				)
 			)
@@ -1394,7 +1394,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "07d96415-14c8-48ee-bdea-1763de03c2dc")
-		(property "Reference" "#PWR012"
+		(property "Reference" "#PWR013"
 			(at 39.37 52.07 0)
 			(effects
 				(font
@@ -1444,7 +1444,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "#PWR012")
+					(reference "#PWR013")
 					(unit 1)
 				)
 			)
@@ -1460,7 +1460,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "17dc86e7-c64a-412b-b581-c36308ddb564")
-		(property "Reference" "R11"
+		(property "Reference" "R8"
 			(at 146.05 48.2599 0)
 			(effects
 				(font
@@ -1514,7 +1514,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "R11")
+					(reference "R8")
 					(unit 1)
 				)
 			)
@@ -1530,7 +1530,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1d9d9418-39c0-4cea-bf66-56e8e50d7434")
-		(property "Reference" "C12"
+		(property "Reference" "C14"
 			(at 135.89 48.2599 0)
 			(effects
 				(font
@@ -1584,7 +1584,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "C12")
+					(reference "C14")
 					(unit 1)
 				)
 			)
@@ -1600,7 +1600,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1dc0f4f3-abcf-4fa1-8899-eb0ccd468471")
-		(property "Reference" "C8"
+		(property "Reference" "C10"
 			(at 50.8 30.4799 0)
 			(effects
 				(font
@@ -1654,7 +1654,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "C8")
+					(reference "C10")
 					(unit 1)
 				)
 			)
@@ -1670,7 +1670,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "326f57b6-8c54-4082-b64c-635f78c2e32d")
-		(property "Reference" "R10"
+		(property "Reference" "R7"
 			(at 146.05 36.8299 0)
 			(effects
 				(font
@@ -1724,7 +1724,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "R10")
+					(reference "R7")
 					(unit 1)
 				)
 			)
@@ -1740,7 +1740,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "337edf6f-66f6-41b5-9d03-4da6f9795cf4")
-		(property "Reference" "C10"
+		(property "Reference" "C12"
 			(at 114.3 38.0999 0)
 			(effects
 				(font
@@ -1794,7 +1794,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "C10")
+					(reference "C12")
 					(unit 1)
 				)
 			)
@@ -1891,7 +1891,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "4e8ff141-34ea-44fd-8f36-ca9dd89327d4")
-		(property "Reference" "C11"
+		(property "Reference" "C13"
 			(at 125.73 38.0999 0)
 			(effects
 				(font
@@ -1945,7 +1945,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "C11")
+					(reference "C13")
 					(unit 1)
 				)
 			)
@@ -1961,7 +1961,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7a1ea683-b7e9-4e2b-b7c9-32f385ec102f")
-		(property "Reference" "C7"
+		(property "Reference" "C9"
 			(at 39.37 30.4799 0)
 			(effects
 				(font
@@ -2015,7 +2015,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "C7")
+					(reference "C9")
 					(unit 1)
 				)
 			)
@@ -2031,7 +2031,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "7dd12d17-f795-4422-9bd1-c4875acbbb59")
-		(property "Reference" "#PWR014"
+		(property "Reference" "#PWR015"
 			(at 116.84 54.61 0)
 			(effects
 				(font
@@ -2081,7 +2081,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "#PWR014")
+					(reference "#PWR015")
 					(unit 1)
 				)
 			)
@@ -2097,7 +2097,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "8271f94a-983a-4905-9295-0a10d1fac59f")
-		(property "Reference" "C6"
+		(property "Reference" "C8"
 			(at 26.67 30.4799 0)
 			(effects
 				(font
@@ -2151,7 +2151,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "C6")
+					(reference "C8")
 					(unit 1)
 				)
 			)
@@ -2244,7 +2244,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "b37d8a33-b660-4c9d-9dba-49ae1d4fa9ce")
-		(property "Reference" "TP301"
+		(property "Reference" "TP14"
 			(at 133.35 26.162 0)
 			(effects
 				(font
@@ -2304,7 +2304,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "TP301")
+					(reference "TP14")
 					(unit 1)
 				)
 			)
@@ -2320,7 +2320,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "bbe4d836-d598-4890-b7a7-90588a2de937")
-		(property "Reference" "C9"
+		(property "Reference" "C11"
 			(at 95.25 22.86 90)
 			(effects
 				(font
@@ -2372,7 +2372,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "C9")
+					(reference "C11")
 					(unit 1)
 				)
 			)
@@ -2388,7 +2388,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "e5f5df11-d7ac-4836-9d4a-33b0001dc40c")
-		(property "Reference" "R12"
+		(property "Reference" "R9"
 			(at 146.05 59.6899 0)
 			(effects
 				(font
@@ -2442,7 +2442,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "R12")
+					(reference "R9")
 					(unit 1)
 				)
 			)
@@ -2458,7 +2458,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "efec701b-8ea7-4ac7-b1a6-e82efec17c35")
-		(property "Reference" "#PWR013"
+		(property "Reference" "#PWR014"
 			(at 74.93 52.07 0)
 			(effects
 				(font
@@ -2508,7 +2508,7 @@
 		(instances
 			(project "hi_amp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/aa9739d0-05d8-4c74-a4fd-846c263eed0b"
-					(reference "#PWR013")
+					(reference "#PWR014")
 					(unit 1)
 				)
 			)
