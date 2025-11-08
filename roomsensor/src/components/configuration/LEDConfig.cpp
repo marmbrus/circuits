@@ -241,7 +241,6 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         /* generation bumped centrally */
         return ESP_OK;
     }
-    // removed legacy 'start' from LEDConfig; now in life module
     if (strcmp(key, "dma") == 0) {
         // Tri-state: if value_str is null, clear; otherwise parse truthy/falsy
         if (value_str == nullptr || value_str[0] == '\0') {
@@ -302,7 +301,6 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     if (w_set_) cJSON_AddNumberToObject(obj, "W", w_);
     if (brightness_set_) cJSON_AddNumberToObject(obj, "brightness", brightness_);
     if (speed_set_) cJSON_AddNumberToObject(obj, "speed", speed_);
-    // 'start' now belongs to life module
     if (dma_set_) cJSON_AddBoolToObject(obj, "dma", dma_);
 
     // If dataGPIO is not set, omit this module from the config entirely

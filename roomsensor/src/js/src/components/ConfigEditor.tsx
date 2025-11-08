@@ -64,7 +64,6 @@ export default function ConfigEditor({ open, mac, field, onClose, onSubmit, cont
 	const handleSubmit = () => {
 		if (!field) return
 		let out: string | number | boolean
-		// No special handling; leave key selection to the caller/UI layer
 		if (control) {
 			switch (control.type) {
 				case 'boolean': out = bool; break

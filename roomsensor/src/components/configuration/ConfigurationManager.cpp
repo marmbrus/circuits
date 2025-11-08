@@ -33,7 +33,6 @@ void ConfigurationManager::register_modules() {
     modules_.push_back(tags_module_.get());
     device_module_.reset(new DeviceConfig());
     modules_.push_back(device_module_.get());
-    // Pattern configuration modules
     life_module_.reset(new GameOfLifeConfig());
     modules_.push_back(life_module_.get());
     led1_module_.reset(new LEDConfig("led1"));
