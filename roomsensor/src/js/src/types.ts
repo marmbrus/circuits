@@ -1,6 +1,7 @@
 export type LedConfig = {
   dataGPIO: number
   enabledGPIO?: number
+  enabledGPIOs?: string
   chip: string
   num_columns: number
   num_rows: number

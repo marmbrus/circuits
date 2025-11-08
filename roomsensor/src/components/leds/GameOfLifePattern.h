@@ -25,6 +25,21 @@ public:
     void set_start_string(const char* start) override { start_string_ = start ? start : ""; }
 
 private:
+    enum class StartMode {
+        RANDOM,
+        SIMPLE,
+        NUMERIC,
+        RLE,
+    };
+    struct StartSpec {
+        StartMode mode = StartMode::RANDOM;
+        uint32_t seed = 0;       // valid when mode == NUMERIC
+        const char* rle = nullptr; // points into start_string_.c_str() after any prefix/whitespace
+    };
+
+    StartSpec parse_start_spec() const;
+    bool apply_rle_seed(const char* rle, size_t rows, size_t cols);
+    void compute_rle_dimensions(const char* rle, size_t& out_width, size_t& out_height) const;
     void randomize_state(size_t rows, size_t cols, uint32_t seed);
     unsigned count_live_neighbors(size_t rows, size_t cols, size_t r, size_t c) const;
     void render_current(LEDStrip& strip) const;
@@ -48,6 +63,8 @@ private:
     std::string start_string_;
     bool simple_mode_ = false;
     uint32_t initial_seed_ = 0; // seed used to create the run's initial random state
+    // Track last applied life config generation to restart on change
+    uint32_t last_life_generation_ = 0;
     // Cycle detection ring buffer allocated in SPI RAM (stores hashes and generation indices)
     static constexpr size_t kHashRingCapacity = 1000;
     Hash256* hash_ring_ = nullptr;

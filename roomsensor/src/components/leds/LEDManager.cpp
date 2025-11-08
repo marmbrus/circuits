@@ -50,7 +50,6 @@ static inline void apply_runtime_knobs(leds::LEDPattern& pat, const config::LEDC
                             cfg.has_w() ? cfg.w() : 0);
     }
     if (cfg.has_brightness()) pat.set_brightness_percent(cfg.brightness());
-    if (cfg.has_start()) pat.set_start_string(cfg.start().c_str());
 }
 
 
@@ -83,6 +82,7 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     scratch_frames_rgba_.clear();
     last_layouts_.clear();
     last_patterns_.clear();
+    last_enable_pins_.clear();
     frames_tx_counts_.assign(active.size(), 0);
     last_generations_.assign(active.size(), 0);
     last_power_enabled_.assign(active.size(), false);
@@ -92,9 +92,22 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
 
     ESP_LOGI(TAG, "Config refresh: %zu active strips", active.size());
     for (LEDConfig* c : active) {
-        ESP_LOGI(TAG, "Strip config: name=%s gpio=%d enable_gpio=%d chip=%s size=%dx%d dma=%s pattern=%s", c->name(),
+        // Build enable list string
+        std::string en_str;
+        auto pins = c->all_enabled_gpios();
+        if (!pins.empty()) {
+            en_str.push_back('[');
+            for (size_t i = 0; i < pins.size(); ++i) {
+                if (i) en_str.push_back(',');
+                en_str += std::to_string(pins[i]);
+            }
+            en_str.push_back(']');
+        } else {
+            en_str = "[]";
+        }
+        ESP_LOGI(TAG, "Strip config: name=%s gpio=%d enable_gpios=%s chip=%s size=%dx%d dma=%s pattern=%s", c->name(),
                  c->has_data_gpio() ? c->data_gpio() : -1,
-                 c->has_enabled_gpio() ? c->enabled_gpio() : -1,
+                 en_str.c_str(),
                  c->chip().c_str(), c->num_columns(), c->num_rows(),
                  c->has_dma() ? (c->dma() ? "true" : "false") : "unset",
                  c->has_pattern() ? c->pattern().c_str() : "<unset>");
@@ -139,6 +152,7 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
         patterns_.push_back(create_pattern_from_config(*c));
         last_layouts_.push_back(c->layout_enum());
         last_patterns_.push_back(c->pattern_enum());
+        last_enable_pins_.push_back(c->all_enabled_gpios());
         built_cfgs.push_back(c);
     }
 
@@ -175,26 +189,27 @@ std::unique_ptr<LEDStrip> LEDManager::create_strip(const config::LEDConfig& cfg,
     }
     switch (chip) {
         case config::LEDConfig::Chip::WS2812: {
-            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1, rows, cols};
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2812(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
+            // Encoder does not manage enable pins; LEDStripSurfaceAdapter handles power control
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2812(ap.gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
             s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
             break;
         }
         case config::LEDConfig::Chip::SK6812: {
-            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1, rows, cols};
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderSK6812(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderSK6812(ap.gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
             s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
             break;
         }
         case config::LEDConfig::Chip::WS2814: {
-            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1, rows, cols};
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2814(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
+            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2814(ap.gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
             s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
             break;
         }
         case config::LEDConfig::Chip::FLIPDOT: {
-            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.has_enabled_gpio() ? cfg.enabled_gpio() : -1, rows, cols};
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderFlipdot(ap.gpio, ap.enable_gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, ((rows * cols) + 2) / 3));
+            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
+            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderFlipdot(ap.gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, ((rows * cols) + 2) / 3));
             s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
             break;
         }
@@ -319,10 +334,7 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
     if (type_changed) {
         patterns_[idx] = create_pattern_from_config(cfg);
         pat = patterns_[idx].get();
-        if (pat) {
-            apply_runtime_knobs(*pat, cfg);
-            pat->reset(*strip, now_us);
-        }
+        if (pat) { apply_runtime_knobs(*pat, cfg); pat->reset(*strip, now_us); }
         ESP_LOGI(TAG, "Pattern swapped for strip %u -> %s", (unsigned)idx, pat ? pat->name() : "<null>");
     } else if (pat) {
         // Apply runtime knobs
@@ -354,7 +366,8 @@ void LEDManager::reconcile_with_config(config::ConfigurationManager& cfg_manager
                 size_t desired_len = static_cast<size_t>(c->num_columns() * c->num_rows());
                 if (s->pin() != (c->has_data_gpio() ? c->data_gpio() : -1) ||
                     s->length() != desired_len ||
-                    (i < last_layouts_.size() && last_layouts_[i] != c->layout_enum())) { big_change = true; break; }
+                    (i < last_layouts_.size() && last_layouts_[i] != c->layout_enum()) ||
+                    (i < last_enable_pins_.size() && last_enable_pins_[i] != c->all_enabled_gpios())) { big_change = true; break; }
             }
         } else {
             // No generation change; nothing to do
@@ -388,6 +401,7 @@ void LEDManager::reconcile_with_config(config::ConfigurationManager& cfg_manager
         last_generations_[i] = current_gen;
         apply_pattern_updates_from_config(i, *c, now);
     }
+    // No pattern-specific restarts here; patterns handle their own config changes
 }
 
 } // namespace leds

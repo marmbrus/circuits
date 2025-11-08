@@ -2,6 +2,8 @@
 
 #include "ConfigurationModule.h"
 #include <string>
+#include <vector>
+#include <algorithm>
 
 namespace config {
 
@@ -52,6 +54,23 @@ public:
     int data_gpio() const { return data_gpio_; }
     bool has_enabled_gpio() const { return enabled_gpio_set_; }
     int enabled_gpio() const { return enabled_gpio_; }
+    // New plural enables
+    bool has_enabled_gpios() const { return enabled_gpios_set_ && !enabled_gpios_.empty(); }
+    const std::vector<int>& enabled_gpios() const { return enabled_gpios_; }
+    // Convenience: union of plural (if set) and singular (if set)
+    std::vector<int> all_enabled_gpios() const {
+        std::vector<int> pins;
+        // If plural is set, prefer it exclusively and ignore singular
+        if (has_enabled_gpios()) {
+            pins.insert(pins.end(), enabled_gpios_.begin(), enabled_gpios_.end());
+        } else if (has_enabled_gpio() && enabled_gpio_ >= 0) {
+            pins.push_back(enabled_gpio_);
+        }
+        // de-dup
+        std::sort(pins.begin(), pins.end());
+        pins.erase(std::unique(pins.begin(), pins.end()), pins.end());
+        return pins;
+    }
     const std::string& chip() const { return chip_; }
     Chip chip_enum() const { return chip_enum_; }
     int num_columns() const { return num_columns_; }
@@ -76,8 +95,6 @@ public:
     int brightness() const { return brightness_; }
     bool has_speed() const { return speed_set_; }
     int speed() const { return speed_; }
-    bool has_start() const { return start_set_; }
-    const std::string& start() const { return start_; }
     bool has_dma() const { return dma_set_; }
     bool dma() const { return dma_; }
     // Optional user-provided display name
@@ -100,6 +117,8 @@ private:
     int data_gpio_ = -1;
     bool enabled_gpio_set_ = false;
     int enabled_gpio_ = -1;
+    bool enabled_gpios_set_ = false;
+    std::vector<int> enabled_gpios_;
     std::string chip_ = "WS2812"; // external/string representation
     Chip chip_enum_ = Chip::WS2812; // internal representation
     int num_columns_ = 1;
@@ -120,7 +139,6 @@ private:
     bool w_set_ = false; int w_ = 0;
     bool brightness_set_ = false; int brightness_ = 100;
     bool speed_set_ = false; int speed_ = 100;
-    bool start_set_ = false; std::string start_;
     bool dma_set_ = false; bool dma_ = false;
 
     std::vector<ConfigurationValueDescriptor> descriptors_;

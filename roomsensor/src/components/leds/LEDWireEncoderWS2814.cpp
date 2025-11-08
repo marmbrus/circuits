@@ -8,8 +8,8 @@ namespace leds { namespace internal {
 
 static const char* TAG_14 = "WireEncoderWS2814";
 
-WireEncoderWS2814::WireEncoderWS2814(int gpio, int enable_gpio, bool with_dma, uint32_t rmt_resolution_hz, size_t mem_block_symbols, size_t max_leds)
-    : gpio_(gpio), enable_gpio_(enable_gpio), with_dma_(with_dma), rmt_resolution_hz_(rmt_resolution_hz), mem_block_symbols_(mem_block_symbols), max_leds_(max_leds) {
+WireEncoderWS2814::WireEncoderWS2814(int gpio, bool with_dma, uint32_t rmt_resolution_hz, size_t mem_block_symbols, size_t max_leds)
+    : gpio_(gpio), with_dma_(with_dma), rmt_resolution_hz_(rmt_resolution_hz), mem_block_symbols_(mem_block_symbols), max_leds_(max_leds) {
     // No enable pin handling here; centralized in LEDStripSurfaceAdapter
     led_strip_config_t led_cfg = {
         .strip_gpio_num = gpio_,

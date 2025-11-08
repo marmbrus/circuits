@@ -8,6 +8,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     // Persisted descriptors
     descriptors_.push_back({"dataGPIO", ConfigValueType::I32, nullptr, true});
     descriptors_.push_back({"enabledGPIO", ConfigValueType::I32, nullptr, true});
+    descriptors_.push_back({"enabledGPIOs", ConfigValueType::String, nullptr, true});
     descriptors_.push_back({"chip", ConfigValueType::String, "WS2812", true});
     descriptors_.push_back({"num_columns", ConfigValueType::I32, "1", true});
     descriptors_.push_back({"num_rows", ConfigValueType::I32, "1", true});
@@ -27,7 +28,6 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     descriptors_.push_back({"W", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"brightness", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"speed", ConfigValueType::I32, nullptr, false});
-    descriptors_.push_back({"start", ConfigValueType::String, nullptr, false});
     descriptors_.push_back({"dma", ConfigValueType::Bool, nullptr, false});
 }
 
@@ -126,6 +126,40 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         /* generation bumped centrally */
         return ESP_OK;
     }
+    if (strcmp(key, "enabledGPIOs") == 0) {
+        enabled_gpios_.clear();
+        if (value_str == nullptr || *value_str == '\0') {
+            enabled_gpios_set_ = false;
+            /* generation bumped centrally */
+            return ESP_OK;
+        }
+        // Parse comma-separated integers; ignore invalid tokens
+        const char* p = value_str;
+        while (*p) {
+            while (*p == ' ' || *p == '\t' || *p == '\n' || *p == ',') p++; // skip delimiters
+            if (!*p) break;
+            // collect token
+            const char* start = p;
+            while (*p && *p != ',') p++;
+            std::string tok(start, p - start);
+            // trim whitespace
+            size_t a = tok.find_first_not_of(" \t\n\r");
+            size_t b = tok.find_last_not_of(" \t\n\r");
+            if (a != std::string::npos && b != std::string::npos) {
+                tok = tok.substr(a, b - a + 1);
+                if (!tok.empty()) {
+                    int v = atoi(tok.c_str());
+                    if (v >= 0) enabled_gpios_.push_back(v);
+                }
+            }
+        }
+        // dedupe
+        std::sort(enabled_gpios_.begin(), enabled_gpios_.end());
+        enabled_gpios_.erase(std::unique(enabled_gpios_.begin(), enabled_gpios_.end()), enabled_gpios_.end());
+        enabled_gpios_set_ = !enabled_gpios_.empty();
+        /* generation bumped centrally */
+        return ESP_OK;
+    }
     if (strcmp(key, "chip") == 0) {
         Chip parsed = parse_chip(value_str);
         if (parsed != Chip::INVALID) {
@@ -207,12 +241,7 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         /* generation bumped centrally */
         return ESP_OK;
     }
-    if (strcmp(key, "start") == 0) {
-        start_set_ = (value_str != nullptr);
-        start_ = value_str ? value_str : "";
-        /* generation bumped centrally */
-        return ESP_OK;
-    }
+    // removed legacy 'start' from LEDConfig; now in life module
     if (strcmp(key, "dma") == 0) {
         // Tri-state: if value_str is null, clear; otherwise parse truthy/falsy
         if (value_str == nullptr || value_str[0] == '\0') {
@@ -246,7 +275,18 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
 
     // Persisted fields
     if (data_gpio_set_) cJSON_AddNumberToObject(obj, "dataGPIO", data_gpio_);
-    if (enabled_gpio_set_) cJSON_AddNumberToObject(obj, "enabledGPIO", enabled_gpio_);
+    // Only include one representation: prefer plural if set; otherwise include singular if non-negative
+    if (enabled_gpios_set_ && !enabled_gpios_.empty()) {
+        // Join into comma-separated string
+        std::string s;
+        for (size_t i = 0; i < enabled_gpios_.size(); ++i) {
+            if (i) s += ",";
+            s += std::to_string(enabled_gpios_[i]);
+        }
+        cJSON_AddStringToObject(obj, "enabledGPIOs", s.c_str());
+    } else if (enabled_gpio_set_ && enabled_gpio_ >= 0) {
+        cJSON_AddNumberToObject(obj, "enabledGPIO", enabled_gpio_);
+    }
     cJSON_AddStringToObject(obj, "chip", chip_.c_str());
     cJSON_AddNumberToObject(obj, "num_columns", num_columns_);
     cJSON_AddNumberToObject(obj, "num_rows", num_rows_);
@@ -262,7 +302,7 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     if (w_set_) cJSON_AddNumberToObject(obj, "W", w_);
     if (brightness_set_) cJSON_AddNumberToObject(obj, "brightness", brightness_);
     if (speed_set_) cJSON_AddNumberToObject(obj, "speed", speed_);
-    if (start_set_) cJSON_AddStringToObject(obj, "start", start_.c_str());
+    // 'start' now belongs to life module
     if (dma_set_) cJSON_AddBoolToObject(obj, "dma", dma_);
 
     // If dataGPIO is not set, omit this module from the config entirely

@@ -15,6 +15,7 @@ namespace config {
 class WifiConfig;
 class TagsConfig;
 class DeviceConfig;
+class GameOfLifeConfig;
 class LEDConfig;
 class A2DConfig;
 class IOConfig;
@@ -39,6 +40,8 @@ public:
     WifiConfig& wifi();
     TagsConfig& tags();
     DeviceConfig& device();
+    // Pattern-specific configs
+    GameOfLifeConfig& life();
     LEDConfig& led1();
     LEDConfig& led2();
     LEDConfig& led3();
@@ -86,6 +89,7 @@ private:
     std::unique_ptr<WifiConfig> wifi_module_;
     std::unique_ptr<TagsConfig> tags_module_;
     std::unique_ptr<DeviceConfig> device_module_;
+    std::unique_ptr<GameOfLifeConfig> life_module_;
     std::unique_ptr<LEDConfig> led1_module_;
     std::unique_ptr<LEDConfig> led2_module_;
     std::unique_ptr<LEDConfig> led3_module_;

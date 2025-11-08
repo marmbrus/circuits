@@ -7,7 +7,7 @@ namespace leds { namespace internal {
 // WS2814 timings compatible; RGBW on wire but mapping requires WRGB logical -> GRBW driver order
 class WireEncoderWS2814 final : public LEDWireEncoder {
 public:
-    WireEncoderWS2814(int gpio, int enable_gpio, bool with_dma, uint32_t rmt_resolution_hz, size_t mem_block_symbols, size_t max_leds);
+    WireEncoderWS2814(int gpio, bool with_dma, uint32_t rmt_resolution_hz, size_t mem_block_symbols, size_t max_leds);
     ~WireEncoderWS2814();
 
     size_t frame_size_for(size_t rows, size_t cols) const override { return rows * cols * 4; }
@@ -37,7 +37,6 @@ public:
 
 private:
     int gpio_ = -1;
-    int enable_gpio_ = -1;
     bool with_dma_ = false;
     uint32_t rmt_resolution_hz_ = 10 * 1000 * 1000;
     size_t mem_block_symbols_ = 48;

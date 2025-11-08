@@ -5,6 +5,8 @@
 #include "LEDCoordinateMapperRowMajor.h"
 #include "LEDWireEncoder.h"
 #include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <memory>
 #include <vector>
 #include "PsramAllocator.h"
@@ -15,7 +17,7 @@ class LEDStripSurfaceAdapter final : public LEDStrip {
 public:
     struct Params {
         int gpio;
-        int enable_gpio = -1;
+        std::vector<int> enable_gpios;
         size_t rows = 1;
         size_t cols = 1;
     };
@@ -23,18 +25,24 @@ public:
     LEDStripSurfaceAdapter(const Params& p,
                            std::unique_ptr<internal::LEDCoordinateMapper> mapper,
                            std::unique_ptr<internal::LEDWireEncoder> encoder)
-        : gpio_(p.gpio), enable_gpio_(p.enable_gpio), rows_(p.rows), cols_(p.cols) {
+        : gpio_(p.gpio), enable_gpios_(p.enable_gpios), rows_(p.rows), cols_(p.cols) {
         surface_.reset(new LEDSurfaceImpl(rows_, cols_, std::move(mapper), std::move(encoder)));
         shadow_rgba_.assign(rows_ * cols_ * 4, 0);
-        if (enable_gpio_ >= 0) {
-            gpio_config_t io_conf = {};
-            io_conf.intr_type = GPIO_INTR_DISABLE;
-            io_conf.mode = GPIO_MODE_OUTPUT;
-            io_conf.pin_bit_mask = 1ULL << enable_gpio_;
-            io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-            io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-            gpio_config(&io_conf);
-            gpio_set_level((gpio_num_t)enable_gpio_, 0);
+        if (!enable_gpios_.empty()) {
+            uint64_t mask = 0;
+            for (int pin : enable_gpios_) { if (pin >= 0) mask |= (1ULL << pin); }
+            if (mask) {
+                gpio_config_t io_conf = {};
+                io_conf.intr_type = GPIO_INTR_DISABLE;
+                io_conf.mode = GPIO_MODE_OUTPUT;
+                io_conf.pin_bit_mask = mask;
+                io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+                io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
+                gpio_config(&io_conf);
+                for (int pin : enable_gpios_) {
+                    if (pin >= 0) gpio_set_level((gpio_num_t)pin, 0);
+                }
+            }
         }
     }
 
@@ -93,18 +101,32 @@ public:
     void on_transmit_complete(uint64_t now_us) override { (void)now_us; /* no-op */ }
 
     bool uses_dma() const override { return false; }
-    bool has_enable_pin() const override { return enable_gpio_ >= 0; }
+    bool has_enable_pin() const override { return !enable_gpios_.empty(); }
     void set_power_enabled(bool on) override {
-        if (enable_gpio_ >= 0) {
-            gpio_set_level((gpio_num_t)enable_gpio_, on ? 1 : 0);
+        if (enable_gpios_.empty()) return;
+        if (on == power_enabled_) return;
+        if (on && enable_gpios_.size() > 1) {
+            // Stagger enabling to mitigate inrush current: 500ms between pins
+            for (size_t i = 0; i < enable_gpios_.size(); ++i) {
+                int pin = enable_gpios_[i];
+                if (pin >= 0) gpio_set_level((gpio_num_t)pin, 1);
+                if (i + 1 < enable_gpios_.size()) vTaskDelay(pdMS_TO_TICKS(500));
+            }
+        } else {
+            // Single pin, or turning off: apply immediately
+            for (int pin : enable_gpios_) {
+                if (pin >= 0) gpio_set_level((gpio_num_t)pin, on ? 1 : 0);
+            }
         }
+        power_enabled_ = on;
     }
 
 private:
     int gpio_ = -1;
-    int enable_gpio_ = -1;
+    std::vector<int> enable_gpios_;
     size_t rows_ = 1;
     size_t cols_ = 1;
+    bool power_enabled_ = false;
     std::unique_ptr<LEDSurfaceImpl> surface_;
     // Shadow buffer can be large: rows*cols*4
     std::vector<uint8_t, PsramAllocator<uint8_t>> shadow_rgba_;

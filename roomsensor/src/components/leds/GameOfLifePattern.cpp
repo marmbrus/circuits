@@ -2,11 +2,14 @@
 #include "LEDStrip.h"
 #include <algorithm>
 #include <strings.h>
+#include <cstdlib>
 #include "communication.h"
 #include "esp_log.h"
 #include "cJSON.h"
 #include "esp_timer.h"
 #include "esp_heap_caps.h"
+#include "ConfigurationManager.h"
+#include "GameOfLifeConfig.h"
 
 // External declarations provided by wifi.cpp (keep local to this TU)
 extern const uint8_t* get_device_mac(void);
@@ -102,8 +105,149 @@ static void report_period_metric(uint32_t period) {
     report_metric("period", (float)period, tags);
 }
 
+GameOfLifePattern::StartSpec GameOfLifePattern::parse_start_spec() const {
+    StartSpec spec;
+    if (start_string_.empty()) return spec;
+    const char* s = start_string_.c_str();
+    while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n') s++;
+    if (strncasecmp(s, "RLE:", 4) == 0) {
+        s += 4;
+        while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n') s++;
+        spec.mode = StartMode::RLE;
+        spec.rle = s;
+        return spec;
+    }
+    if (strcasecmp(s, "SIMPLE") == 0) {
+        spec.mode = StartMode::SIMPLE;
+        return spec;
+    }
+    char* endp = nullptr;
+    unsigned long v = strtoul(s, &endp, 10);
+    while (endp && (*endp == ' ' || *endp == '\t' || *endp == '\r' || *endp == '\n')) endp++;
+    if (endp && *endp == '\0') {
+        spec.mode = StartMode::NUMERIC;
+        spec.seed = static_cast<uint32_t>(v);
+        return spec;
+    }
+    return spec; // RANDOM
+}
+
+bool GameOfLifePattern::apply_rle_seed(const char* rle, size_t rows, size_t cols) {
+    if (!rle) return false;
+    // First pass: compute pattern width and height
+    size_t pat_w = 0, pat_h = 0;
+    compute_rle_dimensions(rle, pat_w, pat_h);
+    // Center offsets (clip if pattern larger than grid)
+    size_t off_r = (rows > pat_h) ? ((rows - pat_h) / 2) : 0;
+    size_t off_c = (cols > pat_w) ? ((cols - pat_w) / 2) : 0;
+
+    // Second pass: render with offsets
+    size_t r = 0, c = 0;
+    auto put_cells = [&](bool live, unsigned count) {
+        for (unsigned i = 0; i < count; ++i) {
+            // destination coordinates
+            size_t rr = off_r + r;
+            size_t cc = off_c + c;
+            if (rr < rows && cc < cols) {
+                size_t idx = cc * rows + rr;
+                current_[idx] = live ? 1 : 0;
+            }
+            ++c;
+        }
+    };
+    const char* p = rle;
+    unsigned n = 0; // run-length accumulator applied to next token
+    while (*p && r < rows) {
+        char ch = *p++;
+        if (ch >= '0' && ch <= '9') {
+            n = n * 10u + static_cast<unsigned>(ch - '0');
+            continue;
+        }
+        if (ch == 'b' || ch == 'B') {
+            unsigned cnt = (n == 0) ? 1u : n;
+            put_cells(false, cnt);
+            n = 0;
+            continue;
+        }
+        if (ch == 'o' || ch == 'O') {
+            unsigned cnt = (n == 0) ? 1u : n;
+            put_cells(true, cnt);
+            n = 0;
+            continue;
+        }
+        if (ch == '$') {
+            unsigned rows_down = (n == 0) ? 1u : n;
+            r += rows_down;
+            c = 0;
+            n = 0;
+            continue;
+        }
+        if (ch == '!') {
+            break;
+        }
+        // Ignore whitespace and any other characters without resetting n
+    }
+    return true;
+}
+
+void GameOfLifePattern::compute_rle_dimensions(const char* rle, size_t& out_width, size_t& out_height) const {
+    out_width = 0;
+    out_height = 0;
+    if (!rle) return;
+    const char* p = rle;
+    unsigned n = 0;
+    size_t cur_w = 0;
+    bool row_has_content = false;
+    while (*p) {
+        char ch = *p++;
+        if (ch >= '0' && ch <= '9') {
+            n = n * 10u + static_cast<unsigned>(ch - '0');
+            continue;
+        }
+        if (ch == 'b' || ch == 'B') {
+            unsigned cnt = (n == 0) ? 1u : n;
+            cur_w += cnt;
+            row_has_content = true;
+            n = 0;
+            continue;
+        }
+        if (ch == 'o' || ch == 'O') {
+            unsigned cnt = (n == 0) ? 1u : n;
+            cur_w += cnt;
+            row_has_content = true;
+            n = 0;
+            continue;
+        }
+        if (ch == '$') {
+            // End of row; count it even if empty when $ is present
+            out_width = (cur_w > out_width) ? cur_w : out_width;
+            unsigned rows_down = (n == 0) ? 1u : n;
+            out_height += rows_down;
+            cur_w = 0;
+            row_has_content = false;
+            n = 0;
+            continue;
+        }
+        if (ch == '!') {
+            break;
+        }
+        // Ignore other/whitespace
+    }
+    // If there was content without a trailing $, count final row
+    if (row_has_content || cur_w > 0) {
+        out_height += 1;
+        out_width = (cur_w > out_width) ? cur_w : out_width;
+    }
+}
+
 void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
     (void)now_us;
+    // Pull latest life config and capture start string + generation
+    auto& mgr = config::GetConfigurationManager();
+    auto& life_cfg = mgr.life();
+    if (life_cfg.has_start()) start_string_ = life_cfg.start();
+    else start_string_.clear();
+    last_life_generation_ = life_cfg.generation();
     const size_t rows = strip.rows();
     const size_t cols = strip.cols();
     const size_t total = rows * cols;
@@ -120,15 +264,12 @@ void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
     }
     ring_count_ = 0;
     ring_pos_ = 0;
-    // Seed based on start_string_
-    bool use_simple = false;
-    if (!start_string_.empty()) {
-        // case-insensitive compare against SIMPLE
-        const char* s = start_string_.c_str();
-        if (strcasecmp(s, "SIMPLE") == 0) use_simple = true;
-    }
-    simple_mode_ = use_simple;
-    if (use_simple && rows >= 1 && cols >= 5) {
+    // Seed selection via a single parsed spec
+    StartSpec spec = parse_start_spec();
+    simple_mode_ = (spec.mode == StartMode::SIMPLE);
+    if (spec.mode == StartMode::RLE) {
+        (void)apply_rle_seed(spec.rle, rows, cols);
+    } else if (spec.mode == StartMode::SIMPLE && rows >= 1 && cols >= 5) {
         // Blinker: three cells in a row away from edges, near top-left area
         size_t r = rows / 2; // middle row
         size_t c = 2;        // a bit away from left edge
@@ -137,9 +278,14 @@ void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
         current_[idx_of(r, c    )] = 1;
         current_[idx_of(r, c + 1)] = 1;
     } else {
-        // RANDOM - seed from current time
-        uint64_t t = esp_timer_get_time();
-        uint32_t seed = static_cast<uint32_t>(t ^ (t >> 32));
+        // RANDOM - seed from provided numeric seed (if any), else current time
+        uint32_t seed;
+        if (spec.mode == StartMode::NUMERIC) {
+            seed = spec.seed;
+        } else {
+            uint64_t t = esp_timer_get_time();
+            seed = static_cast<uint32_t>(t ^ (t >> 32));
+        }
         initial_seed_ = seed;
         randomize_state(rows, cols, seed);
     }
@@ -151,6 +297,20 @@ void GameOfLifePattern::reset(LEDStrip& strip, uint64_t now_us) {
 }
 
 void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
+    // Restart on life config change
+    auto& mgr = config::GetConfigurationManager();
+    auto& life_cfg = mgr.life();
+    bool allow_restart = life_cfg.restart_enabled();
+    if (life_cfg.generation() != last_life_generation_) {
+        if (life_cfg.has_start()) start_string_ = life_cfg.start();
+        else start_string_.clear();
+        last_life_generation_ = life_cfg.generation();
+        if (allow_restart) {
+            reset(strip, now_us);
+            render_current(strip);
+            return;
+        }
+    }
 
     // Determine generation cadence. At speed=100, advance one generation per update
     // (bounded by RMT transmit rate) to avoid skipping generations.
@@ -216,7 +376,7 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
         steady_reported_ = true;
     }
 
-    if (!simple_mode_ && !any_alive) {
+    if (allow_restart && !simple_mode_ && !any_alive) {
         // Immediate reseed on extinction
         uint64_t t = esp_timer_get_time();
         uint32_t seed = static_cast<uint32_t>(t ^ (t >> 32));
@@ -234,7 +394,7 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
             repeating_next = repeating_next_any_mode;
             if (repeating_next) {
                 if (repeat_start_us_ == 0) repeat_start_us_ = now_us;
-                if ((now_us - repeat_start_us_) >= 10ull * 1000 * 1000) {
+                if (allow_restart && (now_us - repeat_start_us_) >= 10ull * 1000 * 1000) {
                     uint64_t t = esp_timer_get_time();
                     uint32_t seed = static_cast<uint32_t>(t ^ (t >> 32));
                     initial_seed_ = seed;
@@ -291,7 +451,7 @@ void GameOfLifePattern::update(LEDStrip& strip, uint64_t now_us) {
         }
 
         // If we have seen the same hash more than 4 times, consider cycle detected
-        if (repeat_hits >= 4) {
+        if (allow_restart && repeat_hits >= 4) {
             uint32_t period = most_recent_distance;
             ESP_LOGI(TAG, "life cycle detected: period=%u after gen=%u", (unsigned)period, (unsigned)generation_count_);
             report_period_metric(period);

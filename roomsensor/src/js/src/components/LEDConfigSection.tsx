@@ -229,7 +229,15 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                   onClick={() => onEdit(ledKey, 'name', led.name || '', { type: 'text', label: 'Name' })}
                 />
                 {'dataGPIO' in led && <Chip label={`Data: ${led.dataGPIO}`} size="small" onClick={() => onEdit(ledKey, 'dataGPIO', led.dataGPIO, { type: 'number', label: 'Data GPIO' })} />}
-                {'enabledGPIO' in led && <Chip label={`Enable: ${led.enabledGPIO}`} size="small" onClick={() => onEdit(ledKey, 'enabledGPIO', led.enabledGPIO, { type: 'number', label: 'Enable GPIO' })} />}
+                <Chip
+                  label={`Enable(s): ${('enabledGPIOs' in led && led.enabledGPIOs && String(led.enabledGPIOs).trim().length > 0)
+                    ? String(led.enabledGPIOs)
+                    : (('enabledGPIO' in led && led.enabledGPIO !== undefined && led.enabledGPIO !== null && led.enabledGPIO !== -1)
+                        ? String(led.enabledGPIO)
+                        : '(none)')}`}
+                  size="small"
+                  onClick={() => onEdit(ledKey, 'enabledGPIOs', (('enabledGPIOs' in led && led.enabledGPIOs) ? led.enabledGPIOs : (('enabledGPIO' in led && led.enabledGPIO !== undefined && led.enabledGPIO !== null && led.enabledGPIO !== -1) ? String(led.enabledGPIO) : '')), { type: 'text', label: 'Enable GPIO(s) — comma-separated' })}
+                />
                 {'num_columns' in led && <Chip label={`Cols: ${led.num_columns}`} size="small" onClick={() => onEdit(ledKey, 'num_columns', led.num_columns, { type: 'number', label: 'Columns' })} />}
                 {'num_rows' in led && <Chip label={`Rows: ${led.num_rows}`} size="small" onClick={() => onEdit(ledKey, 'num_rows', led.num_rows, { type: 'number', label: 'Rows' })} />}
                 {'layout' in led && (

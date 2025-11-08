@@ -3,6 +3,7 @@
 #include "TagsConfig.h"
 #include "DeviceConfig.h"
 #include "LEDConfig.h"
+#include "GameOfLifeConfig.h"
 #include "A2DConfig.h"
 #include "IOConfig.h"
 #include "MotionConfig.h"
@@ -32,6 +33,9 @@ void ConfigurationManager::register_modules() {
     modules_.push_back(tags_module_.get());
     device_module_.reset(new DeviceConfig());
     modules_.push_back(device_module_.get());
+    // Pattern configuration modules
+    life_module_.reset(new GameOfLifeConfig());
+    modules_.push_back(life_module_.get());
     led1_module_.reset(new LEDConfig("led1"));
     modules_.push_back(led1_module_.get());
     led2_module_.reset(new LEDConfig("led2"));
@@ -94,6 +98,7 @@ LEDConfig& ConfigurationManager::led1() { return *led1_module_; }
 LEDConfig& ConfigurationManager::led2() { return *led2_module_; }
 LEDConfig& ConfigurationManager::led3() { return *led3_module_; }
 LEDConfig& ConfigurationManager::led4() { return *led4_module_; }
+GameOfLifeConfig& ConfigurationManager::life() { return *life_module_; }
 
 A2DConfig& ConfigurationManager::a2d1() { return *a2d1_module_; }
 A2DConfig& ConfigurationManager::a2d2() { return *a2d2_module_; }

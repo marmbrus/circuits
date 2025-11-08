@@ -71,6 +71,8 @@ private:
     // Track last applied pattern to avoid reinstalling the same type repeatedly
     std::vector<config::LEDConfig::Pattern> last_patterns_;
     std::vector<uint32_t> last_generations_; // per-strip generation snapshot
+    // Track last configured enable GPIOs list to detect hardware pin changes
+    std::vector<std::vector<int>> last_enable_pins_;
     TaskHandle_t update_task_ = nullptr;
     int update_task_core_ = 1; // APP CPU on ESP32-S3
     int update_task_priority_ = 1; // keep near idle to avoid starving IDLE task on APP CPU
