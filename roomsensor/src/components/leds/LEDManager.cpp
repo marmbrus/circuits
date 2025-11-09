@@ -21,6 +21,7 @@
 #include "PositionTestPattern.h"
 #include "ClockPattern.h"
 #include "CalendarPattern.h"
+#include "SummaryPattern.h"
 #include "PowerManager.h"
 // Calendar pattern forward include added later
 #include "ConfigurationManager.h"
@@ -236,6 +237,7 @@ std::unique_ptr<LEDPattern> LEDManager::create_pattern_from_config(const config:
         case P::POSITION: p.reset(new PositionTestPattern()); break;
         case P::CLOCK: p.reset(new ClockPattern()); break;
         case P::CALENDAR: p.reset(new CalendarPattern()); break;
+        case P::SUMMARY: p.reset(new SummaryPattern()); break;
         case P::INVALID: default: p.reset(new OffPattern()); break;
     }
     return p;

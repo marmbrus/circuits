@@ -12,6 +12,7 @@ idf_component_register(
         "PositionTestPattern.cpp"
         "ClockPattern.cpp"
         "CalendarPattern.cpp"
+        "SummaryPattern.cpp"
         "font6x6.cpp"
 
         # New internal mapper/encoder implementations

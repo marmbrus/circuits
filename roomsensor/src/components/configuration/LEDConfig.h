@@ -28,7 +28,8 @@ public:
         CHASE,
         POSITION,
         CLOCK,
-        CALENDAR
+        CALENDAR,
+        SUMMARY
     };
 
     // Supported LED chips for internal use
