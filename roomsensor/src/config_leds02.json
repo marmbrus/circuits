@@ -42,5 +42,8 @@
     "ch2.sensor": "BTS7002",
     "ch3.sensor": "BTS7002",
     "ch4.sensor": "BTS7002"
+  },
+  "i2c": {
+    "48":"ads1115"
   }
 }
