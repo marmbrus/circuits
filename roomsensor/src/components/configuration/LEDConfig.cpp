@@ -29,6 +29,8 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     descriptors_.push_back({"brightness", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"speed", ConfigValueType::I32, nullptr, false});
     descriptors_.push_back({"dma", ConfigValueType::Bool, nullptr, false});
+    descriptors_.push_back({"transition", ConfigValueType::String, "SWEEP", false});
+    descriptors_.push_back({"transitionSpeed", ConfigValueType::I32, "50", false});
 }
 
 const char* LEDConfig::name() const {
@@ -91,6 +93,7 @@ LEDConfig::Pattern LEDConfig::parse_pattern(const char* value) {
     if (strcmp(value, "POSITION") == 0) return Pattern::POSITION;
     if (strcmp(value, "CLOCK") == 0) return Pattern::CLOCK;
     if (strcmp(value, "CALENDAR") == 0) return Pattern::CALENDAR;
+    if (strcmp(value, "AURORA") == 0) return Pattern::AURORA;
     return Pattern::INVALID;
 }
 
@@ -107,6 +110,7 @@ const char* LEDConfig::pattern_to_string(LEDConfig::Pattern p) {
         case Pattern::POSITION: return "POSITION";
         case Pattern::CLOCK: return "CLOCK";
         case Pattern::CALENDAR: return "CALENDAR";
+        case Pattern::AURORA: return "AURORA";
     }
     return "OFF";
 }
@@ -264,6 +268,38 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         }
         return ESP_ERR_INVALID_ARG;
     }
+    if (strcmp(key, "transition") == 0) {
+        if (value_str == nullptr || *value_str == '\0') {
+            transition_set_ = false;
+            transition_ = "SWEEP"; // Default
+            bump_generation();
+            return ESP_OK;
+        }
+        // Validate transition type
+        if (strcmp(value_str, "SWEEP") == 0 || strcmp(value_str, "BACKSWEEP") == 0 || 
+            strcmp(value_str, "EXPAND") == 0 || strcmp(value_str, "CONTRACT") == 0) {
+            transition_ = value_str;
+            transition_set_ = true;
+            bump_generation();
+            return ESP_OK;
+        }
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (strcmp(key, "transitionSpeed") == 0) {
+        if (value_str == nullptr || *value_str == '\0') {
+            transition_speed_set_ = false;
+            transition_speed_ = 50; // Default medium speed
+            bump_generation();
+            return ESP_OK;
+        }
+        int val = atoi(value_str);
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+        transition_speed_ = val;
+        transition_speed_set_ = true;
+        bump_generation();
+        return ESP_OK;
+    }
 
     return ESP_ERR_NOT_FOUND;
 }
@@ -302,6 +338,8 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     if (brightness_set_) cJSON_AddNumberToObject(obj, "brightness", brightness_);
     if (speed_set_) cJSON_AddNumberToObject(obj, "speed", speed_);
     if (dma_set_) cJSON_AddBoolToObject(obj, "dma", dma_);
+    if (transition_set_) cJSON_AddStringToObject(obj, "transition", transition_.c_str());
+    if (transition_speed_set_) cJSON_AddNumberToObject(obj, "transitionSpeed", transition_speed_);
 
     // If dataGPIO is not set, omit this module from the config entirely
     if (!data_gpio_set_) {

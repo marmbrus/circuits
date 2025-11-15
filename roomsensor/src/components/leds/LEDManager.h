@@ -11,7 +11,7 @@
 #include <string>
 
 namespace config { class ConfigurationManager; class LEDConfig; }
-namespace leds { class LEDStrip; class LEDPattern; }
+namespace leds { class LEDStrip; class LEDPattern; class LEDTransition; }
 namespace leds { class PowerManager; }
 
 namespace leds {
@@ -60,6 +60,9 @@ private:
     std::vector<std::unique_ptr<LEDStrip>> strips_;
     std::vector<std::unique_ptr<LEDPattern>> patterns_; // 1:1 with strips_
     std::vector<std::unique_ptr<PowerManager>> power_mgrs_; // 1:1 with strips_
+    // Transition management
+    std::vector<std::unique_ptr<LEDTransition>> active_transitions_; // 1:1 with strips_, null if no transition
+    std::vector<std::unique_ptr<LEDPattern>> old_patterns_; // 1:1 with strips_, used during transitions
     // Store per-strip RGBA frames in PSRAM to free internal RAM
     std::vector<std::vector<uint8_t, PsramAllocator<uint8_t>>> prev_frames_rgba_; // rows*cols*4 per strip
     std::vector<std::vector<uint8_t, PsramAllocator<uint8_t>>> scratch_frames_rgba_; // reusable buffer for current frame

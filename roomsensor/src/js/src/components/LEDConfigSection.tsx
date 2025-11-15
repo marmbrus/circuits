@@ -70,9 +70,20 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
 }) {
   // Create slider handlers for each property
   const [patternValue, setPatternValue] = useState((('pattern' in led && led.pattern) ? led.pattern : 'OFF') as string)
+  const [transitionValue, setTransitionValue] = useState((('transition' in led && led.transition) ? led.transition : 'SWEEP') as string)
+  
   useEffect(() => {
     setPatternValue((('pattern' in led && led.pattern) ? led.pattern : 'OFF') as string)
   }, [led.pattern])
+  
+  useEffect(() => {
+    setTransitionValue((('transition' in led && led.transition) ? led.transition : 'SWEEP') as string)
+  }, [led.transition])
+
+  const transitionSpeedSlider = useSliderValue(
+    ('transitionSpeed' in led && led.transitionSpeed !== undefined) ? led.transitionSpeed : 50,
+    (value) => publish ? publish(ledKey, 'transitionSpeed', value) : onEdit(ledKey, 'transitionSpeed', value)
+  )
 
   const brightnessSlider = useSliderValue(
     ('brightness' in led && led.brightness !== undefined) ? led.brightness : 100,
@@ -110,6 +121,7 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap sx={{ width: '100%' }}>
           <Typography variant="subtitle2">{ledKey}{('name' in led && led.name) ? ` — ${led.name}` : ''}</Typography>
           <Chip label={`Pattern: ${patternValue}`} size="small" />
+          <Chip label={`Transition: ${transitionValue}`} size="small" />
         </Stack>
       </AccordionSummary>
       <AccordionDetails>
@@ -128,11 +140,48 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                   else onEdit(ledKey, 'pattern', v)
                 }}
               >
-                {['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION','CLOCK','CALENDAR'].map((opt) => (
+                {['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION','CLOCK','CALENDAR','AURORA'].map((opt) => (
                   <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                 ))}
               </Select>
             </FormControl>
+            <FormControl size="small" fullWidth>
+              <InputLabel id={`${ledKey}-transition-label`}>Transition</InputLabel>
+              <Select
+                labelId={`${ledKey}-transition-label`}
+                label="Transition"
+                value={transitionValue}
+                onChange={(e) => {
+                  const v = e.target.value as string
+                  setTransitionValue(v)
+                  if (publish) publish(ledKey, 'transition', v)
+                  else onEdit(ledKey, 'transition', v)
+                }}
+              >
+                {['SWEEP','BACKSWEEP','EXPAND','CONTRACT'].map((opt) => (
+                  <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+          <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+            <Box>
+              <Typography variant="caption">Transition Speed ({transitionSpeedSlider.value})</Typography>
+              <Slider
+                size="small"
+                value={transitionSpeedSlider.value}
+                onChange={transitionSpeedSlider.onChange}
+                onChangeCommitted={transitionSpeedSlider.onChangeCommitted}
+                min={1}
+                max={100}
+                step={1}
+                marks={[
+                  { value: 1, label: 'Slow' },
+                  { value: 100, label: 'Fast' }
+                ]}
+                sx={{ mt: 1 }}
+              />
+            </Box>
           </Stack>
           <Stack spacing={0.75} sx={{ mt: 0.5 }}>
             <Box>

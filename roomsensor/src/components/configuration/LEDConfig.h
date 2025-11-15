@@ -28,7 +28,8 @@ public:
         CHASE,
         POSITION,
         CLOCK,
-        CALENDAR
+        CALENDAR,
+        AURORA
     };
 
     // Supported LED chips for internal use
@@ -100,6 +101,11 @@ public:
     // Optional user-provided display name
     bool has_display_name() const { return name_set_; }
     const std::string& display_name() const { return display_name_; }
+    // Transition configuration
+    bool has_transition() const { return transition_set_; }
+    const std::string& transition() const { return transition_; }
+    bool has_transition_speed() const { return transition_speed_set_; }
+    int transition_speed() const { return transition_speed_; }
 
 private:
     // Parse from external string representation to internal enum. Returns INVALID on failure.
@@ -140,6 +146,8 @@ private:
     bool brightness_set_ = false; int brightness_ = 100;
     bool speed_set_ = false; int speed_ = 100;
     bool dma_set_ = false; bool dma_ = false;
+    bool transition_set_ = false; std::string transition_ = "SWEEP";
+    bool transition_speed_set_ = false; int transition_speed_ = 50; // 0-100, 50 = medium speed
 
     std::vector<ConfigurationValueDescriptor> descriptors_;
 };
