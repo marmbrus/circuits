@@ -80,10 +80,13 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
     setTransitionValue((('transition' in led && led.transition) ? led.transition : 'SWEEP') as string)
   }, [led.transition])
 
-  const transitionSpeedSlider = useSliderValue(
-    ('transitionSpeed' in led && led.transitionSpeed !== undefined) ? led.transitionSpeed : 50,
-    (value) => publish ? publish(ledKey, 'transitionSpeed', value) : onEdit(ledKey, 'transitionSpeed', value)
+  const [transitionSpeedValue, setTransitionSpeedValue] = useState(
+    ('transitionSpeed' in led && led.transitionSpeed !== undefined) ? led.transitionSpeed : 50
   )
+  
+  useEffect(() => {
+    setTransitionSpeedValue(('transitionSpeed' in led && led.transitionSpeed !== undefined) ? led.transitionSpeed : 50)
+  }, [led.transitionSpeed])
 
   const brightnessSlider = useSliderValue(
     ('brightness' in led && led.brightness !== undefined) ? led.brightness : 100,
@@ -166,12 +169,19 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
           </Stack>
           <Stack spacing={0.75} sx={{ mt: 0.5 }}>
             <Box>
-              <Typography variant="caption">Transition Speed ({transitionSpeedSlider.value})</Typography>
+              <Typography variant="caption">Transition Speed ({transitionSpeedValue})</Typography>
               <Slider
                 size="small"
-                value={transitionSpeedSlider.value}
-                onChange={transitionSpeedSlider.onChange}
-                onChangeCommitted={transitionSpeedSlider.onChangeCommitted}
+                value={transitionSpeedValue}
+                onChange={(_event, value) => {
+                  const newValue = Array.isArray(value) ? value[0] : value
+                  setTransitionSpeedValue(newValue)
+                }}
+                onChangeCommitted={(_event, value) => {
+                  const newValue = Array.isArray(value) ? value[0] : value
+                  if (publish) publish(ledKey, 'transitionSpeed', newValue)
+                  else onEdit(ledKey, 'transitionSpeed', newValue)
+                }}
                 min={1}
                 max={100}
                 step={1}
