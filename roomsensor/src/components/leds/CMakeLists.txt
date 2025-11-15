@@ -13,8 +13,10 @@ idf_component_register(
         "ClockPattern.cpp"
         "CalendarPattern.cpp"
         "AuroraPattern.cpp"
-        "LEDTransition.cpp"
-        "LEDBuffer.cpp"
+        "MeteorShowerPattern.cpp"
+        "JungleCanopyPattern.cpp"
+        "UnderseaGrottoPattern.cpp"
+        "ColorRotationPattern.cpp"
         "font6x6.cpp"
 
         # New internal mapper/encoder implementations

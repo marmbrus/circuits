@@ -10,14 +10,30 @@ float AuroraPattern::get_brightness_factor(float position, float time) const {
     // Create complex, organic-looking brightness variations using multiple sine waves
     // with different frequencies and phases to mimic the natural aurora movement
     
-    float wave1 = sinf(position * 0.5f + time * 0.3f) * 0.4f;
-    float wave2 = sinf(position * 1.2f + time * 0.7f) * 0.3f;
-    float wave3 = sinf(position * 2.1f + time * 0.2f) * 0.2f;
-    float wave4 = sinf(position * 0.8f + time * 1.1f) * 0.1f;
+    // Primary brightness waves with more dramatic amplitude
+    float wave1 = sinf(position * 0.4f + time * 0.25f) * 0.6f;  // Slower, more dramatic
+    float wave2 = sinf(position * 1.1f + time * 0.6f) * 0.4f;   // Medium frequency
+    float wave3 = sinf(position * 2.3f + time * 0.15f) * 0.3f;  // Fine detail
     
-    // Combine waves and normalize to 0.1 - 1.0 range
-    float combined = wave1 + wave2 + wave3 + wave4;
-    return 0.1f + (combined + 1.0f) * 0.45f; // Maps [-1,1] to [0.1,1.0]
+    // Add moving brightness "hotspots" that travel across the strip
+    float hotspot1 = sinf(position * 0.8f - time * 0.4f) * 0.5f;  // Moving left to right
+    float hotspot2 = sinf(position * 1.5f + time * 0.3f) * 0.4f;  // Moving right to left
+    
+    // Create "breathing" effect - overall brightness that pulses
+    float breathing = sinf(time * 0.8f) * 0.2f;
+    
+    // Combine all effects
+    float combined = wave1 + wave2 + wave3 + hotspot1 + hotspot2 + breathing;
+    
+    // Apply non-linear scaling to create more dramatic bright/dim contrast
+    // Use a power function to make bright areas brighter and dim areas dimmer
+    float normalized = 0.05f + (combined + 2.0f) * 0.475f; // Maps to [0.05, 1.0] range
+    
+    // Apply power curve for more dramatic contrast (bright areas get brighter, dim areas get dimmer)
+    float contrast_enhanced = powf(normalized, 1.8f);
+    
+    // Ensure we stay within valid range and maintain some minimum brightness
+    return fmaxf(0.02f, fminf(1.0f, contrast_enhanced));
 }
 
 AuroraPattern::AuroraColor AuroraPattern::interpolate_color(const AuroraColor& c1, const AuroraColor& c2, float t) const {
@@ -44,11 +60,13 @@ void AuroraPattern::update(LEDStrip& strip, uint64_t now_us) {
         
         // Create slowly moving color zones across the strip
         // The color selection moves slowly across the strip over time
-        float color_position = fmodf(position * 2.0f + time * 0.1f, 2.0f);
+        // Use a full cycle that wraps seamlessly by mapping to the full color palette range
+        float color_position = fmodf(position * 2.0f + time * 0.1f, 1.0f);
         
-        // Map to color palette with smooth transitions
-        float color_index_f = color_position * (num_colors_ - 1);
-        size_t color_index = static_cast<size_t>(color_index_f) % num_colors_;
+        // Map to color palette with smooth transitions that wrap around seamlessly
+        // Scale by num_colors_ (not num_colors_ - 1) to ensure smooth wrapping
+        float color_index_f = color_position * static_cast<float>(num_colors_);
+        size_t color_index = static_cast<size_t>(floorf(color_index_f)) % num_colors_;
         size_t next_color_index = (color_index + 1) % num_colors_;
         float color_blend = color_index_f - floorf(color_index_f);
         

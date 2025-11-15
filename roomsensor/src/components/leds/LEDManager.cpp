@@ -22,7 +22,10 @@
 #include "ClockPattern.h"
 #include "CalendarPattern.h"
 #include "AuroraPattern.h"
-#include "LEDTransition.h"
+#include "MeteorShowerPattern.h"
+#include "JungleCanopyPattern.h"
+#include "UnderseaGrottoPattern.h"
+#include "ColorRotationPattern.h"
 #include "PowerManager.h"
 // Calendar pattern forward include added later
 #include "ConfigurationManager.h"
@@ -80,8 +83,6 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     strips_.clear();
     patterns_.clear();
     power_mgrs_.clear();
-    active_transitions_.clear();
-    old_patterns_.clear();
     prev_frames_rgba_.clear();
     scratch_frames_rgba_.clear();
     last_layouts_.clear();
@@ -93,8 +94,6 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     power_on_hold_until_us_.assign(active.size(), 0);
     strips_.reserve(active.size());
     patterns_.reserve(active.size());
-    active_transitions_.resize(active.size());
-    old_patterns_.resize(active.size());
 
     ESP_LOGI(TAG, "Config refresh: %zu active strips", active.size());
     for (LEDConfig* c : active) {
@@ -243,6 +242,10 @@ std::unique_ptr<LEDPattern> LEDManager::create_pattern_from_config(const config:
         case P::CLOCK: p.reset(new ClockPattern()); break;
         case P::CALENDAR: p.reset(new CalendarPattern()); break;
         case P::AURORA: p.reset(new AuroraPattern()); break;
+        case P::METEOR_SHOWER: p.reset(new MeteorShowerPattern()); break;
+        case P::JUNGLE_CANOPY: p.reset(new JungleCanopyPattern()); break;
+        case P::UNDERSEA_GROTTO: p.reset(new UnderseaGrottoPattern()); break;
+        case P::COLOR_ROTATION: p.reset(new ColorRotationPattern()); break;
         case P::INVALID: default: p.reset(new OffPattern()); break;
     }
     return p;
@@ -270,30 +273,7 @@ void LEDManager::run_update_loop() {
             LEDStrip* s = strips_[i].get();
             LEDPattern* p = (i < patterns_.size()) ? patterns_[i].get() : nullptr;
             if (!s) continue;
-            
-            if (!s->is_transmitting()) {
-                // Check if there's an active transition
-                if (i < active_transitions_.size() && active_transitions_[i]) {
-                    // Update transition
-                    LEDPattern* old_p = (i < old_patterns_.size()) ? old_patterns_[i].get() : nullptr;
-                    if (p && old_p) {
-                        bool transition_complete = active_transitions_[i]->update(*s, *old_p, *p, now);
-                        if (transition_complete) {
-                            // Transition finished, clean up
-                            active_transitions_[i].reset();
-                            old_patterns_[i].reset();
-                            ESP_LOGI(TAG, "Transition completed for strip %u", (unsigned)i);
-                        }
-                    } else {
-                        // Invalid transition state, clean up
-                        active_transitions_[i].reset();
-                        old_patterns_[i].reset();
-                    }
-                } else if (p) {
-                    // Normal pattern update
-                    p->update(*s, now);
-                }
-            }
+            if (!s->is_transmitting() && p) p->update(*s, now);
 
             // Power + refresh policy
             if (i < power_mgrs_.size()) {
@@ -362,41 +342,10 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
     bool type_changed = (!pat) || (last_patterns_[idx] != cfg.pattern_enum());
 
     if (type_changed) {
-        // Create new pattern
-        auto new_pattern = create_pattern_from_config(cfg);
-        if (new_pattern) {
-            apply_runtime_knobs(*new_pattern, cfg);
-            new_pattern->reset(*strip, now_us);
-            
-            // If we have an existing pattern, start a transition
-            if (pat) {
-                // Ensure transition vectors are properly sized
-                if (active_transitions_.size() <= idx) active_transitions_.resize(idx + 1);
-                if (old_patterns_.size() <= idx) old_patterns_.resize(idx + 1);
-                
-                // Store the old pattern for the transition
-                old_patterns_[idx] = std::move(patterns_[idx]);
-                
-                // Create and start the configured transition
-                leds::TransitionType transition_type = leds::parse_transition_type(cfg.has_transition() ? cfg.transition().c_str() : "SWEEP");
-                active_transitions_[idx] = leds::create_transition(transition_type);
-                
-                // Set transition speed (0-100, default 50)
-                int transition_speed = cfg.has_transition_speed() ? cfg.transition_speed() : 50;
-                active_transitions_[idx]->set_speed(transition_speed);
-                
-                active_transitions_[idx]->start(*strip, *old_patterns_[idx], *new_pattern, now_us);
-                
-                ESP_LOGI(TAG, "Starting %s transition for strip %u -> %s", 
-                         leds::transition_type_to_string(transition_type), (unsigned)idx, new_pattern->name());
-            } else {
-                ESP_LOGI(TAG, "Pattern set for strip %u -> %s", (unsigned)idx, new_pattern->name());
-            }
-            
-            // Install the new pattern
-            patterns_[idx] = std::move(new_pattern);
-            pat = patterns_[idx].get();
-        }
+        patterns_[idx] = create_pattern_from_config(cfg);
+        pat = patterns_[idx].get();
+        if (pat) { apply_runtime_knobs(*pat, cfg); pat->reset(*strip, now_us); }
+        ESP_LOGI(TAG, "Pattern swapped for strip %u -> %s", (unsigned)idx, pat ? pat->name() : "<null>");
     } else if (pat) {
         // Apply runtime knobs
         apply_runtime_knobs(*pat, cfg);
