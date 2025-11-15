@@ -138,7 +138,16 @@ def main() -> None:
         action="store_true",
         help="Skip the 'erase-flash' and 'flash' steps."
     )
+    parser.add_argument(
+        "--program",
+        action="store_true",
+        help="Only program configuration (skip flashing, equivalent to --skip-flash)."
+    )
     args = parser.parse_args()
+    
+    # --program implies --skip-flash
+    if args.program:
+        args.skip_flash = True
 
     # --- Start: Fail-fast validation ---
     for config_file in args.config_files:
