@@ -75,7 +75,9 @@ private:
     std::vector<std::vector<int>> last_enable_pins_;
     TaskHandle_t update_task_ = nullptr;
     int update_task_core_ = 1; // APP CPU on ESP32-S3
-    int update_task_priority_ = 1; // keep near idle to avoid starving IDLE task on APP CPU
+    // Give LED update task a modestly higher priority so it preempts most other app work
+    // on the APP core, but still stays below critical system/IDLE tasks.
+    int update_task_priority_ = 3;
     // Update loop cadence and behavior:
     // - Each tick: poll configuration; if changed, rebuild strips/patterns and reassign DMA centrally
     // - For each strip: if not transmitting, invoke pattern.update(now); then attempt flush_if_dirty(now)

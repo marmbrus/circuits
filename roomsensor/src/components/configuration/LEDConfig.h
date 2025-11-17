@@ -29,7 +29,10 @@ public:
         POSITION,
         CLOCK,
         CALENDAR,
-        SUMMARY
+        SUMMARY,
+        SWEEP,
+        METEOR,
+        SUNSET
     };
 
     // Supported LED chips for internal use

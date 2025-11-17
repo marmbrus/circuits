@@ -92,6 +92,9 @@ LEDConfig::Pattern LEDConfig::parse_pattern(const char* value) {
     if (strcmp(value, "CLOCK") == 0) return Pattern::CLOCK;
     if (strcmp(value, "CALENDAR") == 0) return Pattern::CALENDAR;
     if (strcmp(value, "SUMMARY") == 0) return Pattern::SUMMARY;
+    if (strcmp(value, "SWEEP") == 0) return Pattern::SWEEP;
+    if (strcmp(value, "METEOR") == 0) return Pattern::METEOR;
+    if (strcmp(value, "SUNSET") == 0) return Pattern::SUNSET;
     return Pattern::INVALID;
 }
 
@@ -109,6 +112,9 @@ const char* LEDConfig::pattern_to_string(LEDConfig::Pattern p) {
         case Pattern::CLOCK: return "CLOCK";
         case Pattern::CALENDAR: return "CALENDAR";
         case Pattern::SUMMARY: return "SUMMARY";
+        case Pattern::SWEEP: return "SWEEP";
+        case Pattern::METEOR: return "METEOR";
+        case Pattern::SUNSET: return "SUNSET";
     }
     return "OFF";
 }

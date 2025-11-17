@@ -7,15 +7,16 @@ namespace leds {
 void FadePattern::update(LEDStrip& strip, uint64_t now_us) {
     if (!initialized_) { fade_start_us_ = now_us; initialized_ = true; }
 
-    // If the target changed since last update, capture a new segment start from current output
+    // If the target (color or brightness) changed since last update, capture a new segment start
     if (target_dirty_) {
-        // Attempt to read the current value from strip (best-effort). If unavailable, fall back to last_out_*
-        // LEDStrip exposes get_pixel by index; we sample the first pixel as representative for global solid fade.
-        uint8_t cr=last_out_r_, cg=last_out_g_, cb=last_out_b_, cw=last_out_w_;
-        if (strip.length() > 0) {
-            (void)strip.get_pixel(0, cr, cg, cb, cw);
-        }
-        start_r_ = cr; start_g_ = cg; start_b_ = cb; start_w_ = cw;
+        // Use the last color we actually output as the starting point for the new fade
+        // instead of sampling a specific pixel, which may be OFF due to spatial duty.
+        start_r_ = last_out_r_;
+        start_g_ = last_out_g_;
+        start_b_ = last_out_b_;
+        start_w_ = last_out_w_;
+        // Also fade brightness duty from the last effective level to the new target level
+        start_brightness_percent_ = last_out_brightness_percent_;
         fade_start_us_ = now_us;
         target_dirty_ = false;
     }
@@ -52,10 +53,56 @@ void FadePattern::update(LEDStrip& strip, uint64_t now_us) {
     uint8_t b = lerp_u8(start_b_, target_b_, tg);
     uint8_t w = lerp_u8(start_w_, target_w_, tg);
 
-    for (size_t i = 0; i < strip.length(); ++i) {
-        strip.set_pixel(i, r, g, b, w);
+    // Fade brightness duty between start and target as well, matching SolidPattern spacing:
+    // - brightness <= 0  : all OFF
+    // - brightness >= 100: all pixels at (r,g,b,w)
+    // - 0 < brightness < 100: exactly K LEDs ON, spaced as evenly as possible
+    float b_lerp = static_cast<float>(start_brightness_percent_) +
+                   (static_cast<float>(target_brightness_percent_) - static_cast<float>(start_brightness_percent_)) * tg;
+    int bp = static_cast<int>(b_lerp + 0.5f);
+    if (bp <= 0) {
+        for (size_t i = 0; i < strip.length(); ++i) {
+            strip.set_pixel(i, 0, 0, 0, 0);
+        }
+        last_out_r_ = 0; last_out_g_ = 0; last_out_b_ = 0; last_out_w_ = 0;
+        last_out_brightness_percent_ = 0;
+        return;
     }
+    if (bp >= 100) {
+        for (size_t i = 0; i < strip.length(); ++i) {
+            strip.set_pixel(i, r, g, b, w);
+        }
+        last_out_r_ = r; last_out_g_ = g; last_out_b_ = b; last_out_w_ = w;
+        last_out_brightness_percent_ = 100;
+        return;
+    }
+
+    size_t total = strip.length();
+    size_t on_count = (total * static_cast<size_t>(bp)) / 100u;
+    if (on_count == 0) {
+        for (size_t i = 0; i < total; ++i) strip.set_pixel(i, 0, 0, 0, 0);
+        last_out_r_ = 0; last_out_g_ = 0; last_out_b_ = 0; last_out_w_ = 0;
+        last_out_brightness_percent_ = 0;
+        return;
+    }
+    if (on_count >= total) {
+        for (size_t i = 0; i < total; ++i) strip.set_pixel(i, r, g, b, w);
+        last_out_r_ = r; last_out_g_ = g; last_out_b_ = b; last_out_w_ = w;
+        last_out_brightness_percent_ = 100;
+        return;
+    }
+
+    size_t acc = 0;
+    for (size_t i = 0; i < total; ++i) {
+        acc += on_count;
+        bool on = false;
+        if (acc >= total) { on = true; acc -= total; }
+        if (on) strip.set_pixel(i, r, g, b, w);
+        else strip.set_pixel(i, 0, 0, 0, 0);
+    }
+    // last_out_* tracks the representative ON color
     last_out_r_ = r; last_out_g_ = g; last_out_b_ = b; last_out_w_ = w;
+    last_out_brightness_percent_ = bp;
 }
 
 } // namespace leds
