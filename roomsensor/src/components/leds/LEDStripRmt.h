@@ -1,11 +1,16 @@
 #pragma once
 
 #include "LEDStrip.h"
-#include "led_strip.h"
 #include "esp_timer.h"
-#include <vector>
 #include "PsramAllocator.h"
+#include <vector>
 #include <memory>
+#include "esp_err.h"
+
+// RMT TX driver (IDF 5.x)
+#include "driver/rmt_tx.h"
+// Internal encoder used by Espressif's led_strip component
+#include "led_strip_rmt_encoder.h"
 
 namespace leds {
 
@@ -26,6 +31,27 @@ public:
 
     static std::unique_ptr<LEDStripRmt> Create(const CreateParams& params);
     ~LEDStripRmt() override;
+
+    // Lightweight telemetry about RMT activity, for diagnostics and health checks.
+    struct Stats {
+        // Counts
+        uint32_t tx_count_total = 0;          // all frames ever transmitted
+        uint32_t tx_count_window = 0;         // frames in current logging window
+        uint32_t tx_error_count_total = 0;    // total transmit errors
+        uint32_t tx_error_count_window = 0;   // errors in current window
+        esp_err_t tx_error_last_code = ESP_OK;
+        uint32_t tx_late_count_total = 0;     // transfers that finished after expected_done_us_ + margin
+        uint32_t tx_late_count_window = 0;
+        uint32_t backpressure_ticks_window = 0; // update-loop ticks where strip was still transmitting
+
+        // Timing (us)
+        uint64_t last_start_us = 0;
+        uint64_t last_done_us = 0;
+        uint32_t last_duration_us = 0;        // clamped to 32-bit
+        uint32_t max_duration_us_window = 0;  // max observed duration in current window
+        uint32_t expected_duration_us_last = 0;
+        uint32_t expected_duration_us_max_window = 0;
+    };
 
     // LEDStrip interface
     int pin() const override { return gpio_; }
@@ -50,6 +76,13 @@ public:
     bool is_transmitting() const override { return transmitting_; }
     void on_transmit_complete(uint64_t now_us) override;
 
+    // Access to current statistics snapshot. Safe to call from the LED manager task.
+    const Stats& stats() const { return stats_; }
+    // Reset per-window counters after a telemetry log.
+    void reset_window_stats();
+    // Record that an update tick was skipped because transmission was still in flight.
+    void on_backpressure_tick();
+
     bool uses_dma() const override { return with_dma_; }
 
     bool has_enable_pin() const override { return enable_gpio_ >= 0; }
@@ -63,7 +96,7 @@ private:
 
     int gpio_ = -1;
     int enable_gpio_ = -1;
-    size_t length_ = 0;
+    size_t length_ = 0;   // logical LEDs (rows_ * cols_)
     size_t rows_ = 1;
     size_t cols_ = 0;
     config::LEDConfig::Chip chip_ = config::LEDConfig::Chip::WS2812;
@@ -77,8 +110,16 @@ private:
     bool has_white_ = false;
     bool dirty_ = false;
 
-    // RMT strip handle
-    led_strip_handle_t handle_ = nullptr;
+    // Asynchronous RMT backing: channel + encoder + staging buffer in host RAM.
+    rmt_channel_handle_t rmt_chan_ = nullptr;
+    rmt_encoder_handle_t strip_encoder_ = nullptr;
+    // Number of bytes per *physical* LED the encoder expects (3 = GRB, 4 = GRBW).
+    uint8_t bytes_per_pixel_ = 3;
+    // Staging buffer passed to rmt_transmit(), ordered as GRB/GRBW per physical LED.
+    std::vector<uint8_t, PsramAllocator<uint8_t>> tx_buf_;
+
+    Stats stats_;
+
     bool transmitting_ = false;
     uint64_t last_flush_us_ = 0;
     uint64_t expected_done_us_ = 0;

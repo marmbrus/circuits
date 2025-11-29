@@ -266,12 +266,20 @@ void LEDManager::run_update_loop() {
         // Cheap per-tick generation check; if changed, reconcile immediately
         reconcile_with_config(*cfg_manager_);
 
-        // Update patterns and flush strips. Skip pattern update if strip is transmitting.
+        // Update patterns and flush strips. Skip pattern update if strip is transmitting,
+        // and record backpressure ticks for diagnostics.
         for (size_t i = 0; i < strips_.size(); ++i) {
             LEDStrip* s = strips_[i].get();
             LEDPattern* p = (i < patterns_.size()) ? patterns_[i].get() : nullptr;
             if (!s) continue;
-            if (!s->is_transmitting() && p) p->update(*s, now);
+            if (!s->is_transmitting()) {
+                if (p) p->update(*s, now);
+            } else if (s->uses_dma()) {
+                // Record that this tick was backpressured by an in-flight transmit.
+                // We only know how to expose detailed stats for RMT-based strips.
+                LEDStripRmt* rmt = static_cast<LEDStripRmt*>(s);
+                rmt->on_backpressure_tick();
+            }
 
             // Power + refresh policy
             if (i < power_mgrs_.size()) {
@@ -318,7 +326,43 @@ void LEDManager::run_update_loop() {
             for (size_t i = 0; i < strips_.size(); ++i) {
                 unsigned idx = static_cast<unsigned>(i);
                 unsigned frames = (i < frames_tx_counts_.size()) ? static_cast<unsigned>(frames_tx_counts_[i]) : 0u;
-                ESP_LOGI(TAG, "Frames TX (last minute window) strip %u: %u", idx, frames);
+
+                LEDStrip* base = (i < strips_.size()) ? strips_[i].get() : nullptr;
+                double fps = (frames > 0) ? (static_cast<double>(frames) / 60.0) : 0.0;
+                double avg_period_ms = (frames > 0) ? (60000.0 / static_cast<double>(frames)) : 0.0;
+
+                // If this strip is backed by our RMT implementation, emit detailed stats.
+                // Otherwise, fall back to basic rate information.
+                LEDStripRmt* rmt = nullptr;
+                if (base) {
+                    // Today, all strips are LEDStripSurfaceAdapter; LEDStripRmt is available
+                    // for future use and will expose richer stats when wired in.
+                    rmt = nullptr;
+                }
+
+                if (rmt) {
+                    const auto& st = rmt->stats();
+                    ESP_LOGI(TAG,
+                             "Strip %u: frames=%u fps=%.2f avg_period_ms=%.2f "
+                             "last_tx_us=%u max_tx_us=%u late_tx=%u backpressure_ticks=%u "
+                             "tx_errs=%u last_err=%d",
+                             idx,
+                             frames,
+                             fps,
+                             avg_period_ms,
+                             static_cast<unsigned>(st.last_duration_us),
+                             static_cast<unsigned>(st.max_duration_us_window),
+                             static_cast<unsigned>(st.tx_late_count_window),
+                             static_cast<unsigned>(st.backpressure_ticks_window),
+                             static_cast<unsigned>(st.tx_error_count_window),
+                             static_cast<int>(st.tx_error_last_code));
+
+                    // Reset per-window stats after logging.
+                    rmt->reset_window_stats();
+                } else {
+                    ESP_LOGI(TAG, "Strip %u: frames=%u fps=%.2f avg_period_ms=%.2f",
+                             idx, frames, fps, avg_period_ms);
+                }
             }
             std::fill(frames_tx_counts_.begin(), frames_tx_counts_.end(), 0);
         }
