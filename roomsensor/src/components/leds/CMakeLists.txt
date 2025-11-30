@@ -16,6 +16,9 @@ idf_component_register(
         "SunsetPattern.cpp"
         "MeteorPattern.cpp"
         "SweepPattern.cpp"
+        "CrossWipePattern.cpp"
+        "CrossFadePattern.cpp"
+        "FireworksPattern.cpp"
         "font6x6.cpp"
 
         # New internal mapper/encoder implementations

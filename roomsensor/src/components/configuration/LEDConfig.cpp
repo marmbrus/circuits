@@ -95,6 +95,9 @@ LEDConfig::Pattern LEDConfig::parse_pattern(const char* value) {
     if (strcmp(value, "SWEEP") == 0) return Pattern::SWEEP;
     if (strcmp(value, "METEOR") == 0) return Pattern::METEOR;
     if (strcmp(value, "SUNSET") == 0) return Pattern::SUNSET;
+    if (strcmp(value, "CROSS_WIPE") == 0) return Pattern::CROSS_WIPE;
+    if (strcmp(value, "CROSS_FADE") == 0) return Pattern::CROSS_FADE;
+    if (strcmp(value, "FIREWORKS") == 0) return Pattern::FIREWORKS;
     return Pattern::INVALID;
 }
 
@@ -115,6 +118,9 @@ const char* LEDConfig::pattern_to_string(LEDConfig::Pattern p) {
         case Pattern::SWEEP: return "SWEEP";
         case Pattern::METEOR: return "METEOR";
         case Pattern::SUNSET: return "SUNSET";
+        case Pattern::CROSS_WIPE: return "CROSS_WIPE";
+        case Pattern::CROSS_FADE: return "CROSS_FADE";
+        case Pattern::FIREWORKS: return "FIREWORKS";
     }
     return "OFF";
 }

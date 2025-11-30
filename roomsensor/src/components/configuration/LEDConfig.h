@@ -32,7 +32,10 @@ public:
         SUMMARY,
         SWEEP,
         METEOR,
-        SUNSET
+        SUNSET,
+        CROSS_WIPE,
+        CROSS_FADE,
+        FIREWORKS
     };
 
     // Supported LED chips for internal use

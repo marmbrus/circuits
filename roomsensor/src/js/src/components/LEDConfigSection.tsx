@@ -128,7 +128,7 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                   else onEdit(ledKey, 'pattern', v)
                 }}
               >
-                {['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION','CLOCK','CALENDAR','SUMMARY','SWEEP','METEOR','SUNSET'].map((opt) => (
+                {['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION','CLOCK','CALENDAR','SUMMARY','SWEEP','METEOR','SUNSET','CROSS_WIPE','CROSS_FADE','FIREWORKS'].map((opt) => (
                   <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                 ))}
               </Select>
