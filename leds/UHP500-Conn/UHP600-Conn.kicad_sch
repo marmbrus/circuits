@@ -5,89 +5,6 @@
 	(uuid "745439b6-3a0c-46b1-8ec6-7f27b83900ed")
 	(paper "A4")
 	(lib_symbols
-		(symbol "Mechanical:MountingHole"
-			(pin_names
-				(offset 1.016)
-			)
-			(exclude_from_sim no)
-			(in_bom no)
-			(on_board yes)
-			(property "Reference" "H"
-				(at 0 5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "MountingHole"
-				(at 0 3.175 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Mounting Hole without connection"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "mounting hole"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "MountingHole*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "MountingHole_0_1"
-				(circle
-					(center 0 0)
-					(radius 1.27)
-					(stroke
-						(width 1.27)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Mechanical:MountingHole_Pad"
 			(pin_numbers
 				(hide yes)
@@ -2400,134 +2317,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 22.86 49.53 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "1cd0cea8-d67f-4b52-8be6-17809e5ddbaf")
-		(property "Reference" "H7"
-			(at 25.4 48.2599 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 25.4 50.7999 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_3.5mm"
-			(at 22.86 49.53 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 22.86 49.53 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 22.86 49.53 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project ""
-				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
-					(reference "H7")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 50.8 62.23 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "44f73765-f2e8-41e8-b2d6-84cddb9e7ecb")
-		(property "Reference" "H6"
-			(at 53.34 60.9599 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 53.34 63.4999 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_3.7mm"
-			(at 50.8 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 50.8 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 50.8 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "UHP200-Conn"
-				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
-					(reference "H6")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
 		(at 74.93 26.67 0)
 		(unit 1)
@@ -2555,7 +2344,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_3.5mm_Pad_Via"
+		(property "Footprint" "MountingHole:MountingHole_4.3mm_M4_Pad_Via"
 			(at 74.93 26.67 0)
 			(effects
 				(font
@@ -2622,7 +2411,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_3.5mm_Pad_Via"
+		(property "Footprint" "MountingHole:MountingHole_4.3mm_M4_Pad_Via"
 			(at 27.94 26.67 0)
 			(effects
 				(font
@@ -2724,10 +2513,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "53464947-de54-4cb6-aa51-41b321eac5f7")
+			(uuid "53464947-de54-4cb6-aa51-41b321eac5f8")
 		)
 		(pin "2"
-			(uuid "7c8a0c36-993b-467b-b561-1f9506b6821c")
+			(uuid "7c8a0c36-993b-467b-b561-1f9506b6821d")
 		)
 		(instances
 			(project ""
@@ -2766,7 +2555,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "CONN_SDA-42820-0002_02_RC_MOL"
+		(property "Footprint" "easyeda2kicad:CONN_SDA-42820-0002_02_RC_MOL"
 			(at 162.56 36.83 0)
 			(effects
 				(font
@@ -2879,79 +2668,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "53464947-de54-4cb6-aa51-41b321eac5f7")
+			(uuid "53464947-de54-4cb6-aa51-41b321eac5f9")
 		)
 		(pin "2"
-			(uuid "7c8a0c36-993b-467b-b561-1f9506b6821c")
+			(uuid "7c8a0c36-993b-467b-b561-1f9506b6821e")
 		)
 		(instances
 			(project ""
 				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
 					(reference "CN4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 22.86 62.23 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "9c0c8136-1c51-40be-a187-08cdae3ba6e7")
-		(property "Reference" "H5"
-			(at 25.4 60.9599 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 25.4 63.4999 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_3.7mm"
-			(at 22.86 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 22.86 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 22.86 62.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "UHP200-Conn"
-				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
-					(reference "H5")
 					(unit 1)
 				)
 			)
@@ -3068,7 +2793,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "CONN_SDA-42820-0002_02_RC_MOL"
+		(property "Footprint" "easyeda2kicad:CONN_SDA-42820-0002_02_RC_MOL"
 			(at 162.56 72.39 0)
 			(effects
 				(font
@@ -3212,7 +2937,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_3.5mm_Pad_Via"
+		(property "Footprint" "MountingHole:MountingHole_4.3mm_M4_Pad_Via"
 			(at 52.07 26.67 0)
 			(effects
 				(font
@@ -3314,10 +3039,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "53464947-de54-4cb6-aa51-41b321eac5f7")
+			(uuid "53464947-de54-4cb6-aa51-41b321eac5fa")
 		)
 		(pin "2"
-			(uuid "7c8a0c36-993b-467b-b561-1f9506b6821c")
+			(uuid "7c8a0c36-993b-467b-b561-1f9506b6821f")
 		)
 		(instances
 			(project ""
@@ -3395,70 +3120,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 50.8 49.53 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "e3014c2d-1406-43b1-bad4-5c62bf328591")
-		(property "Reference" "H8"
-			(at 53.34 48.2599 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 53.34 50.7999 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "MountingHole:MountingHole_3.7mm"
-			(at 50.8 49.53 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 50.8 49.53 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 50.8 49.53 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project ""
-				(path "/745439b6-3a0c-46b1-8ec6-7f27b83900ed"
-					(reference "H8")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
 		(at 97.79 26.67 0)
 		(unit 1)
@@ -3486,7 +3147,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "MountingHole:MountingHole_3.5mm_Pad_Via"
+		(property "Footprint" "MountingHole:MountingHole_4.3mm_M4_Pad_Via"
 			(at 97.79 26.67 0)
 			(effects
 				(font
