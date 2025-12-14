@@ -19,6 +19,13 @@ void draw_glyph(LEDStrip& strip, char ch, size_t top_row, size_t left_col,
 size_t draw_text(LEDStrip& strip, const char* text, size_t top_row, size_t left_col,
                  uint8_t r, uint8_t g, uint8_t b, uint8_t w);
 
+// Render scrolling text with pixel-level horizontal positioning. 'start_x'
+// is a (possibly negative) global X coordinate where the first glyph would
+// begin; glyphs are spaced 8 pixels apart. Any pixels falling outside the
+// strip's 0..cols-1 range are clipped.
+size_t draw_text_scrolling(LEDStrip& strip, const char* text, size_t top_row, int start_x,
+                           uint8_t r, uint8_t g, uint8_t b, uint8_t w);
+
 // Convenience: render a numeric digit '0'..'9' and ':' using the same glyphs
 inline void draw_digit(LEDStrip& strip, int digit, size_t top_row, size_t left_col,
                        uint8_t r, uint8_t g, uint8_t b, uint8_t w) {

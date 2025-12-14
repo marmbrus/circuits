@@ -28,6 +28,7 @@
 #include "CrossWipePattern.h"
 #include "CrossFadePattern.h"
 #include "FireworksPattern.h"
+#include "MarqueePattern.h"
 #include "PowerManager.h"
 // Calendar pattern forward include added later
 #include "ConfigurationManager.h"
@@ -57,6 +58,7 @@ static inline void apply_runtime_knobs(leds::LEDPattern& pat, const config::LEDC
                             cfg.has_w() ? cfg.w() : 0);
     }
     if (cfg.has_brightness()) pat.set_brightness_percent(cfg.brightness());
+    if (cfg.has_message()) pat.set_start_string(cfg.message().c_str());
 }
 
 
@@ -250,6 +252,7 @@ std::unique_ptr<LEDPattern> LEDManager::create_pattern_from_config(const config:
         case P::CROSS_WIPE: p.reset(new CrossWipePattern()); break;
         case P::CROSS_FADE: p.reset(new CrossFadePattern()); break;
         case P::FIREWORKS: p.reset(new FireworksPattern()); break;
+        case P::MARQUEE: p.reset(new MarqueePattern()); break;
         case P::INVALID: default: p.reset(new OffPattern()); break;
     }
     return p;

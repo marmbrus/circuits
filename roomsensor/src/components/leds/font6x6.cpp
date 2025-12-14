@@ -241,6 +241,67 @@ size_t draw_text(LEDStrip& strip, const char* text, size_t top_row, size_t left_
     return x;
 }
 
+size_t draw_text_scrolling(LEDStrip& strip, const char* text, size_t top_row, int start_x,
+                           uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+    if (!text) return static_cast<size_t>((start_x < 0) ? 0 : start_x);
+
+    const size_t cols = strip.cols();
+    const size_t rows = strip.rows();
+    int x = start_x;
+
+    // Decide whether we have enough vertical space for the 1px outer margin,
+    // matching draw_glyph's behavior when rows < top_row + 8.
+    bool fits_with_margin = (rows >= top_row + 8);
+    size_t margin = fits_with_margin ? 1u : 0u;
+
+    for (const char* p = text; *p; ++p) {
+        const Glyph* gph = nullptr;
+        if (*p >= '0' && *p <= '9') {
+            gph = &DIGITS[*p - '0'];
+        } else if (*p == ':') {
+            gph = &COLON;
+        } else {
+            gph = get_letter_glyph(*p);
+            if (!gph) {
+                x += 8;
+                continue;
+            }
+        }
+        if (!gph) {
+            x += 8;
+            continue;
+        }
+
+        for (int row_i = 0; row_i < 6; ++row_i) {
+            const char* pattern = gph->rows[row_i];
+            if (!pattern || pattern[0] == '\0') continue;
+
+            int row = static_cast<int>(top_row + margin + static_cast<size_t>(row_i));
+            if (row < 0 || static_cast<size_t>(row) >= rows) continue;
+
+            for (int i = 0; pattern[i] != '\0'; ++i) {
+                char ch = pattern[i];
+                if (ch != '*' && ch != '-') continue;
+
+                int col = x + static_cast<int>(margin) + i;
+                if (col < 0 || static_cast<size_t>(col) >= cols) continue;
+
+                uint8_t R = r, G = g, B = b, W = w;
+                if (ch == '-') {
+                    R = static_cast<uint8_t>(R / 16u);
+                    G = static_cast<uint8_t>(G / 16u);
+                    B = static_cast<uint8_t>(B / 16u);
+                    W = static_cast<uint8_t>(W / 16u);
+                }
+                size_t idx = strip.index_for_row_col(static_cast<size_t>(row), static_cast<size_t>(col));
+                strip.set_pixel(idx, R, G, B, W);
+            }
+        }
+        x += 8;
+    }
+    return static_cast<size_t>((x < 0) ? 0 : x);
+}
+
 } } // namespace leds::font6x6
 
 

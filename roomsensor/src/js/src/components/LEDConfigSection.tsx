@@ -128,7 +128,7 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                   else onEdit(ledKey, 'pattern', v)
                 }}
               >
-                {['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION','CLOCK','CALENDAR','SUMMARY','SWEEP','METEOR','SUNSET','CROSS_WIPE','CROSS_FADE','FIREWORKS'].map((opt) => (
+                {['OFF','SOLID','FADE','STATUS','RAINBOW','CHASE','LIFE','POSITION','CLOCK','CALENDAR','SUMMARY','SWEEP','METEOR','SUNSET','CROSS_WIPE','CROSS_FADE','FIREWORKS','MARQUEE'].map((opt) => (
                   <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                 ))}
               </Select>
@@ -227,6 +227,11 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                   label={`Name: ${led.name || '(none)'}`}
                   size="small"
                   onClick={() => onEdit(ledKey, 'name', led.name || '', { type: 'text', label: 'Name' })}
+                />
+                <Chip
+                  label={`Message: ${led.message || '(none)'}`}
+                  size="small"
+                  onClick={() => onEdit(ledKey, 'message', led.message || '', { type: 'text', label: 'Message' })}
                 />
                 {'dataGPIO' in led && <Chip label={`Data: ${led.dataGPIO}`} size="small" onClick={() => onEdit(ledKey, 'dataGPIO', led.dataGPIO, { type: 'number', label: 'Data GPIO' })} />}
                 <Chip

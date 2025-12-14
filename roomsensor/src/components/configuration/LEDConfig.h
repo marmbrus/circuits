@@ -35,7 +35,8 @@ public:
         SUNSET,
         CROSS_WIPE,
         CROSS_FADE,
-        FIREWORKS
+        FIREWORKS,
+        MARQUEE
     };
 
     // Supported LED chips for internal use
@@ -107,6 +108,9 @@ public:
     // Optional user-provided display name
     bool has_display_name() const { return name_set_; }
     const std::string& display_name() const { return display_name_; }
+    // Optional marquee/message text
+    bool has_message() const { return message_set_; }
+    const std::string& message() const { return message_; }
 
 private:
     // Parse from external string representation to internal enum. Returns INVALID on failure.
@@ -147,6 +151,10 @@ private:
     bool brightness_set_ = false; int brightness_ = 100;
     bool speed_set_ = false; int speed_ = 100;
     bool dma_set_ = false; bool dma_ = false;
+
+    // Optional message string (persisted)
+    bool message_set_ = false;
+    std::string message_;
 
     std::vector<ConfigurationValueDescriptor> descriptors_;
 };

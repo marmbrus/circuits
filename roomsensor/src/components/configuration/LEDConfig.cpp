@@ -15,6 +15,7 @@ LEDConfig::LEDConfig(const char* instance_name) : name_(instance_name ? instance
     descriptors_.push_back({"segment_rows", ConfigValueType::I32, nullptr, true});
     descriptors_.push_back({"layout", ConfigValueType::String, "ROW_MAJOR", true});
     descriptors_.push_back({"name", ConfigValueType::String, nullptr, true});
+    descriptors_.push_back({"message", ConfigValueType::String, nullptr, true});
 
     // Non-persisted runtime values (still declared so they can be updated and optionally loaded once)
     // NOTE: The following keys are intentionally NOT persisted to avoid flash wear from frequent updates:
@@ -98,6 +99,7 @@ LEDConfig::Pattern LEDConfig::parse_pattern(const char* value) {
     if (strcmp(value, "CROSS_WIPE") == 0) return Pattern::CROSS_WIPE;
     if (strcmp(value, "CROSS_FADE") == 0) return Pattern::CROSS_FADE;
     if (strcmp(value, "FIREWORKS") == 0) return Pattern::FIREWORKS;
+    if (strcmp(value, "MARQUEE") == 0) return Pattern::MARQUEE;
     return Pattern::INVALID;
 }
 
@@ -121,6 +123,7 @@ const char* LEDConfig::pattern_to_string(LEDConfig::Pattern p) {
         case Pattern::CROSS_WIPE: return "CROSS_WIPE";
         case Pattern::CROSS_FADE: return "CROSS_FADE";
         case Pattern::FIREWORKS: return "FIREWORKS";
+        case Pattern::MARQUEE: return "MARQUEE";
     }
     return "OFF";
 }
@@ -222,6 +225,17 @@ esp_err_t LEDConfig::apply_update(const char* key, const char* value_str) {
         /* generation bumped centrally */
         return ESP_OK;
     }
+    if (strcmp(key, "message") == 0) {
+        if (value_str == nullptr || *value_str == '\0') {
+            message_.clear();
+            message_set_ = false;
+        } else {
+            message_ = value_str;
+            message_set_ = true;
+        }
+        /* generation bumped centrally */
+        return ESP_OK;
+    }
 
     // Non-persisted
     if (strcmp(key, "pattern") == 0) {
@@ -306,6 +320,7 @@ esp_err_t LEDConfig::to_json(cJSON* root_object) const {
     if (segment_rows_set_) cJSON_AddNumberToObject(obj, "segment_rows", segment_rows_);
     cJSON_AddStringToObject(obj, "layout", layout_.c_str());
     if (name_set_) cJSON_AddStringToObject(obj, "name", display_name_.c_str());
+    if (message_set_) cJSON_AddStringToObject(obj, "message", message_.c_str());
 
     // Non-persisted runtime fields (include only if set)
     if (pattern_set_) cJSON_AddStringToObject(obj, "pattern", pattern_.c_str());

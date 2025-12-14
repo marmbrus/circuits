@@ -19,6 +19,7 @@ idf_component_register(
         "CrossWipePattern.cpp"
         "CrossFadePattern.cpp"
         "FireworksPattern.cpp"
+        "MarqueePattern.cpp"
         "font6x6.cpp"
 
         # New internal mapper/encoder implementations
