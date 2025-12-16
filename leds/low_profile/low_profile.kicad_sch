@@ -5,6 +5,317 @@
 	(uuid "48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa")
 	(paper "A4")
 	(lib_symbols
+		(symbol "Device:C_Polarized"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0.254)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "C"
+				(at 0.635 2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Value" "C_Polarized"
+				(at 0.635 -2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 0.9652 -3.81 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Polarized capacitor"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "cap capacitor"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "CP_*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "C_Polarized_0_1"
+				(rectangle
+					(start -2.286 0.508)
+					(end 2.286 1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.778 2.286) (xy -0.762 2.286)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 2.794) (xy -1.27 1.778)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start 2.286 -0.508)
+					(end -2.286 -1.016)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+			)
+			(symbol "C_Polarized_1_1"
+				(pin passive line
+					(at 0 3.81 270)
+					(length 2.794)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 2.794)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "Device:D_Zener"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 1.016)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "D"
+				(at 0 2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "D_Zener"
+				(at 0 -2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Zener diode"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "diode"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "TO-???* *_Diode_* *SingleDiode* D_*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "D_Zener_0_1"
+				(polyline
+					(pts
+						(xy -1.27 -1.27) (xy -1.27 1.27) (xy -0.762 1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 0) (xy -1.27 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 -1.27) (xy 1.27 1.27) (xy -1.27 0) (xy 1.27 -1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "D_Zener_1_1"
+				(pin passive line
+					(at -3.81 0 0)
+					(length 2.54)
+					(name "K"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 3.81 0 180)
+					(length 2.54)
+					(name "A"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Mechanical:MountingHole_Pad"
 			(pin_numbers
 				(hide yes)
@@ -1559,6 +1870,12 @@
 		(uuid "2efa5303-f669-420c-acb4-adee314aceb8")
 	)
 	(junction
+		(at 33.02 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "32f9b446-37fe-4536-9871-894b434814e8")
+	)
+	(junction
 		(at 45.72 44.45)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -1577,10 +1894,22 @@
 		(uuid "4262598d-bab1-4803-a9c9-d9cd750d4357")
 	)
 	(junction
+		(at 45.72 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "46652ae1-7c23-4a04-97ee-c5a0dd5b4f8d")
+	)
+	(junction
 		(at 118.11 102.87)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "535e39da-e29e-4d3f-bec5-63f556465fb8")
+	)
+	(junction
+		(at 33.02 80.01)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "5987dd41-3a4d-4e37-b0d0-550d617e18cb")
 	)
 	(junction
 		(at 156.21 52.07)
@@ -1635,6 +1964,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "98f0ba74-c6ef-45a7-a03b-600086a96ec5")
+	)
+	(junction
+		(at 76.2 80.01)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "a1df940b-20b2-4a95-8dbf-89dc4640eab5")
 	)
 	(junction
 		(at 22.86 135.89)
@@ -1770,6 +2105,16 @@
 	)
 	(wire
 		(pts
+			(xy 76.2 80.01) (xy 76.2 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0b51b363-4bc8-4abf-b7f7-5e70f6d585bc")
+	)
+	(wire
+		(pts
 			(xy 88.9 107.95) (xy 76.2 107.95)
 		)
 		(stroke
@@ -1820,7 +2165,7 @@
 	)
 	(wire
 		(pts
-			(xy 33.02 36.83) (xy 33.02 110.49)
+			(xy 33.02 36.83) (xy 33.02 60.96)
 		)
 		(stroke
 			(width 0)
@@ -1870,7 +2215,7 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 44.45) (xy 45.72 68.58)
+			(xy 45.72 44.45) (xy 45.72 60.96)
 		)
 		(stroke
 			(width 0)
@@ -2050,7 +2395,7 @@
 	)
 	(wire
 		(pts
-			(xy 76.2 68.58) (xy 76.2 85.09)
+			(xy 76.2 68.58) (xy 76.2 80.01)
 		)
 		(stroke
 			(width 0)
@@ -2067,6 +2412,36 @@
 			(type default)
 		)
 		(uuid "67cf4a7d-cb2f-4683-808f-8836d648f3b4")
+	)
+	(wire
+		(pts
+			(xy 33.02 60.96) (xy 33.02 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "68e4b577-d53a-48d0-955f-bb511f9fbf55")
+	)
+	(wire
+		(pts
+			(xy 49.53 80.01) (xy 33.02 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "69ed9f0e-2872-403f-a427-d6f8b8ada6b3")
+	)
+	(wire
+		(pts
+			(xy 45.72 60.96) (xy 45.72 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "751884de-8c34-4721-a5e0-33437c35fb2e")
 	)
 	(wire
 		(pts
@@ -2120,6 +2495,16 @@
 	)
 	(wire
 		(pts
+			(xy 57.15 80.01) (xy 76.2 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8901f7f4-a55a-4389-8fce-0db815d01dc4")
+	)
+	(wire
+		(pts
 			(xy 48.26 152.4) (xy 81.28 152.4)
 		)
 		(stroke
@@ -2127,6 +2512,16 @@
 			(type default)
 		)
 		(uuid "8a837617-05b9-484b-a7a7-c568c2a6b4d3")
+	)
+	(wire
+		(pts
+			(xy 33.02 80.01) (xy 33.02 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8aab4dbd-8b4b-48cc-82fa-9e7a33f04fad")
 	)
 	(wire
 		(pts
@@ -2217,6 +2612,16 @@
 			(type default)
 		)
 		(uuid "b93eaac8-ae6c-4944-a080-a2080f860dd9")
+	)
+	(wire
+		(pts
+			(xy 41.91 60.96) (xy 45.72 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ba0d26c1-4934-4a13-8fb9-ef4b73853f3f")
 	)
 	(wire
 		(pts
@@ -2317,6 +2722,16 @@
 			(type default)
 		)
 		(uuid "d481f849-224e-4f04-9c0a-817880abca06")
+	)
+	(wire
+		(pts
+			(xy 33.02 60.96) (xy 34.29 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d48a7cfa-cb97-4995-968c-ef0509b3f729")
 	)
 	(wire
 		(pts
@@ -2616,9 +3031,9 @@
 		(at 26.67 44.45 180)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "17c29bd0-92e1-4ef6-bb24-c0750886a58f")
 		(property "Reference" "J2"
@@ -2834,6 +3249,92 @@
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
 					(reference "TP7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C_Polarized")
+		(at 38.1 60.96 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "58a5d934-0bf8-4b20-a177-ac75f02ff6b7")
+		(property "Reference" "C5"
+			(at 38.989 53.34 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "C_Polarized"
+			(at 38.989 55.88 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:CP_Elec_8x11.9"
+			(at 34.29 61.9252 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 38.1 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Polarized capacitor"
+			(at 38.1 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" ""
+			(at 38.1 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C542295"
+			(at 38.1 60.96 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "2"
+			(uuid "6e69f135-a6d3-4aaa-a003-416fa8c45b5b")
+		)
+		(pin "1"
+			(uuid "a54da187-d812-41a2-b0a1-62a75f70dc0f")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "C5")
 					(unit 1)
 				)
 			)
@@ -3261,6 +3762,83 @@
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
 					(reference "H2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:D_Zener")
+		(at 53.34 80.01 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "c951d792-17d0-4d5b-9b8a-17e76461d4e6")
+		(property "Reference" "D6"
+			(at 53.34 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "D_TVS"
+			(at 53.34 76.2 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Diode_SMD:D_SMB"
+			(at 53.34 80.01 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 53.34 80.01 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "TVS diode"
+			(at 53.34 80.01 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C151256"
+			(at 53.34 80.01 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "87b7211e-9f63-4d93-9c66-82afd44ca00b")
+		)
+		(pin "2"
+			(uuid "93b5ed77-18c4-4547-840d-d4e984f5ba7a")
+		)
+		(instances
+			(project "low_profile"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "D6")
 					(unit 1)
 				)
 			)
