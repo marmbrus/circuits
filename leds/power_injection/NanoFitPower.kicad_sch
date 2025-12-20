@@ -159,6 +159,214 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "easyeda2kicad:TVS2700DRVR"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "D"
+				(at 0 15.24 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "TVS2700DRVR"
+				(at 0 -7.62 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:WSON-6_L2.0-W2.0-P0.65-BL-EP"
+				(at 0 -10.16 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/TVS_Texas-Instruments-Texas-Instruments-TVS2700DRVR_C523797.html"
+				(at 0 -12.7 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "LCSC Part" "C523797"
+				(at 0 -15.24 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "TVS2700DRVR_0_1"
+				(rectangle
+					(start -6.35 5.08)
+					(end 6.35 -5.08)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(circle
+					(center -5.08 3.81)
+					(radius 0.38)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin unspecified line
+					(at -8.89 2.54 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at -8.89 0 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at -8.89 -2.54 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 1.27 10.16 270)
+					(length 5.08)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 8.89 2.54 180)
+					(length 2.54)
+					(name "IN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 8.89 0 180)
+					(length 2.54)
+					(name "IN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 8.89 -2.54 180)
+					(length 2.54)
+					(name "IN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "power:GND"
 			(power)
 			(pin_numbers
@@ -261,9 +469,73 @@
 			(embedded_fonts no)
 		)
 	)
+	(junction
+		(at 80.01 27.94)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "2f421292-b784-4490-9d08-c94d2c73f662")
+	)
+	(junction
+		(at 33.02 22.86)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "55dc1714-b52c-4ced-beb1-3bba44977258")
+	)
+	(junction
+		(at 69.85 27.94)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "70c70a9c-dafe-451e-b1f9-84c840f771bb")
+	)
+	(junction
+		(at 69.85 45.72)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "70cae284-3ce2-4567-a49e-237ed5a598e6")
+	)
+	(junction
+		(at 72.39 45.72)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "87e7b253-af0d-4fe3-b080-827ba98cc94f")
+	)
+	(junction
+		(at 49.53 27.94)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "96fd3bc5-d3f7-4d96-a27d-900dbb4ab750")
+	)
+	(junction
+		(at 72.39 27.94)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d0c90924-13fe-475d-b5d9-99113802ab1d")
+	)
+	(junction
+		(at 67.31 45.72)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d4db11a5-e333-404d-9586-318cce30591d")
+	)
+	(junction
+		(at 67.31 27.94)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "fdef11dc-2e36-40ba-9513-333a49aaa808")
+	)
 	(wire
 		(pts
-			(xy 40.64 27.94) (xy 52.07 27.94)
+			(xy 67.31 27.94) (xy 69.85 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "20ee0842-14f4-4011-b6bf-8edc180fdd8d")
+	)
+	(wire
+		(pts
+			(xy 40.64 27.94) (xy 49.53 27.94)
 		)
 		(stroke
 			(width 0)
@@ -273,7 +545,97 @@
 	)
 	(wire
 		(pts
-			(xy 40.64 30.48) (xy 45.72 30.48)
+			(xy 49.53 22.86) (xy 49.53 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "75e88503-0bcc-43af-85dc-52548e945b49")
+	)
+	(wire
+		(pts
+			(xy 44.45 45.72) (xy 44.45 30.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7ad3424b-a431-4a4d-97d0-92af13df1e16")
+	)
+	(wire
+		(pts
+			(xy 72.39 45.72) (xy 88.9 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7d155632-a538-4de0-a76f-c57f194e16f0")
+	)
+	(wire
+		(pts
+			(xy 33.02 35.56) (xy 16.51 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "85acbca5-9db3-43a6-95d9-19fbf9282db0")
+	)
+	(wire
+		(pts
+			(xy 16.51 35.56) (xy 16.51 22.86)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "98ba4fe8-af6c-448a-b040-352ffad7c0c6")
+	)
+	(wire
+		(pts
+			(xy 67.31 45.72) (xy 69.85 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9fbc013c-97c7-4c5c-8c15-70787c515505")
+	)
+	(wire
+		(pts
+			(xy 33.02 22.86) (xy 49.53 22.86)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "be145cbb-465f-41c0-9b4b-0a160f080539")
+	)
+	(wire
+		(pts
+			(xy 72.39 27.94) (xy 80.01 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c2de73b9-1ee2-4128-b723-1fa8c4a10593")
+	)
+	(wire
+		(pts
+			(xy 69.85 45.72) (xy 72.39 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c2e238ff-6b03-4337-a38f-fd2ebd32d41a")
+	)
+	(wire
+		(pts
+			(xy 44.45 45.72) (xy 67.31 45.72)
 		)
 		(stroke
 			(width 0)
@@ -281,9 +643,69 @@
 		)
 		(uuid "cfd87bbb-cda9-4cf2-aa5e-ee53f2dadf5a")
 	)
+	(wire
+		(pts
+			(xy 69.85 27.94) (xy 72.39 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d1337ac8-ef97-44fc-8062-f8bc382852f7")
+	)
+	(wire
+		(pts
+			(xy 80.01 27.94) (xy 91.44 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e154f9e8-d770-483c-a5ff-db67551867ec")
+	)
+	(wire
+		(pts
+			(xy 16.51 22.86) (xy 33.02 22.86)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ea94b969-5bd1-4bd7-b544-2637d46a7a76")
+	)
+	(wire
+		(pts
+			(xy 80.01 27.94) (xy 80.01 38.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f0ae609a-185a-482c-aa39-770e793fb72c")
+	)
+	(wire
+		(pts
+			(xy 49.53 27.94) (xy 67.31 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f16e52ee-9c48-493a-96d2-a41d7ad581ec")
+	)
+	(wire
+		(pts
+			(xy 44.45 30.48) (xy 40.64 30.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f5be7a1b-8303-45c2-8521-9500ab1473d1")
+	)
 	(hierarchical_label "VIN"
 		(shape input)
-		(at 45.72 30.48 270)
+		(at 88.9 45.72 270)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -294,7 +716,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 52.07 27.94 0)
+		(at 91.44 27.94 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -302,8 +724,8 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "13844f16-2f73-49ac-a8ad-e3b4cdf8a160")
-		(property "Reference" "#PWR020"
-			(at 52.07 34.29 0)
+		(property "Reference" "#PWR01"
+			(at 91.44 34.29 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -312,7 +734,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 52.07 33.02 0)
+			(at 91.44 33.02 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -320,7 +742,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 52.07 27.94 0)
+			(at 91.44 27.94 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -329,7 +751,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 52.07 27.94 0)
+			(at 91.44 27.94 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -338,7 +760,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 52.07 27.94 0)
+			(at 91.44 27.94 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -352,11 +774,11 @@
 		(instances
 			(project "strip_connection"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5bd799f0-fbfd-4157-b3c6-f957271a17dd"
-					(reference "#PWR020")
+					(reference "#PWR01")
 					(unit 1)
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9705e5db-40b4-4b33-8409-e064f0938af9"
-					(reference "#PWR0101")
+					(reference "#PWR03")
 					(unit 1)
 				)
 			)
@@ -372,7 +794,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "910d7eb0-45ee-4f02-95d0-46a5674dbce7")
-		(property "Reference" "CN11"
+		(property "Reference" "CN1"
 			(at 30.48 27.9399 0)
 			(effects
 				(font
@@ -441,11 +863,109 @@
 		(instances
 			(project "strip_connection"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5bd799f0-fbfd-4157-b3c6-f957271a17dd"
-					(reference "CN11")
+					(reference "CN1")
 					(unit 1)
 				)
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9705e5db-40b4-4b33-8409-e064f0938af9"
-					(reference "CN7")
+					(reference "CN2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:TVS2700DRVR")
+		(at 69.85 36.83 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "d4b16c7e-4b74-4703-a63b-067aa91a5d25")
+		(property "Reference" "D5"
+			(at 63.5 35.5599 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "TVS2700DRVR"
+			(at 63.5 38.0999 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:WSON-6_L2.0-W2.0-P0.65-BL-EP"
+			(at 59.69 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/TVS_Texas-Instruments-Texas-Instruments-TVS2700DRVR_C523797.html"
+			(at 57.15 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 69.85 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C523797"
+			(at 54.61 36.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "1722821f-da69-4fb1-8db7-443897dc99a4")
+		)
+		(pin "2"
+			(uuid "975a5498-1a44-4364-a008-26f5ff6b07a2")
+		)
+		(pin "3"
+			(uuid "27fee5e8-df9c-480c-b050-a364df52bacd")
+		)
+		(pin "7"
+			(uuid "898d67fc-c686-4df9-a649-45244cd918df")
+		)
+		(pin "6"
+			(uuid "843ce730-de6b-492e-9130-fbbc0c48d598")
+		)
+		(pin "5"
+			(uuid "756cc606-bcfc-4c0d-a309-cb66492bda6b")
+		)
+		(pin "4"
+			(uuid "384f23f7-3f20-4156-a0d2-8270f62133b6")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/5bd799f0-fbfd-4157-b3c6-f957271a17dd"
+					(reference "D5")
+					(unit 1)
+				)
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/9705e5db-40b4-4b33-8409-e064f0938af9"
+					(reference "D6")
 					(unit 1)
 				)
 			)
