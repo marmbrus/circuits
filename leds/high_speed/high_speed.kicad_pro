@@ -124,7 +124,7 @@
       },
       "rules": {
         "max_error": 0.005,
-        "min_clearance": 0.09,
+        "min_clearance": 0.1,
         "min_connection": 0.0,
         "min_copper_edge_clearance": 0.5,
         "min_groove_width": 0.0,
@@ -137,7 +137,7 @@
         "min_text_height": 0.8,
         "min_text_thickness": 0.08,
         "min_through_hole_diameter": 0.2,
-        "min_track_width": 0.09,
+        "min_track_width": 0.1,
         "min_via_annular_width": 0.075,
         "min_via_diameter": 0.35,
         "solder_mask_to_copper_clearance": 0.005,
@@ -477,14 +477,14 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "power_injection.kicad_pro",
+    "filename": "high_speed.kicad_pro",
     "version": 3
   },
   "net_settings": {
     "classes": [
       {
         "bus_width": 12,
-        "clearance": 0.1,
+        "clearance": 0.127,
         "diff_pair_gap": 0.25,
         "diff_pair_via_gap": 0.25,
         "diff_pair_width": 0.2,
@@ -499,13 +499,58 @@
         "via_diameter": 0.25,
         "via_drill": 0.15,
         "wire_width": 6
+      },
+      {
+        "clearance": 0.127,
+        "diff_pair_gap": 0.2,
+        "diff_pair_width": 0.22,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.25,
+        "name": "DiffSignal",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 1,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.22,
+        "via_diameter": 0.45,
+        "via_drill": 0.3
+      },
+      {
+        "clearance": 0.2,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.25,
+        "name": "DigitalSignal",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 0,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.35,
+        "via_diameter": 0.45,
+        "via_drill": 0.3
       }
     ],
     "meta": {
       "version": 4
     },
     "net_colors": null,
-    "netclass_assignments": null,
+    "netclass_assignments": {
+      "/esp32/LEDCLOCK": [
+        "DigitalSignal"
+      ],
+      "/esp32/LEDDATA": [
+        "DigitalSignal"
+      ],
+      "/led_channel/RS485/A": [
+        "DiffSignal"
+      ],
+      "/led_channel/RS485/B": [
+        "DiffSignal"
+      ],
+      "/led_channel/RS486/A": [
+        "DiffSignal"
+      ],
+      "/led_channel/RS486/B": [
+        "DiffSignal"
+      ]
+    },
     "netclass_patterns": []
   },
   "pcbnew": {
@@ -628,7 +673,7 @@
     "meta": {
       "version": 1
     },
-    "net_format_name": "KiCad",
+    "net_format_name": "",
     "page_layout_descr_file": "",
     "plot_directory": "",
     "space_save_all_events": true,
@@ -647,16 +692,36 @@
       "Root"
     ],
     [
-      "5bd799f0-fbfd-4157-b3c6-f957271a17dd",
-      "NanoFitPower1"
+      "971439fe-c8ce-4450-821c-537e8691d398",
+      "esp32"
     ],
     [
-      "fd6d255e-cbb5-4078-9520-650565e8415b",
-      "buck24v"
+      "0e3eff3d-726c-4564-b1c0-82058f71435d",
+      "RS486"
     ],
     [
-      "9705e5db-40b4-4b33-8409-e064f0938af9",
-      "NanoFitPower"
+      "aa9739d0-05d8-4c74-a4fd-846c263eed0b",
+      "buckconverter"
+    ],
+    [
+      "35a4a023-801a-4ad8-aaa9-651a71e86f56",
+      "i2c"
+    ],
+    [
+      "ff982210-6c86-422a-a66b-20bff67bd030",
+      "3v3"
+    ],
+    [
+      "e9719c33-edbb-4c34-a1ec-3f6b22cc8297",
+      "a2d"
+    ],
+    [
+      "ee466774-203d-4e86-853a-e430a538880e",
+      "RS485"
+    ],
+    [
+      "f2bbebe1-7e19-419b-a0b6-59692ffc8a76",
+      "led_channel"
     ]
   ],
   "text_variables": {}
