@@ -31,14 +31,8 @@ idf_component_register(
         # Adapter (header-only)
         
     INCLUDE_DIRS "."
-    # Internal implementation header for RMT LED strip encoder lives under the
-    # managed component's src directory, not its public include directory.
-    # We add it as a private include so we can build a custom RMT driver on top
-    # of the same encoder implementation.
-    PRIV_INCLUDE_DIRS
-        "../../managed_components/espressif__led_strip/src"
 
-    REQUIRES json freertos configuration espressif__led_strip esp_timer esp_netif
+    REQUIRES json freertos configuration led_strip esp_timer esp_netif
     PRIV_REQUIRES esp_driver_gpio
 )
 
