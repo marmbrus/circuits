@@ -27,6 +27,9 @@
 
 static const char* TAG = "main";
 
+// HD108 LED test entrypoint (defined in HD108.cpp)
+void init_hd108();
+
 extern "C" void app_main(void)
 {
     // Initialize NVS
@@ -149,6 +152,9 @@ extern "C" void app_main(void)
     }
 
     ESP_LOGI(TAG, "Startup sequence complete.");
+
+    // Run HD108 SPI LED test (one-shot)
+    init_hd108();
 
     // Idle loop to keep app_main task alive while yielding CPU
     while (true) {
