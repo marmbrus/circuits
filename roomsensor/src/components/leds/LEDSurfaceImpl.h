@@ -2,7 +2,8 @@
 
 #include "LEDSurface.h"
 #include "LEDGrid.h"
-#include "LEDWireEncoder.h"
+#include "PixelProcessor.h"
+#include "Transmitter.h"
 #include <vector>
 #include "PsramAllocator.h"
 #include <memory>
@@ -14,48 +15,57 @@ public:
     LEDSurfaceImpl(size_t rows,
                    size_t cols,
                    std::unique_ptr<internal::LEDCoordinateMapper> mapper,
-                   std::unique_ptr<internal::LEDWireEncoder> encoder)
-        : rows_(rows), cols_(cols), mapper_(std::move(mapper)), encoder_(std::move(encoder)) {
-        logical_rgba_.assign(rows_ * cols_ * 4, 0);
-        frame_bytes_.resize(encoder_->frame_size_for(rows_, cols_));
+                   std::unique_ptr<PixelProcessor> processor,
+                   std::unique_ptr<Transmitter> transmitter)
+        : rows_(rows), cols_(cols), mapper_(std::move(mapper)), 
+          processor_(std::move(processor)), transmitter_(std::move(transmitter)) {
+        // Keep logical state in PSRAM (large)
+        logical_pixels_.assign(rows_ * cols_, Color());
+        // Use internal RAM (SRAM) for the wire buffer to ensure stable transmission
+        // especially for non-DMA RMT which relies on CPU-driven FIFO filling.
+        // PSRAM latency can cause RMT underrun/flicker.
+        if (processor_) {
+            frame_bytes_.resize(processor_->get_buffer_size(rows_ * cols_));
+        }
     }
 
     size_t rows() const override { return rows_; }
     size_t cols() const override { return cols_; }
 
-    void set(size_t row, size_t col, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) override {
+    void set(size_t row, size_t col, const Color& color) override {
         size_t mr = row, mc = col;
         if (mapper_) mapper_->map(row, col, mr, mc);
         if (mr >= rows_ || mc >= cols_) return;
-        size_t idx = (mr * cols_ + mc) * 4;
-        logical_rgba_[idx+0] = r;
-        logical_rgba_[idx+1] = g;
-        logical_rgba_[idx+2] = b;
-        logical_rgba_[idx+3] = w;
+        size_t idx = mr * cols_ + mc;
+        if (idx < logical_pixels_.size()) {
+            logical_pixels_[idx] = color;
+        }
     }
 
     void clear() override {
-        std::fill(logical_rgba_.begin(), logical_rgba_.end(), 0u);
+        std::fill(logical_pixels_.begin(), logical_pixels_.end(), Color());
     }
 
     bool flush() override {
-        if (!encoder_ || encoder_->is_busy()) return false;
-        encoder_->encode_frame(logical_rgba_.data(), rows_, cols_, frame_bytes_.data());
-        return encoder_->transmit_frame(frame_bytes_.data(), frame_bytes_.size());
+        if (!processor_ || !transmitter_ || transmitter_->is_busy()) return false;
+        
+        processor_->process(logical_pixels_.data(), logical_pixels_.size(), frame_bytes_.data());
+        return transmitter_->transmit(frame_bytes_.data(), frame_bytes_.size());
     }
 
-    bool is_busy() const override { return encoder_ ? encoder_->is_busy() : false; }
+    bool is_busy() const override { return transmitter_ ? transmitter_->is_busy() : false; }
 
 private:
     size_t rows_ = 0;
     size_t cols_ = 0;
     std::unique_ptr<internal::LEDCoordinateMapper> mapper_;
-    std::unique_ptr<internal::LEDWireEncoder> encoder_;
-    // Large frame buffers → store in PSRAM
-    std::vector<uint8_t, PsramAllocator<uint8_t>> logical_rgba_;
-    std::vector<uint8_t, PsramAllocator<uint8_t>> frame_bytes_;
+    std::unique_ptr<PixelProcessor> processor_;
+    std::unique_ptr<Transmitter> transmitter_;
+    
+    // Store logical state in PSRAM
+    std::vector<Color, PsramAllocator<Color>> logical_pixels_;
+    // Store wire buffer in SRAM (default allocator)
+    std::vector<uint8_t> frame_bytes_;
 };
 
 } // namespace leds
-
-

@@ -46,6 +46,7 @@ public:
         SK6812,
         WS2814,
         FLIPDOT,
+        APA102,
     };
 
     // Grid layout for mapping logical (row,col) to physical. Defaults to ROW_MAJOR.
@@ -60,6 +61,10 @@ public:
     // Accessors
     bool has_data_gpio() const { return data_gpio_set_; }
     int data_gpio() const { return data_gpio_; }
+    // New: Clock GPIO for SPI
+    bool has_clock_gpio() const { return clock_gpio_set_; }
+    int clock_gpio() const { return clock_gpio_; }
+    
     bool has_enabled_gpio() const { return enabled_gpio_set_; }
     int enabled_gpio() const { return enabled_gpio_; }
     // New plural enables
@@ -126,6 +131,10 @@ private:
     // Persisted fields
     bool data_gpio_set_ = false;
     int data_gpio_ = -1;
+    // New persisted field
+    bool clock_gpio_set_ = false;
+    int clock_gpio_ = -1;
+
     bool enabled_gpio_set_ = false;
     int enabled_gpio_ = -1;
     bool enabled_gpios_set_ = false;
@@ -160,5 +169,3 @@ private:
 };
 
 } // namespace config
-
-

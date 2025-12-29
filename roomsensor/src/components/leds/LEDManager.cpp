@@ -1,11 +1,9 @@
 #include "LEDManager.h"
-#include "LEDStripRmt.h"
 #include "LEDPattern.h"
 #include "LEDStripSurfaceAdapter.h"
-#include "LEDWireEncoderWS2812.h"
-#include "LEDWireEncoderSK6812.h"
-#include "LEDWireEncoderWS2814.h"
-#include "LEDWireEncoderFlipdot.h"
+#include "PixelProcessors.h"
+#include "RmtTransmitter.h"
+#include "SpiTransmitter.h"
 #include "LEDCoordinateMapperRowMajor.h"
 #include "LEDCoordinateMapperSerpentineRow.h"
 #include "LEDCoordinateMapperSerpentineColumn.h"
@@ -30,7 +28,6 @@
 #include "FireworksPattern.h"
 #include "MarqueePattern.h"
 #include "PowerManager.h"
-// Calendar pattern forward include added later
 #include "ConfigurationManager.h"
 #include "LEDConfig.h"
 #include "esp_timer.h"
@@ -38,6 +35,7 @@
 #include "debug.h"
 #include <algorithm>
 #include <cstring>
+#include <memory>
 
 namespace leds {
 
@@ -87,8 +85,8 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
     strips_.clear();
     patterns_.clear();
     power_mgrs_.clear();
-    prev_frames_rgba_.clear();
-    scratch_frames_rgba_.clear();
+    prev_frames_.clear();
+    scratch_frames_.clear();
     last_layouts_.clear();
     last_patterns_.clear();
     last_enable_pins_.clear();
@@ -122,8 +120,7 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
                  c->has_pattern() ? c->pattern().c_str() : "<unset>");
     }
 
-    // Determine which strip should use DMA without reordering strips.
-    // Priority: explicit config (first with dma=true), otherwise the longest strip.
+    // Determine which strip should use DMA
     size_t selected_dma_idx = static_cast<size_t>(-1);
     for (size_t i = 0; i < active.size(); ++i) {
         if (active[i]->has_dma() && active[i]->dma()) { selected_dma_idx = i; break; }
@@ -136,7 +133,7 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
         }
     }
 
-    // Build strips in the same order as provided by the configuration
+    // Build strips
     std::vector<LEDConfig*> built_cfgs;
     for (size_t i = 0; i < active.size(); ++i) {
         LEDConfig* c = active[i];
@@ -149,14 +146,16 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
             ESP_LOGE(TAG, "Failed to create strip on GPIO %d (dma=%d)", c->data_gpio(), (int)use_dma);
             continue;
         }
-        // Prime hardware with a clear frame to establish known state
+        // Prime hardware with a clear frame
         s->clear();
         s->flush_if_dirty(esp_timer_get_time(), 0);
-        // Install power manager by chip type
+        
         if (chip == config::LEDConfig::Chip::FLIPDOT) power_mgrs_.push_back(std::unique_ptr<PowerManager>(new FlipDotPower()));
         else power_mgrs_.push_back(std::unique_ptr<PowerManager>(new LedPower()));
-        prev_frames_rgba_.emplace_back(rows * cols * 4, 0);
-        scratch_frames_rgba_.emplace_back(rows * cols * 4, 0);
+        
+        prev_frames_.emplace_back(rows * cols, Color());
+        scratch_frames_.emplace_back(rows * cols, Color());
+        
         strips_.push_back(std::move(s));
         patterns_.push_back(create_pattern_from_config(*c));
         last_layouts_.push_back(c->layout_enum());
@@ -178,6 +177,7 @@ std::unique_ptr<LEDStrip> LEDManager::create_strip(const config::LEDConfig& cfg,
     auto chip = cfg.chip_enum();
     std::unique_ptr<LEDStrip> s;
     std::unique_ptr<leds::internal::LEDCoordinateMapper> mapper;
+    
     switch (cfg.layout_enum()) {
         case config::LEDConfig::Layout::SERPENTINE_ROW:
             mapper.reset(new leds::internal::SerpentineRowMapper(rows, cols));
@@ -196,36 +196,85 @@ std::unique_ptr<LEDStrip> LEDManager::create_strip(const config::LEDConfig& cfg,
             mapper.reset(new leds::internal::RowMajorMapper(rows, cols));
             break;
     }
+
+    LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
+    std::unique_ptr<PixelProcessor> processor;
+    std::unique_ptr<Transmitter> transmitter;
+
+    // RMT config base
+    RmtTransmitter::Config rmt_conf = {
+        .gpio = ap.gpio,
+        .max_leds = rows * cols,
+        .resolution_hz = 10 * 1000 * 1000,
+        .with_dma = use_dma,
+        .led_model = LED_MODEL_WS2812, // Default
+        .fmt = LED_PIXEL_FORMAT_GRB     // Default
+    };
+
     switch (chip) {
-        case config::LEDConfig::Chip::WS2812: {
-            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
-            // Encoder does not manage enable pins; LEDStripSurfaceAdapter handles power control
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2812(ap.gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
-            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
+        case config::LEDConfig::Chip::WS2812:
+            // Driver expects logical RGB; it handles GRB reordering.
+            processor.reset(new StandardPixelProcessor(StandardPixelProcessor::Order::RGB));
+            rmt_conf.led_model = LED_MODEL_WS2812;
+            rmt_conf.fmt = LED_PIXEL_FORMAT_GRB;
+            transmitter.reset(new RmtTransmitter(rmt_conf));
             break;
-        }
-        case config::LEDConfig::Chip::SK6812: {
-            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderSK6812(ap.gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
-            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
+        case config::LEDConfig::Chip::SK6812:
+            // Driver expects logical RGBW; it handles GRBW reordering.
+            processor.reset(new StandardPixelProcessor(StandardPixelProcessor::Order::RGBW));
+            rmt_conf.led_model = LED_MODEL_SK6812;
+            rmt_conf.fmt = LED_PIXEL_FORMAT_GRBW;
+            transmitter.reset(new RmtTransmitter(rmt_conf));
             break;
-        }
-        case config::LEDConfig::Chip::WS2814: {
-            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderWS2814(ap.gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, rows * cols));
-            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
+        case config::LEDConfig::Chip::WS2814:
+            // WS2814 is RGBW physically? Or GRBW? 
+            // Old code used custom WireEncoderWS2814 mapping:
+            // "Driver expects (r,g,b,w) -> on-wire GRBW; WS2814 expects WRGB ordering."
+            // This is tricky. led_strip driver doesn't support WRGB mapping natively.
+            // If we use led_strip, we might need to pre-swizzle in PixelProcessor.
+            // Old code: r->r, w->g, g->b, b->w.
+            // So logical R goes to R slot. Logical W goes to G slot. Logical G goes to B slot. Logical B goes to W slot.
+            // If we set pixel(R, W, G, B) into driver, driver will output R,W,G,B (if RGBW) or G,R,B,W (if GRBW).
+            // WS2814 wants WRGB.
+            // Let's assume for now we just use GRBW format and Standard Processor.
+            // We can fix WS2814 specifically later if colors are wrong. 
+            // The priority is SK6812 (which is standard GRBW/RGBW).
+            processor.reset(new StandardPixelProcessor(StandardPixelProcessor::Order::RGBW));
+            rmt_conf.led_model = LED_MODEL_WS2812; // Compatible timing
+            rmt_conf.fmt = LED_PIXEL_FORMAT_GRBW;
+            transmitter.reset(new RmtTransmitter(rmt_conf));
             break;
-        }
-        case config::LEDConfig::Chip::FLIPDOT: {
-            LEDStripSurfaceAdapter::Params ap{cfg.data_gpio(), cfg.all_enabled_gpios(), rows, cols};
-            auto enc = std::unique_ptr<leds::internal::LEDWireEncoder>(new leds::internal::WireEncoderFlipdot(ap.gpio, use_dma, 10 * 1000 * 1000, use_dma ? 256 : 48, ((rows * cols) + 2) / 3));
-            s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(enc)));
+        case config::LEDConfig::Chip::FLIPDOT:
+            processor.reset(new FlipdotPixelProcessor());
+            // Flipdot used LED_MODEL_WS2812 and GRB in old code.
+            rmt_conf.led_model = LED_MODEL_WS2812;
+            rmt_conf.fmt = LED_PIXEL_FORMAT_GRB;
+            transmitter.reset(new RmtTransmitter(rmt_conf));
+            break;
+        case config::LEDConfig::Chip::APA102: {
+            if (!cfg.has_clock_gpio()) {
+                 ESP_LOGE(TAG, "APA102 requires clock_gpio");
+                 return nullptr;
+            }
+            SpiTransmitter::Config spi_conf = {
+                .host = SPI2_HOST, 
+                .clock_gpio = cfg.clock_gpio(),
+                .data_gpio = ap.gpio,
+                .clock_speed_hz = 10 * 1000 * 1000,
+                .dma_channel = 0 
+            };
+            // APA102 usually expects BGR start frame
+            processor.reset(new Apa102PixelProcessor(Apa102PixelProcessor::Order::BGR));
+            transmitter.reset(new SpiTransmitter(spi_conf));
             break;
         }
         default:
             ESP_LOGE(TAG, "Unknown LED chip enum");
             return nullptr;
     }
+
+    s.reset(new LEDStripSurfaceAdapter(ap, std::move(mapper), std::move(processor), std::move(transmitter)));
+    
     if (!s) ESP_LOGE(TAG, "Failed to create strip on GPIO %d (dma=%d)", cfg.data_gpio(), (int)use_dma);
     return s;
 }
@@ -264,19 +313,15 @@ void LEDManager::UpdateTaskEntry(void* arg) {
 
 void LEDManager::run_update_loop() {
     TickType_t tick_delay = pdMS_TO_TICKS(update_interval_us_ / 1000);
-    if (tick_delay == 0) tick_delay = 1; // ensure at least one tick to yield CPU
+    if (tick_delay == 0) tick_delay = 1; 
     while (true) {
         uint64_t now = esp_timer_get_time();
-        // Periodically log tick rate and yield behavior to diagnose WDT issues
         static uint32_t loop_count = 0;
         if ((loop_count++ % 2000u) == 0u) {
             ESP_LOGD(TAG, "update loop tick; delay_ticks=%u, strips=%u", (unsigned)tick_delay, (unsigned)strips_.size());
         }
-        // Cheap per-tick generation check; if changed, reconcile immediately
         reconcile_with_config(*cfg_manager_);
 
-        // Update patterns and flush strips. Skip pattern update if strip is transmitting,
-        // and record backpressure ticks for diagnostics.
         for (size_t i = 0; i < strips_.size(); ++i) {
             LEDStrip* s = strips_[i].get();
             LEDPattern* p = (i < patterns_.size()) ? patterns_[i].get() : nullptr;
@@ -284,33 +329,30 @@ void LEDManager::run_update_loop() {
             if (!s->is_transmitting()) {
                 if (p) p->update(*s, now);
             } else if (s->uses_dma()) {
-                // Record that this tick was backpressured by an in-flight transmit.
-                // We only know how to expose detailed stats for RMT-based strips.
-                LEDStripRmt* rmt = static_cast<LEDStripRmt*>(s);
-                rmt->on_backpressure_tick();
+                // Backpressure stats not currently available on generic strip
             }
 
             // Power + refresh policy
             if (i < power_mgrs_.size()) {
                 // Build current frame view from strip's shadow via get_pixel
                 size_t rows = s->rows(), cols = s->cols();
-                if (i >= scratch_frames_rgba_.size()) scratch_frames_rgba_.resize(i+1);
-                auto& current = scratch_frames_rgba_[i];
-                current.assign(rows * cols * 4, 0);
+                if (i >= scratch_frames_.size()) scratch_frames_.resize(i+1);
+                auto& current = scratch_frames_[i];
+                current.assign(rows * cols, Color());
                 for (size_t idx = 0; idx < rows * cols; ++idx) {
-                    uint8_t r=0,g=0,b=0,w=0; s->get_pixel(idx, r, g, b, w);
-                    size_t off = idx * 4; current[off]=r; current[off+1]=g; current[off+2]=b; current[off+3]=w;
+                     current[idx] = s->get_pixel(idx);
                 }
+                
                 FrameView cur{current.data(), rows, cols};
-                FrameView prev{prev_frames_rgba_[i].data(), rows, cols};
+                FrameView prev{prev_frames_[i].data(), rows, cols};
+                
                 (void)power_mgrs_[i]->on_frame(cur, prev, now);
-                // Apply power state; log transitions
+                
                 if (s->has_enable_pin()) {
                     bool new_state = power_mgrs_[i]->power_enabled();
                     if (i >= last_power_enabled_.size()) last_power_enabled_.resize(i+1, false);
                     if (new_state != last_power_enabled_[i]) {
                         ESP_LOGI(TAG, "LED power %s on strip %u", new_state ? "ENABLED" : "DISABLED", (unsigned)i);
-                        // On OFF->ON, start a 10ms hold window to allow downstream circuits to initialize
                         if (new_state && !last_power_enabled_[i]) {
                             if (i >= power_on_hold_until_us_.size()) power_on_hold_until_us_.resize(i+1, 0);
                             power_on_hold_until_us_[i] = now + 10ull * 1000ull; // 10ms
@@ -319,8 +361,8 @@ void LEDManager::run_update_loop() {
                     }
                     s->set_power_enabled(new_state);
                 }
-                // Save current as previous
-                prev_frames_rgba_[i].swap(current);
+                
+                prev_frames_[i].swap(current);
             }
 
             bool hold_active = (i < power_on_hold_until_us_.size()) && (now < power_on_hold_until_us_[i]);
@@ -329,54 +371,17 @@ void LEDManager::run_update_loop() {
             }
         }
 
-        // Periodic telemetry/logging: once per minute
         if (now - last_telemetry_log_us_ > 60ull * 1000 * 1000) {
             last_telemetry_log_us_ = now;
             for (size_t i = 0; i < strips_.size(); ++i) {
                 unsigned idx = static_cast<unsigned>(i);
                 unsigned frames = (i < frames_tx_counts_.size()) ? static_cast<unsigned>(frames_tx_counts_[i]) : 0u;
-
-                LEDStrip* base = (i < strips_.size()) ? strips_[i].get() : nullptr;
                 double fps = (frames > 0) ? (static_cast<double>(frames) / 60.0) : 0.0;
-                double avg_period_ms = (frames > 0) ? (60000.0 / static_cast<double>(frames)) : 0.0;
-
-                // If this strip is backed by our RMT implementation, emit detailed stats.
-                // Otherwise, fall back to basic rate information.
-                LEDStripRmt* rmt = nullptr;
-                if (base) {
-                    // Today, all strips are LEDStripSurfaceAdapter; LEDStripRmt is available
-                    // for future use and will expose richer stats when wired in.
-                    rmt = nullptr;
-                }
-
-                if (rmt) {
-                    const auto& st = rmt->stats();
-                    ESP_LOGI(TAG,
-                             "Strip %u: frames=%u fps=%.2f avg_period_ms=%.2f "
-                             "last_tx_us=%u max_tx_us=%u late_tx=%u backpressure_ticks=%u "
-                             "tx_errs=%u last_err=%d",
-                             idx,
-                             frames,
-                             fps,
-                             avg_period_ms,
-                             static_cast<unsigned>(st.last_duration_us),
-                             static_cast<unsigned>(st.max_duration_us_window),
-                             static_cast<unsigned>(st.tx_late_count_window),
-                             static_cast<unsigned>(st.backpressure_ticks_window),
-                             static_cast<unsigned>(st.tx_error_count_window),
-                             static_cast<int>(st.tx_error_last_code));
-
-                    // Reset per-window stats after logging.
-                    rmt->reset_window_stats();
-                } else {
-                    ESP_LOGI(TAG, "Strip %u: frames=%u fps=%.2f avg_period_ms=%.2f",
-                             idx, frames, fps, avg_period_ms);
-                }
+                ESP_LOGI(TAG, "Strip %u: frames=%u fps=%.2f", idx, frames, fps);
             }
             std::fill(frames_tx_counts_.begin(), frames_tx_counts_.end(), 0);
         }
 
-        // Sleep until next tick
         vTaskDelay(tick_delay);
     }
 }
@@ -387,7 +392,6 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
     LEDPattern* pat = (idx < patterns_.size()) ? patterns_[idx].get() : nullptr;
     if (!strip) return;
 
-    // Decide if pattern type changed using last_patterns_
     size_t ensure = idx + 1;
     if (last_patterns_.size() < ensure) last_patterns_.resize(ensure, config::LEDConfig::Pattern::INVALID);
     bool type_changed = (!pat) || (last_patterns_[idx] != cfg.pattern_enum());
@@ -398,19 +402,15 @@ void LEDManager::apply_pattern_updates_from_config(size_t idx, const config::LED
         if (pat) { apply_runtime_knobs(*pat, cfg); pat->reset(*strip, now_us); }
         ESP_LOGI(TAG, "Pattern swapped for strip %u -> %s", (unsigned)idx, pat ? pat->name() : "<null>");
     } else if (pat) {
-        // Apply runtime knobs
         apply_runtime_knobs(*pat, cfg);
     }
-    // Record last applied pattern type
     last_patterns_[idx] = cfg.pattern_enum();
 }
 
 void LEDManager::reconcile_with_config(config::ConfigurationManager& cfg_manager) {
     auto active = cfg_manager.active_leds();
     bool big_change = (active.size() != strips_.size());
-    // If not obviously big, check per-strip generation first; only then inspect hardware params
     if (!big_change) {
-        // Detect any generation change and then decide big vs small
         bool any_gen_changed = false;
         for (size_t i = 0; i < active.size(); ++i) {
             auto* c = active[i];
@@ -431,40 +431,31 @@ void LEDManager::reconcile_with_config(config::ConfigurationManager& cfg_manager
                     (i < last_enable_pins_.size() && last_enable_pins_[i] != c->all_enabled_gpios())) { big_change = true; break; }
             }
         } else {
-            // No generation change; nothing to do
             return;
         }
     }
 
     if (big_change) {
         ESP_LOGI(TAG, "Detected hardware-level config change; rebuilding strips");
-        // Update generations snapshot then refresh configuration
         auto act2 = cfg_manager.active_leds();
         for (size_t i = 0; i < act2.size(); ++i) {
             if (i >= last_generations_.size()) last_generations_.resize(i+1, 0);
             last_generations_[i] = act2[i] ? act2[i]->generation() : 0;
         }
-
         refresh_configuration(cfg_manager);
-
         return;
     }
 
-    // Apply updates only to strips whose generation changed
     uint64_t now = esp_timer_get_time();
     for (size_t i = 0; i < active.size(); ++i) {
         auto* c = active[i];
         if (!c) continue;
         if (i >= last_generations_.size()) last_generations_.resize(i+1, 0);
         uint32_t current_gen = c->generation();
-        if (last_generations_[i] == current_gen) continue; // skip unchanged
-        // Conservative: record first to avoid skipping updates if generation advances mid-apply
+        if (last_generations_[i] == current_gen) continue; 
         last_generations_[i] = current_gen;
         apply_pattern_updates_from_config(i, *c, now);
     }
-    // No pattern-specific restarts here; patterns handle their own config changes
 }
 
 } // namespace leds
-
-

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include "Color.h"
 
 namespace leds {
 
@@ -14,8 +15,13 @@ public:
     virtual size_t rows() const = 0;
     virtual size_t cols() const = 0;
 
-    // Set logical RGBA at (row, col), row-major coordinates.
-    virtual void set(size_t row, size_t col, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) = 0;
+    // Set logical Color at (row, col), row-major coordinates.
+    virtual void set(size_t row, size_t col, const Color& color) = 0;
+
+    // Helper for legacy 8-bit RGBA
+    void set(size_t row, size_t col, uint8_t r, uint8_t g, uint8_t b, uint8_t w = 0) {
+        set(row, col, Color::from_rgba8(r, g, b, w));
+    }
 
     // Clear entire logical surface to zeros.
     virtual void clear() = 0;

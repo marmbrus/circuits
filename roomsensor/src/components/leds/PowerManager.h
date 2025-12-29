@@ -3,13 +3,14 @@
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+#include "Color.h"
 
 namespace leds {
 
 // Lightweight view of a frame for power decisions
 struct FrameView {
-    // RGBA buffer (rows*cols*4). For FLIPDOT, use R|G|B|W to indicate on/off intent per logical dot.
-    const uint8_t* rgba = nullptr;
+    // RGBA buffer (rows*cols).
+    const Color* pixels = nullptr;
     size_t rows = 0;
     size_t cols = 0;
 };
@@ -35,7 +36,7 @@ public:
     bool on_frame(const FrameView& current,
                   const FrameView& previous,
                   uint64_t now_us) override {
-        (void)previous; (void)now_us;
+        (void)previous; 
         bool any = any_on(current);
         if (any) last_nonzero_us_ = now_us;
         bool hold = (last_nonzero_us_ != 0) && ((now_us - last_nonzero_us_) < hold_on_after_off_us_);
@@ -48,9 +49,12 @@ public:
 
 private:
     static bool any_on(const FrameView& f) {
-        if (!f.rgba) return false;
-        size_t total = f.rows * f.cols * 4;
-        for (size_t i = 0; i < total; ++i) if (f.rgba[i] != 0) return true;
+        if (!f.pixels) return false;
+        size_t total = f.rows * f.cols;
+        for (size_t i = 0; i < total; ++i) {
+            const Color& c = f.pixels[i];
+            if (c.r || c.g || c.b || c.w) return true;
+        }
         return false;
     }
     bool enabled_ = false;
@@ -84,9 +88,11 @@ public:
 
 private:
     static bool frame_differs(const FrameView& a, const FrameView& b) {
-        if (a.rows != b.rows || a.cols != b.cols || !a.rgba || !b.rgba) return true;
-        size_t n = a.rows * a.cols * 4;
-        for (size_t i = 0; i < n; ++i) if (a.rgba[i] != b.rgba[i]) return true;
+        if (a.rows != b.rows || a.cols != b.cols || !a.pixels || !b.pixels) return true;
+        size_t n = a.rows * a.cols;
+        for (size_t i = 0; i < n; ++i) {
+             if (a.pixels[i] != b.pixels[i]) return true;
+        }
         return false;
     }
 
@@ -98,5 +104,3 @@ private:
 };
 
 } // namespace leds
-
-

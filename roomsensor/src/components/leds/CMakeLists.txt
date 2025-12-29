@@ -1,6 +1,5 @@
 idf_component_register(
     SRCS
-        "LEDStripRmt.cpp"
         "LEDManager.cpp"
         "OffPattern.cpp"
         "SolidPattern.cpp"
@@ -22,18 +21,13 @@ idf_component_register(
         "MarqueePattern.cpp"
         "font6x6.cpp"
 
-        # New internal mapper/encoder implementations
-        "LEDWireEncoderWS2812.cpp"
-        "LEDWireEncoderFlipdot.cpp"
-        "LEDWireEncoderSK6812.cpp"
-        "LEDWireEncoderWS2814.cpp"
-        
-        # Adapter (header-only)
+        # New implementation files
+        "PixelProcessors.cpp"
+        "RmtTransmitter.cpp"
+        "SpiTransmitter.cpp"
         
     INCLUDE_DIRS "."
 
     REQUIRES json freertos configuration led_strip esp_timer esp_netif
-    PRIV_REQUIRES esp_driver_gpio
+    PRIV_REQUIRES esp_driver_gpio esp_driver_spi esp_driver_rmt
 )
-
-
