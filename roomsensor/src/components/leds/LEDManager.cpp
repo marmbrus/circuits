@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <cstring>
 #include <memory>
+#include <set>
 
 namespace leds {
 
@@ -135,8 +136,31 @@ void LEDManager::refresh_configuration(config::ConfigurationManager& cfg_manager
 
     // Build strips
     std::vector<LEDConfig*> built_cfgs;
+    std::set<int> used_signal_pins;
+
     for (size_t i = 0; i < active.size(); ++i) {
         LEDConfig* c = active[i];
+        
+        // Check for pin conflicts
+        int d_pin = c->has_data_gpio() ? c->data_gpio() : -1;
+        int c_pin = -1;
+        if ((c->chip_enum() == config::LEDConfig::Chip::APA102 || c->chip_enum() == config::LEDConfig::Chip::HD108) && c->has_clock_gpio()) {
+            c_pin = c->clock_gpio();
+        }
+
+        bool conflict = false;
+        if (d_pin != -1 && used_signal_pins.count(d_pin)) {
+             ESP_LOGE(TAG, "SKIPPING strip '%s': Data GPIO %d already in use by another strip.", c->name(), d_pin);
+             conflict = true;
+        }
+        if (c_pin != -1 && used_signal_pins.count(c_pin)) {
+             ESP_LOGE(TAG, "SKIPPING strip '%s': Clock GPIO %d already in use by another strip.", c->name(), c_pin);
+             conflict = true;
+        }
+        if (conflict) continue;
+
+        if (d_pin != -1) used_signal_pins.insert(d_pin);
+        if (c_pin != -1) used_signal_pins.insert(c_pin);
         bool use_dma = (i == selected_dma_idx);
         size_t rows = static_cast<size_t>(c->num_rows());
         size_t cols = static_cast<size_t>(c->num_columns());
@@ -264,7 +288,29 @@ std::unique_ptr<LEDStrip> LEDManager::create_strip(const config::LEDConfig& cfg,
                 .dma_channel = 0 
             };
             // APA102 usually expects BGR start frame
-            processor.reset(new Apa102PixelProcessor(Apa102PixelProcessor::Order::BGR));
+            // Wrap with WhiteToRgbProcessor to support white channel on RGB hardware
+            auto inner = std::unique_ptr<PixelProcessor>(new Apa102PixelProcessor(Apa102PixelProcessor::Order::BGR));
+            processor.reset(new WhiteToRgbProcessor(std::move(inner)));
+            
+            transmitter.reset(new SpiTransmitter(spi_conf));
+            break;
+        }
+        case config::LEDConfig::Chip::HD108: {
+            if (!cfg.has_clock_gpio()) {
+                 ESP_LOGE(TAG, "HD108 requires clock_gpio");
+                 return nullptr;
+            }
+            SpiTransmitter::Config spi_conf = {
+                .host = SPI2_HOST,
+                .clock_gpio = cfg.clock_gpio(),
+                .data_gpio = ap.gpio,
+                .clock_speed_hz = 20 * 1000 * 1000, // 20 MHz as per test driver
+                .dma_channel = 0 
+            };
+            // Use generic White -> RGB mixer for HD108 (which is RGB-only)
+            auto inner = std::unique_ptr<PixelProcessor>(new Hd108PixelProcessor());
+            processor.reset(new WhiteToRgbProcessor(std::move(inner)));
+            
             transmitter.reset(new SpiTransmitter(spi_conf));
             break;
         }

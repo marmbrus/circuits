@@ -195,20 +195,18 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                 onChangeCommitted={(_, v) => blueSlider.onChangeCommitted(Math.round(v as number))}
               />
             </Box>
-            {(led.chip === 'SK6812' || led.chip === 'WS2814') && (
-              <Box>
-                <Typography variant="caption">White ({whiteSlider.value})</Typography>
-                <Slider
-                  size="small"
-                  min={0}
-                  max={255}
-                  step={1}
-                  value={whiteSlider.value}
-                  onChange={(_, v) => whiteSlider.onChange(Math.round(v as number))}
-                  onChangeCommitted={(_, v) => whiteSlider.onChangeCommitted(Math.round(v as number))}
-                />
-              </Box>
-            )}
+            <Box>
+              <Typography variant="caption">White ({whiteSlider.value})</Typography>
+              <Slider
+                size="small"
+                min={0}
+                max={255}
+                step={1}
+                value={whiteSlider.value}
+                onChange={(_, v) => whiteSlider.onChange(Math.round(v as number))}
+                onChangeCommitted={(_, v) => whiteSlider.onChangeCommitted(Math.round(v as number))}
+              />
+            </Box>
           </Stack>
           <Accordion disableGutters sx={{ mt: 0.75 }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -220,7 +218,14 @@ function LEDCard({ ledKey, led, onEdit, publish }: {
                   <Chip
                     label={`Chip: ${led.chip}`}
                     size="small"
-                    onClick={() => onEdit(ledKey, 'chip', led.chip, { type: 'select', options: ['WS2812', 'SK6812', 'WS2814', 'FLIPDOT'], label: 'Chip' })}
+                    onClick={() => onEdit(ledKey, 'chip', led.chip, { type: 'select', options: ['WS2812', 'SK6812', 'WS2814', 'FLIPDOT', 'APA102', 'HD108'], label: 'Chip' })}
+                  />
+                )}
+                {(led.chip === 'APA102' || led.chip === 'HD108') && (
+                  <Chip
+                    label={`Clock: ${('clockGPIO' in led) ? led.clockGPIO : '?'}`}
+                    size="small"
+                    onClick={() => onEdit(ledKey, 'clockGPIO', led.clockGPIO || 0, { type: 'number', label: 'Clock GPIO' })}
                   />
                 )}
                 <Chip

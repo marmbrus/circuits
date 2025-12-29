@@ -47,6 +47,7 @@ public:
         WS2814,
         FLIPDOT,
         APA102,
+        HD108,
     };
 
     // Grid layout for mapping logical (row,col) to physical. Defaults to ROW_MAJOR.

@@ -1,5 +1,9 @@
 #include "PixelProcessors.h"
 #include <cstring>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+#include <algorithm>
 
 namespace leds {
 
@@ -131,6 +135,97 @@ void FlipdotPixelProcessor::process(const Color* logical_pixels, size_t count, u
         wire_buffer[p * 3 + 1] = rch; // R carries index 1
         wire_buffer[p * 3 + 2] = bch; // B carries index 2
     }
+}
+
+// --------------------------------------------------------------------------
+
+size_t Hd108PixelProcessor::get_buffer_size(size_t num_leds) const {
+    // Start Frame: 16 bytes (128 bits 0s)
+    // LED Frame: 8 bytes per pixel (64 bits)
+    // End Frame: 64 bytes (512 bits 0s) - Increased to ensure data propagation on long strips
+    return 16 + (num_leds * 8) + 64;
+}
+
+void Hd108PixelProcessor::process(const Color* logical_pixels, size_t count, uint8_t* wire_buffer) {
+    size_t offset = 0;
+    
+    // Start Frame (16 bytes 0)
+    memset(wire_buffer + offset, 0x00, 16);
+    offset += 16;
+    
+    for (size_t i = 0; i < count; ++i) {
+        const Color& c = logical_pixels[i];
+        
+        // Use dimming (5-bit) for per-channel gain. 
+        // If dimming is 0, LEDs might be off.
+        // If constructed via default constructor, dimming is 31 (max).
+        // If from_rgba8, dimming is 31.
+        // If user set manual color with dimming=0, then it's 0.
+        
+        uint8_t gain = c.dimming & 0x1F;
+        
+        uint8_t byte0 = static_cast<uint8_t>(
+            0x80 |                  // start bit
+            ((gain & 0x1F) << 2) |  // Blue gain
+            ((gain & 0x1F) >> 3)    // Green gain top 2
+        );
+        uint8_t byte1 = static_cast<uint8_t>(
+            ((gain & 0x07) << 5) |  // Green gain low 3
+            (gain & 0x1F)           // Red gain
+        );
+        
+        wire_buffer[offset++] = byte0;
+        wire_buffer[offset++] = byte1;
+        
+        // R, G, B (16-bit Big Endian) - User reported Blue/Red swapped, changing from BGR to RGB
+        wire_buffer[offset++] = static_cast<uint8_t>(c.r >> 8);
+        wire_buffer[offset++] = static_cast<uint8_t>(c.r & 0xFF);
+        
+        wire_buffer[offset++] = static_cast<uint8_t>(c.g >> 8);
+        wire_buffer[offset++] = static_cast<uint8_t>(c.g & 0xFF);
+        
+        wire_buffer[offset++] = static_cast<uint8_t>(c.b >> 8);
+        wire_buffer[offset++] = static_cast<uint8_t>(c.b & 0xFF);
+    }
+    
+    // End Frame (64 bytes 0)
+    memset(wire_buffer + offset, 0x00, 64);
+}
+
+// --------------------------------------------------------------------------
+
+WhiteToRgbProcessor::WhiteToRgbProcessor(std::unique_ptr<PixelProcessor> next)
+    : next_(std::move(next)) {}
+
+size_t WhiteToRgbProcessor::get_buffer_size(size_t num_leds) const {
+    return next_ ? next_->get_buffer_size(num_leds) : 0;
+}
+
+void WhiteToRgbProcessor::process(const Color* logical_pixels, size_t count, uint8_t* wire_buffer) {
+    if (!next_) return;
+
+    if (scratch_.size() < count) {
+        scratch_.resize(count);
+    }
+
+    // Mix white into RGB
+    for (size_t i = 0; i < count; ++i) {
+        const Color& in = logical_pixels[i];
+        Color& out = scratch_[i];
+        
+        // Simple saturating addition of White to R, G, B
+        uint32_t r = static_cast<uint32_t>(in.r) + in.w;
+        uint32_t g = static_cast<uint32_t>(in.g) + in.w;
+        uint32_t b = static_cast<uint32_t>(in.b) + in.w;
+
+        out.r = (r > 0xFFFF) ? 0xFFFF : static_cast<uint16_t>(r);
+        out.g = (g > 0xFFFF) ? 0xFFFF : static_cast<uint16_t>(g);
+        out.b = (b > 0xFFFF) ? 0xFFFF : static_cast<uint16_t>(b);
+        out.w = 0; // Consumed
+        out.dimming = in.dimming;
+    }
+
+    next_->process(scratch_.data(), count, wire_buffer);
 }
 
 } // namespace leds

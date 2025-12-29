@@ -1,6 +1,8 @@
 #pragma once
 
 #include "PixelProcessor.h"
+#include <memory>
+#include <vector>
 
 namespace leds {
 
@@ -36,6 +38,27 @@ public:
 
     size_t get_buffer_size(size_t num_leds) const override;
     void process(const Color* logical_pixels, size_t count, uint8_t* wire_buffer) override;
+};
+
+class Hd108PixelProcessor : public PixelProcessor {
+public:
+    Hd108PixelProcessor() = default;
+
+    size_t get_buffer_size(size_t num_leds) const override;
+    void process(const Color* logical_pixels, size_t count, uint8_t* wire_buffer) override;
+};
+
+class WhiteToRgbProcessor : public PixelProcessor {
+public:
+    explicit WhiteToRgbProcessor(std::unique_ptr<PixelProcessor> next);
+
+    size_t get_buffer_size(size_t num_leds) const override;
+    void process(const Color* logical_pixels, size_t count, uint8_t* wire_buffer) override;
+
+private:
+    std::unique_ptr<PixelProcessor> next_;
+    // Mutable scratch buffer to avoid reallocation
+    std::vector<Color> scratch_;
 };
 
 } // namespace leds

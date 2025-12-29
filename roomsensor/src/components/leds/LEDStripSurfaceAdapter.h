@@ -89,10 +89,8 @@ public:
     bool flush_if_dirty(uint64_t now_us, uint64_t max_quiescent_us) override {
         (void)now_us;
         if (!dirty_) {
-            if (max_quiescent_us == 0) {
-                // Force a transmit even if not marked dirty
-                return surface_->flush();
-            }
+            // Only flush if quiescent timeout is specified and expired (not implemented yet)
+            // if (max_quiescent_us > 0 && ...)
             return false;
         }
         bool ok = surface_->flush();

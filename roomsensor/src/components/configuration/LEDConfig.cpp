@@ -45,6 +45,7 @@ LEDConfig::Chip LEDConfig::parse_chip(const char* value) {
     if (strcasecmp(value, "WS2814") == 0) return Chip::WS2814;
     if (strcasecmp(value, "FLIPDOT") == 0) return Chip::FLIPDOT;
     if (strcasecmp(value, "APA102") == 0) return Chip::APA102;
+    if (strcasecmp(value, "HD108") == 0) return Chip::HD108;
     return Chip::INVALID;
 }
 
@@ -55,6 +56,7 @@ const char* LEDConfig::chip_to_string(LEDConfig::Chip c) {
         case Chip::WS2814: return "WS2814";
         case Chip::FLIPDOT: return "FLIPDOT";
         case Chip::APA102: return "APA102";
+        case Chip::HD108: return "HD108";
         case Chip::INVALID: default: return "WS2812";
     }
 }
