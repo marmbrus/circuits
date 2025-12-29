@@ -164,18 +164,25 @@ void init_hd108()
 
     // End frame: last 16 bytes already zeroed
 
-    // --- Sequential fill loop: one LED fades 0->100% over 1s and stays ON, then next LED starts ---
-    static constexpr uint64_t FADE_PERIOD_US = 1000000ULL; // 1 second per LED fade-in
-    static constexpr uint64_t FPS_REPORT_US  = 10000000ULL; // report every 10 seconds
-    static constexpr int NUM_LEDS = HD108_NUM_TEST_LEDS;
+    // --- Sequential fill loop: one LED fades 0->50% over 10ms and stays ON, then next LED starts ---
+    // At 20MHz SPI, we can push frames quite fast. 3872 bytes takes ~1.55ms.
+    // 10ms budget allows ~6 frames per LED.
+    // We will just step through levels appropriately to fit in 10ms.
+    
+    static constexpr uint64_t FADE_PERIOD_US = 1000ULL; // 10ms per LED fade-in
+    static constexpr uint32_t MAX_LEVEL = 0x5000;
+    static constexpr uint64_t FPS_REPORT_US = 10000000ULL; // report every 10 seconds
 
-    ESP_LOGI(TAG, "Entering sequential fill loop: each LED fades 0->100%% over %" PRIu64 " us and stays ON", FADE_PERIOD_US);
+    static constexpr int NUM_LEDS = HD108_NUM_TEST_LEDS;
 
     uint64_t last_cycle_start_us = esp_timer_get_time();
     uint64_t last_report_us = last_cycle_start_us;
     uint32_t frames_since_report = 0;
     int current_led_index = 0;
     bool logged_transition = false;
+
+    // We will use time-based calculation again to respect the 10ms deadline
+    // instead of iterating every single level (which would take ~50-100s at full resolution).
 
     while (true) {
         uint64_t now_us = esp_timer_get_time();
@@ -185,18 +192,13 @@ void init_hd108()
         
         // Move to next LED if period finished
         if (elapsed_in_cycle >= FADE_PERIOD_US) {
-            // Once an LED finishes fading in, it stays fully ON.
-            // Move to the next LED.
             current_led_index++;
             
-            // If we've filled the whole strip, reset (or just stop, depending on desire).
-            // Here we'll wrap around and clear everything to start over for a continuous test.
             if (current_led_index >= NUM_LEDS) {
                 current_led_index = 0;
-                // Clear the buffer (except control headers) to restart from darkness
                 for (int i = 0; i < NUM_LEDS; ++i) {
                     const int base = HD108_START_FRAME_BYTES + i * HD108_LED_FRAME_BYTES;
-                    memset(&tx_buf[base + 2], 0, 6); // clear R, G, B bytes
+                    memset(&tx_buf[base + 2], 0, 6);
                 }
                 ESP_LOGI(TAG, "Strip full! Resetting to start.");
             }
@@ -210,33 +212,26 @@ void init_hd108()
         float phase = static_cast<float>(elapsed_in_cycle) / static_cast<float>(FADE_PERIOD_US);
         if (phase > 1.0f) phase = 1.0f; // clamp
 
-        // Linear fade in: 0 -> 1
-        uint16_t fade_level = static_cast<uint16_t>(phase * 65535.0f + 0.5f);
+        // Linear fade in: 0 -> MAX_LEVEL
+        uint32_t current_level_32 = static_cast<uint32_t>(phase * (float)MAX_LEVEL);
+        uint16_t fade_level = (uint16_t)current_level_32;
 
-        // Check if "fully on" to log
+        // Check if "fully on" to log (only once per LED)
         if (!logged_transition && phase > 0.95f) {
-            ESP_LOGI(TAG, "LED %d is fully ON (moving to next LED soon)", current_led_index);
+            // Log less frequently to avoid spamming at 10ms intervals
+            if (current_led_index % 50 == 0) {
+                ESP_LOGI(TAG, "LED %d passed 95%% (moving to next LED soon)", current_led_index);
+            }
             logged_transition = true;
         }
 
-        // Update LEDs:
-        // - Indices < current_led_index: Fully ON (0xFFFF)
-        // - Index == current_led_index: Fading in (fade_level)
-        // - Indices > current_led_index: OFF (0x0000)
-        // Optimization: We only need to update the current one actively, previous ones are already set to max
-        // if we updated them at end of cycle, but to be robust we can set the active one every frame.
-        
-        // Actually, since we rewrite the buffer every time in the loop (or rely on persistence), 
-        // let's explicitly set the current LED. Previous LEDs retain their last state in the buffer 
-        // (which should be 0xFFFF from the end of their cycle) if we don't clear it.
-        // Wait, `memset` was only at the start.
-        // So:
-        // 1. Ensure the PREVIOUS LED is fully set to 0xFFFF (fix up potential floating point drift at end of its cycle).
+        // 1. Ensure previous LED is latched to MAX_LEVEL
         if (current_led_index > 0) {
              const int prev_base = HD108_START_FRAME_BYTES + (current_led_index - 1) * HD108_LED_FRAME_BYTES;
-             tx_buf[prev_base + 2] = 0xFF; tx_buf[prev_base + 3] = 0xFF; // R
-             tx_buf[prev_base + 4] = 0xFF; tx_buf[prev_base + 5] = 0xFF; // G
-             tx_buf[prev_base + 6] = 0xFF; tx_buf[prev_base + 7] = 0xFF; // B
+             uint16_t max = (uint16_t)MAX_LEVEL;
+             tx_buf[prev_base + 2] = (uint8_t)((max >> 8) & 0xFF); tx_buf[prev_base + 3] = (uint8_t)(max & 0xFF);
+             tx_buf[prev_base + 4] = (uint8_t)((max >> 8) & 0xFF); tx_buf[prev_base + 5] = (uint8_t)(max & 0xFF);
+             tx_buf[prev_base + 6] = (uint8_t)((max >> 8) & 0xFF); tx_buf[prev_base + 7] = (uint8_t)(max & 0xFF);
         }
 
         // 2. Update CURRENT LED with fade level
@@ -248,9 +243,7 @@ void init_hd108()
         tx_buf[curr_base + 6] = static_cast<uint8_t>((fade_level >> 8) & 0xFF);
         tx_buf[curr_base + 7] = static_cast<uint8_t>(fade_level & 0xFF);
 
-        // 3. (Optional) Clear NEXT LED to ensure it starts black (if we just wrapped/reset)
-        // But the reset logic handles that.
-
+        // 3. Send
         spi_transaction_t t = {};
         t.length    = HD108_TOTAL_BYTES * 8;  // bits
         t.tx_buffer = tx_buf;
@@ -261,18 +254,18 @@ void init_hd108()
             break;
         }
 
+        // 4. Report FPS
         frames_since_report++;
         uint64_t elapsed_report_us = now_us - last_report_us;
         if (elapsed_report_us >= FPS_REPORT_US) {
             float elapsed_s = static_cast<float>(elapsed_report_us) / 1000000.0f;
             float fps       = static_cast<float>(frames_since_report) / elapsed_s;
-            ESP_LOGI(TAG, "HD108 sequential: frames=%" PRIu32 " over %.3fs -> %.1f FPS (current LED=%d)",
-                     frames_since_report, elapsed_s, fps, current_led_index);
+            ESP_LOGI(TAG, "HD108 fast-ramp: frames=%" PRIu32 " over %.3fs -> %.1f FPS (LED=%d level=%" PRIu32 ")",
+                     frames_since_report, elapsed_s, fps, current_led_index, current_level_32);
             last_report_us      = now_us;
             frames_since_report = 0;
         }
     }
-
     // If we ever break out of the loop (e.g., due to error), clean up.
     if (tx_buf) free(tx_buf);
     spi_bus_remove_device(dev);
