@@ -5,6 +5,7 @@
 #include "esp_timer.h"
 #include <string.h>
 #include <inttypes.h>
+#include <unistd.h>
 
 //
 // Simple SPI test driver for HD108 LEDs.
@@ -164,86 +165,31 @@ void init_hd108()
 
     // End frame: last 16 bytes already zeroed
 
-    // --- Sequential fill loop: one LED fades 0->50% over 10ms and stays ON, then next LED starts ---
-    // At 20MHz SPI, we can push frames quite fast. 3872 bytes takes ~1.55ms.
-    // 10ms budget allows ~6 frames per LED.
-    // We will just step through levels appropriately to fit in 10ms.
-    
-    static constexpr uint64_t FADE_PERIOD_US = 1000ULL; // 10ms per LED fade-in
-    static constexpr uint32_t MAX_LEVEL = 0x5000;
-    static constexpr uint64_t FPS_REPORT_US = 10000000ULL; // report every 10 seconds
-
+    // --- Breathing Fade Test: All LEDs fade 0->40%->0 together, step 1ms ---
+    // Max level 40% of 65535 = ~26214 (0x6666)
+    static constexpr int32_t MAX_LEVEL = 0x6666;
     static constexpr int NUM_LEDS = HD108_NUM_TEST_LEDS;
 
-    uint64_t last_cycle_start_us = esp_timer_get_time();
-    uint64_t last_report_us = last_cycle_start_us;
-    uint32_t frames_since_report = 0;
-    int current_led_index = 0;
-    bool logged_transition = false;
+    ESP_LOGI(TAG, "Starting breathing fade test (all LEDs): 0->40%%->0, 1ms/step");
 
-    // We will use time-based calculation again to respect the 10ms deadline
-    // instead of iterating every single level (which would take ~50-100s at full resolution).
+    int32_t current_level = 0;
+    int32_t step = 1;
 
     while (true) {
-        uint64_t now_us = esp_timer_get_time();
-        
-        // Calculate how far we are into the current LED's fade period
-        uint64_t elapsed_in_cycle = now_us - last_cycle_start_us;
-        
-        // Move to next LED if period finished
-        if (elapsed_in_cycle >= FADE_PERIOD_US) {
-            current_led_index++;
-            
-            if (current_led_index >= NUM_LEDS) {
-                current_led_index = 0;
-                for (int i = 0; i < NUM_LEDS; ++i) {
-                    const int base = HD108_START_FRAME_BYTES + i * HD108_LED_FRAME_BYTES;
-                    memset(&tx_buf[base + 2], 0, 6);
-                }
-                ESP_LOGI(TAG, "Strip full! Resetting to start.");
-            }
+        // 1. Fill buffer for ALL LEDs with current_level
+        uint16_t val16 = (uint16_t)current_level;
+        uint8_t  val_h = (uint8_t)((val16 >> 8) & 0xFF);
+        uint8_t  val_l = (uint8_t)(val16 & 0xFF);
 
-            last_cycle_start_us = now_us;
-            elapsed_in_cycle = 0;
-            logged_transition = false; 
+        for (int i = 0; i < NUM_LEDS; ++i) {
+            const int base = HD108_START_FRAME_BYTES + i * HD108_LED_FRAME_BYTES;
+            // RGB = same value => White
+            tx_buf[base + 2] = val_h; tx_buf[base + 3] = val_l;
+            tx_buf[base + 4] = val_h; tx_buf[base + 5] = val_l;
+            tx_buf[base + 6] = val_h; tx_buf[base + 7] = val_l;
         }
 
-        // Calculate brightness phase (0..1) for the current fading LED
-        float phase = static_cast<float>(elapsed_in_cycle) / static_cast<float>(FADE_PERIOD_US);
-        if (phase > 1.0f) phase = 1.0f; // clamp
-
-        // Linear fade in: 0 -> MAX_LEVEL
-        uint32_t current_level_32 = static_cast<uint32_t>(phase * (float)MAX_LEVEL);
-        uint16_t fade_level = (uint16_t)current_level_32;
-
-        // Check if "fully on" to log (only once per LED)
-        if (!logged_transition && phase > 0.95f) {
-            // Log less frequently to avoid spamming at 10ms intervals
-            if (current_led_index % 50 == 0) {
-                ESP_LOGI(TAG, "LED %d passed 95%% (moving to next LED soon)", current_led_index);
-            }
-            logged_transition = true;
-        }
-
-        // 1. Ensure previous LED is latched to MAX_LEVEL
-        if (current_led_index > 0) {
-             const int prev_base = HD108_START_FRAME_BYTES + (current_led_index - 1) * HD108_LED_FRAME_BYTES;
-             uint16_t max = (uint16_t)MAX_LEVEL;
-             tx_buf[prev_base + 2] = (uint8_t)((max >> 8) & 0xFF); tx_buf[prev_base + 3] = (uint8_t)(max & 0xFF);
-             tx_buf[prev_base + 4] = (uint8_t)((max >> 8) & 0xFF); tx_buf[prev_base + 5] = (uint8_t)(max & 0xFF);
-             tx_buf[prev_base + 6] = (uint8_t)((max >> 8) & 0xFF); tx_buf[prev_base + 7] = (uint8_t)(max & 0xFF);
-        }
-
-        // 2. Update CURRENT LED with fade level
-        const int curr_base = HD108_START_FRAME_BYTES + current_led_index * HD108_LED_FRAME_BYTES;
-        tx_buf[curr_base + 2] = static_cast<uint8_t>((fade_level >> 8) & 0xFF);
-        tx_buf[curr_base + 3] = static_cast<uint8_t>(fade_level & 0xFF);
-        tx_buf[curr_base + 4] = static_cast<uint8_t>((fade_level >> 8) & 0xFF);
-        tx_buf[curr_base + 5] = static_cast<uint8_t>(fade_level & 0xFF);
-        tx_buf[curr_base + 6] = static_cast<uint8_t>((fade_level >> 8) & 0xFF);
-        tx_buf[curr_base + 7] = static_cast<uint8_t>(fade_level & 0xFF);
-
-        // 3. Send
+        // 2. Send
         spi_transaction_t t = {};
         t.length    = HD108_TOTAL_BYTES * 8;  // bits
         t.tx_buffer = tx_buf;
@@ -254,18 +200,20 @@ void init_hd108()
             break;
         }
 
-        // 4. Report FPS
-        frames_since_report++;
-        uint64_t elapsed_report_us = now_us - last_report_us;
-        if (elapsed_report_us >= FPS_REPORT_US) {
-            float elapsed_s = static_cast<float>(elapsed_report_us) / 1000000.0f;
-            float fps       = static_cast<float>(frames_since_report) / elapsed_s;
-            ESP_LOGI(TAG, "HD108 fast-ramp: frames=%" PRIu32 " over %.3fs -> %.1f FPS (LED=%d level=%" PRIu32 ")",
-                     frames_since_report, elapsed_s, fps, current_led_index, current_level_32);
-            last_report_us      = now_us;
-            frames_since_report = 0;
+        // 3. Update state (ping-pong)
+        current_level += step;
+        if (current_level >= MAX_LEVEL) {
+            current_level = MAX_LEVEL;
+            step = -1;
+        } else if (current_level <= 0) {
+            current_level = 0;
+            step = 1;
         }
+
+        // 4. Sleep 1ms
+        usleep(1000); 
     }
+
     // If we ever break out of the loop (e.g., due to error), clean up.
     if (tx_buf) free(tx_buf);
     spi_bus_remove_device(dev);
