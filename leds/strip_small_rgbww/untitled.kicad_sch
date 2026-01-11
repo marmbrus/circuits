@@ -2379,7 +2379,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_PLCC_2835_Handsoldering"
+		(property "Footprint" "easyeda2kicad:LED-SMD_L3.2-W2.8-RD_YELLOW"
 			(at 200.66 35.56 0)
 			(effects
 				(font
@@ -2913,7 +2913,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_PLCC_2835_Handsoldering"
+		(property "Footprint" "easyeda2kicad:LED-SMD_L3.5-W2.8-RD-B"
 			(at 255.27 35.56 0)
 			(effects
 				(font
@@ -3221,7 +3221,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_PLCC_2835_Handsoldering"
+		(property "Footprint" "easyeda2kicad:LED-SMD_L3.2-W2.8-RD_YELLOW"
 			(at 55.88 34.29 0)
 			(effects
 				(font
@@ -3447,7 +3447,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_PLCC_2835_Handsoldering"
+		(property "Footprint" "easyeda2kicad:LED-SMD_L3.5-W2.8-RD-B"
 			(at 110.49 34.29 0)
 			(effects
 				(font
