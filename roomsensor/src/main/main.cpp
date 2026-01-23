@@ -153,9 +153,6 @@ extern "C" void app_main(void)
 
     ESP_LOGI(TAG, "Startup sequence complete.");
 
-    // Run HD108 SPI LED test (one-shot)
-    init_hd108();
-
     // Idle loop to keep app_main task alive while yielding CPU
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(100000));

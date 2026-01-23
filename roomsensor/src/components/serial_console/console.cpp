@@ -11,6 +11,10 @@
 #include "cmd_system.h"
 #include "cmd_ota.h"
 #include "gpio.h"
+#include "cmd_hd108.h"
+#include "cmd_sk6812.h"
+#include "cmd_tlc59711.h"
+#include "cmd_tlc59711.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "console_buffer.h"
@@ -151,6 +155,10 @@ static void console_task(void *arg)
     register_wifi();
     register_gpio();
     register_ota();
+    register_hd108_debug();
+    register_sk6812_debug();
+    register_tlc59711();
+    register_tlc59711();
     register_console_commands();
 
     ESP_LOGI(TAG_CONSOLE, "Console initialized. Type 'help' to list commands.");
