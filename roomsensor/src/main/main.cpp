@@ -27,9 +27,6 @@
 
 static const char* TAG = "main";
 
-// HD108 LED test entrypoint (defined in HD108.cpp)
-void init_hd108();
-
 extern "C" void app_main(void)
 {
     // Initialize NVS
