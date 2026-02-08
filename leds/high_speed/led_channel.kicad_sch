@@ -3681,7 +3681,7 @@
 				(hide yes)
 			)
 		)
-		(property "LCSC Part" "C151256"
+		(property "LCSC Part" "C178227"
 			(at 199.39 74.93 0)
 			(effects
 				(font
@@ -3761,10 +3761,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "39dce855-96ea-49dc-a3eb-e823bd04d0df")
+			(uuid "39dce855-96ea-49dc-a3eb-e823bd04d0e0")
 		)
 		(pin "2"
-			(uuid "13fe0400-981d-4a96-9415-50779da5b886")
+			(uuid "13fe0400-981d-4a96-9415-50779da5b887")
 		)
 		(instances
 			(project ""
@@ -3901,10 +3901,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "e977cb16-e17d-4ca5-8ff0-5b9c90c87050")
+			(uuid "e977cb16-e17d-4ca5-8ff0-5b9c90c87051")
 		)
 		(pin "2"
-			(uuid "c696b0c7-face-48fb-91f7-b851e655b28e")
+			(uuid "c696b0c7-face-48fb-91f7-b851e655b28f")
 		)
 		(instances
 			(project ""
@@ -3971,10 +3971,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "39dce855-96ea-49dc-a3eb-e823bd04d0df")
+			(uuid "39dce855-96ea-49dc-a3eb-e823bd04d0e1")
 		)
 		(pin "2"
-			(uuid "13fe0400-981d-4a96-9415-50779da5b886")
+			(uuid "13fe0400-981d-4a96-9415-50779da5b888")
 		)
 		(instances
 			(project ""
@@ -4041,10 +4041,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "e977cb16-e17d-4ca5-8ff0-5b9c90c87050")
+			(uuid "e977cb16-e17d-4ca5-8ff0-5b9c90c87052")
 		)
 		(pin "2"
-			(uuid "c696b0c7-face-48fb-91f7-b851e655b28e")
+			(uuid "c696b0c7-face-48fb-91f7-b851e655b290")
 		)
 		(instances
 			(project ""
@@ -4189,7 +4189,7 @@
 			)
 		)
 		(pin "1"
-			(uuid "06dc0d6d-c4ef-4c15-be98-510505f580bd")
+			(uuid "06dc0d6d-c4ef-4c15-be98-510505f580be")
 		)
 		(instances
 			(project ""
@@ -4324,10 +4324,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "e977cb16-e17d-4ca5-8ff0-5b9c90c87050")
+			(uuid "e977cb16-e17d-4ca5-8ff0-5b9c90c87053")
 		)
 		(pin "2"
-			(uuid "c696b0c7-face-48fb-91f7-b851e655b28e")
+			(uuid "c696b0c7-face-48fb-91f7-b851e655b291")
 		)
 		(instances
 			(project ""

@@ -273,6 +273,124 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "easyeda2kicad:39-30-1020"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "CN"
+				(at 0 6.35 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "39-30-1020"
+				(at 0 -6.35 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "easyeda2kicad:CONN-TH_2P-P5.50_39-30-1020"
+				(at 0 -8.89 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://lcsc.com/product-detail/Others_MOLEX_39-30-1020_MOLEX-39-30-1020_C240832.html"
+				(at 0 -11.43 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "LCSC Part" "C240832"
+				(at 0 -13.97 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "39-30-1020_0_1"
+				(rectangle
+					(start -3.81 3.81)
+					(end 1.27 -3.81)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(circle
+					(center 0 -2.54)
+					(radius 0.38)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin unspecified line
+					(at 3.81 1.27 180)
+					(length 2.54)
+					(name "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin unspecified line
+					(at 3.81 -1.27 180)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "easyeda2kicad:428202214"
 			(pin_names
 				(offset 0.254)
@@ -1916,6 +2034,12 @@
 		(uuid "19866db1-4328-4be7-ab60-4f4841f79f89")
 	)
 	(junction
+		(at 33.02 53.34)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "25bdb80d-4126-499c-aae2-44435561ffe2")
+	)
+	(junction
 		(at 50.8 68.58)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -1938,6 +2062,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "4262598d-bab1-4803-a9c9-d9cd750d4357")
+	)
+	(junction
+		(at 45.72 55.88)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4c3d02d4-107a-4da8-9c54-c3364f14bc29")
 	)
 	(junction
 		(at 33.02 91.44)
@@ -2149,6 +2279,26 @@
 	)
 	(wire
 		(pts
+			(xy 33.02 53.34) (xy 33.02 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "08bb5f2a-c872-41a5-8185-27a6477730fc")
+	)
+	(wire
+		(pts
+			(xy 25.4 53.34) (xy 33.02 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "08f9a7eb-74ee-4f56-9a5e-13980bfdf8f6")
+	)
+	(wire
+		(pts
 			(xy 33.02 81.28) (xy 33.02 91.44)
 		)
 		(stroke
@@ -2219,13 +2369,33 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 44.45) (xy 45.72 60.96)
+			(xy 45.72 55.88) (xy 45.72 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "26d31d43-7e7b-4f63-bb82-d61986064efd")
+	)
+	(wire
+		(pts
+			(xy 45.72 44.45) (xy 45.72 55.88)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "27c97179-0882-478e-bb15-557ce8c34330")
+	)
+	(wire
+		(pts
+			(xy 190.5 78.74) (xy 201.93 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2846e5f7-1b5f-45ac-b61e-d012b04eb8a7")
 	)
 	(wire
 		(pts
@@ -2296,6 +2466,16 @@
 			(type default)
 		)
 		(uuid "3d5a0bd0-7087-4c4f-a584-8c94ad35cea5")
+	)
+	(wire
+		(pts
+			(xy 190.5 86.36) (xy 201.93 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "41a90df2-48dd-4354-b20b-3b3508946f9b")
 	)
 	(wire
 		(pts
@@ -2389,6 +2569,16 @@
 	)
 	(wire
 		(pts
+			(xy 25.4 55.88) (xy 45.72 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5a45353e-bdf3-4d64-8ba7-55f210865003")
+	)
+	(wire
+		(pts
 			(xy 128.27 93.98) (xy 128.27 127)
 		)
 		(stroke
@@ -2439,7 +2629,7 @@
 	)
 	(wire
 		(pts
-			(xy 33.02 36.83) (xy 33.02 60.96)
+			(xy 33.02 36.83) (xy 33.02 53.34)
 		)
 		(stroke
 			(width 0)
@@ -2709,6 +2899,16 @@
 	)
 	(wire
 		(pts
+			(xy 190.5 82.55) (xy 201.93 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cc3c5b0b-167c-48c0-a309-c671cb3ae18d")
+	)
+	(wire
+		(pts
 			(xy 85.09 77.47) (xy 85.09 60.96)
 		)
 		(stroke
@@ -2726,6 +2926,16 @@
 			(type default)
 		)
 		(uuid "ceaf6f4e-9b83-427c-a337-7805d839eb55")
+	)
+	(wire
+		(pts
+			(xy 190.5 74.93) (xy 201.93 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cf6f0d9b-dce2-471f-8966-dd017dc3eb58")
 	)
 	(wire
 		(pts
@@ -3117,6 +3327,82 @@
 		)
 	)
 	(symbol
+		(lib_id "easyeda2kicad:LabeledTestPoint")
+		(at 201.93 82.55 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "1adb245d-05b6-4cd0-be47-71f67f95e066")
+		(property "Reference" "TP8"
+			(at 208.788 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "LabeledTestPoint"
+			(at 207.01 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
+			(at 201.93 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 201.93 87.63 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 201.93 82.55 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" "T3"
+			(at 207.01 82.5499 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "026f65cd-d2e5-471b-adbf-31156891cc45")
+		)
+		(instances
+			(project "high_speed"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "TP8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C_Polarized")
 		(at 38.1 60.96 270)
 		(unit 1)
@@ -3298,6 +3584,82 @@
 		)
 	)
 	(symbol
+		(lib_id "easyeda2kicad:LabeledTestPoint")
+		(at 201.93 78.74 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "3a19737b-8915-4316-8a0a-a0fe05332dc1")
+		(property "Reference" "TP7"
+			(at 208.788 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "LabeledTestPoint"
+			(at 207.01 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
+			(at 201.93 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 201.93 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 201.93 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" "T2"
+			(at 207.01 78.7399 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "86048679-62af-4a0e-bcbb-4e131921695d")
+		)
+		(instances
+			(project "high_speed"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "TP7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Mechanical:MountingHole_Pad")
 		(at 220.98 25.4 0)
 		(unit 1)
@@ -3441,6 +3803,84 @@
 		)
 	)
 	(symbol
+		(lib_id "easyeda2kicad:39-30-1020")
+		(at 21.59 54.61 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp yes)
+		(uuid "841ebfa5-4a8b-4056-8522-16dab799d9a9")
+		(property "Reference" "CN6"
+			(at 25.654 62.738 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "39-30-1020"
+			(at 25.654 60.198 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:CONN-TH_2P-P5.50_39-30-1020"
+			(at 21.59 63.5 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://lcsc.com/product-detail/Others_MOLEX_39-30-1020_MOLEX-39-30-1020_C240832.html"
+			(at 21.59 66.04 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 21.59 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "LCSC Part" "C240832"
+			(at 21.59 68.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "2a0296a8-1f3b-453d-9000-6a51d53df921")
+		)
+		(pin "2"
+			(uuid "2c1ea863-cff3-44d4-9b51-c6c3b38435c6")
+		)
+		(instances
+			(project "high_speed"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "CN6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 22.86 170.18 0)
 		(unit 1)
@@ -3501,6 +3941,82 @@
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
 					(reference "#PWR03")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:LabeledTestPoint")
+		(at 201.93 86.36 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a0f1ffd7-0bca-42bb-b3b9-5bd291875d04")
+		(property "Reference" "TP9"
+			(at 208.788 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "LabeledTestPoint"
+			(at 207.01 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
+			(at 201.93 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 201.93 91.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 201.93 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" "T4"
+			(at 207.01 86.3599 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "f25a585e-d526-4e60-9ea0-a8cd303819ce")
+		)
+		(instances
+			(project "high_speed"
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "TP9")
 					(unit 1)
 				)
 			)
@@ -3568,6 +4084,82 @@
 			(project "leds"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
 					(reference "H2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "easyeda2kicad:LabeledTestPoint")
+		(at 201.93 74.93 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "dc35a2dd-a6c8-4fc6-b0c9-e6750577c7b7")
+		(property "Reference" "TP6"
+			(at 208.788 74.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "LabeledTestPoint"
+			(at 207.01 74.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "easyeda2kicad:LabeledTestPoint"
+			(at 201.93 80.01 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 201.93 80.01 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "test point"
+			(at 201.93 74.93 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Label" "T1"
+			(at 207.01 74.9299 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "1"
+			(uuid "6e8dc1a4-e3c5-438c-9441-01d0e9fa4735")
+		)
+		(instances
+			(project ""
+				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa"
+					(reference "TP6")
 					(unit 1)
 				)
 			)
@@ -3980,6 +4572,46 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+			)
+		)
+		(pin "T1" input
+			(at 190.5 74.93 0)
+			(uuid "b3bb7220-2a2e-4ef7-b59a-0f21e3111f23")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "T2" input
+			(at 190.5 78.74 0)
+			(uuid "88d9d937-28a5-4579-8f66-94397124b835")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "T3" input
+			(at 190.5 82.55 0)
+			(uuid "a19b7a62-c5e8-45bb-bb58-664ebbbaba1d")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "T4" input
+			(at 190.5 86.36 0)
+			(uuid "03e32356-1923-450c-8eb9-f828146653ea")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 			)
 		)
 		(instances
