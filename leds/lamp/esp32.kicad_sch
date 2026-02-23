@@ -3202,7 +3202,7 @@
 		)
 		(uuid "c4adb62f-109a-4001-a2e4-e755778cce88")
 	)
-	(hierarchical_label "I2S{DIN,BCLK,LRCLK}"
+	(hierarchical_label "I2S{DIN,BCLK,LRCLK, DOUT}"
 		(shape input)
 		(at 260.35 101.6 0)
 		(effects

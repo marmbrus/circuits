@@ -48,7 +48,7 @@
         "silk_text_thickness": 0.1,
         "silk_text_upright": false,
         "zones": {
-          "min_clearance": 0.3
+          "min_clearance": 0.15
         }
       },
       "diff_pair_dimensions": [
@@ -734,8 +734,16 @@
       "10k_temp"
     ],
     [
+      "ed9b5779-19ca-4046-bdc8-67624a94c0b8",
+      "dioed"
+    ],
+    [
       "f2bbebe1-7e19-419b-a0b6-59692ffc8a76",
       "led_channel"
+    ],
+    [
+      "daa62c67-c5be-46d0-9e17-179fa08ac5f3",
+      "mic"
     ]
   ],
   "text_variables": {}
