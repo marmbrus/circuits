@@ -559,6 +559,12 @@
       "/led_channel/RS486/B": [
         "DiffSignal"
       ],
+      "Net-(J2-Pin_1)": [
+        "Mains"
+      ],
+      "Net-(J2-Pin_2)": [
+        "Mains"
+      ],
       "Net-(J6-Pin_1)": [
         "Mains"
       ],

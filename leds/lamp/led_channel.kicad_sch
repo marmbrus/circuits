@@ -2504,7 +2504,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1203a0bb-2927-4fb9-8bbd-aed7f0c53093")
-		(property "Reference" "J2"
+		(property "Reference" "J7"
 			(at 259.08 60.96 0)
 			(effects
 				(font
@@ -2589,7 +2589,7 @@
 		(instances
 			(project "lamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "J2")
+					(reference "J7")
 					(unit 1)
 				)
 			)
@@ -2605,7 +2605,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "19aae919-48c5-4181-847b-634b0e8fa1ba")
-		(property "Reference" "U19"
+		(property "Reference" "U7"
 			(at 185.42 59.69 0)
 			(effects
 				(font
@@ -2750,7 +2750,7 @@
 		(instances
 			(project "high_speed"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "U19")
+					(reference "U7")
 					(unit 1)
 				)
 			)
@@ -2766,7 +2766,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "1b4ca061-a2cd-4f87-8343-39eb05393db9")
-		(property "Reference" "#PWR01"
+		(property "Reference" "#PWR017"
 			(at 185.42 107.95 0)
 			(effects
 				(font
@@ -2816,7 +2816,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "#PWR01")
+					(reference "#PWR017")
 					(unit 1)
 				)
 			)
@@ -2832,7 +2832,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "231e947e-3314-409f-bd7d-0ce128e0c4e9")
-		(property "Reference" "R14"
+		(property "Reference" "R18"
 			(at 161.29 90.1699 0)
 			(effects
 				(font
@@ -2886,7 +2886,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "R14")
+					(reference "R18")
 					(unit 1)
 				)
 			)
@@ -2902,7 +2902,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "324d1c00-dc37-41ec-b6ea-d3c1f2616dc0")
-		(property "Reference" "C24"
+		(property "Reference" "C19"
 			(at 140.97 87.6299 0)
 			(effects
 				(font
@@ -2956,7 +2956,7 @@
 		(instances
 			(project "high_speed"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "C24")
+					(reference "C19")
 					(unit 1)
 				)
 			)
@@ -2971,7 +2971,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "8b2f5765-a473-4470-85c1-35d1da5e7f0b")
-		(property "Reference" "C13"
+		(property "Reference" "C24"
 			(at 244.856 71.882 0)
 			(effects
 				(font
@@ -3043,7 +3043,7 @@
 		(instances
 			(project "lamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "C13")
+					(reference "C24")
 					(unit 1)
 				)
 			)
@@ -3059,7 +3059,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "90e72291-485f-4c76-a697-fa3206e7a005")
-		(property "Reference" "R13"
+		(property "Reference" "R17"
 			(at 152.4 87.6299 0)
 			(effects
 				(font
@@ -3113,7 +3113,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "R13")
+					(reference "R17")
 					(unit 1)
 				)
 			)
@@ -3129,7 +3129,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "9a590ea6-4f63-44b5-b2f3-b68f79788d7d")
-		(property "Reference" "C21"
+		(property "Reference" "C22"
 			(at 222.25 85.0899 0)
 			(effects
 				(font
@@ -3183,7 +3183,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "C21")
+					(reference "C22")
 					(unit 1)
 				)
 			)
@@ -3199,7 +3199,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "9c5c09f4-2a3f-4b9f-a7cc-65ed62e848d4")
-		(property "Reference" "C22"
+		(property "Reference" "C21"
 			(at 213.36 90.1699 0)
 			(effects
 				(font
@@ -3253,7 +3253,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "C22")
+					(reference "C21")
 					(unit 1)
 				)
 			)
@@ -3269,7 +3269,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "ae1a3259-8bc8-4141-94e6-b8fc835f17ae")
-		(property "Reference" "R18"
+		(property "Reference" "R19"
 			(at 170.18 92.7099 0)
 			(effects
 				(font
@@ -3323,7 +3323,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "R18")
+					(reference "R19")
 					(unit 1)
 				)
 			)
@@ -3339,7 +3339,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "b4c710e3-cbb5-4604-bb02-cf38d5ef3c46")
-		(property "Reference" "C23"
+		(property "Reference" "C20"
 			(at 203.2 92.7099 0)
 			(effects
 				(font
@@ -3393,7 +3393,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "C23")
+					(reference "C20")
 					(unit 1)
 				)
 			)
@@ -3409,7 +3409,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "bc3b27dd-55a5-4f66-ba4a-b06a215bd304")
-		(property "Reference" "R6"
+		(property "Reference" "R16"
 			(at 133.35 69.85 90)
 			(effects
 				(font
@@ -3461,7 +3461,7 @@
 		(instances
 			(project "high_speed"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "R6")
+					(reference "R16")
 					(unit 1)
 				)
 			)
@@ -3477,7 +3477,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "bca0b77e-9c9e-4c0f-a752-219d01a6eae3")
-		(property "Reference" "C7"
+		(property "Reference" "C23"
 			(at 232.41 82.5499 0)
 			(effects
 				(font
@@ -3531,7 +3531,7 @@
 		(instances
 			(project ""
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "C7")
+					(reference "C23")
 					(unit 1)
 				)
 			)
@@ -3547,7 +3547,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d2ca61a6-5262-41a1-909a-35c9b0a4015a")
-		(property "Reference" "D4"
+		(property "Reference" "D2"
 			(at 142.5575 68.58 0)
 			(effects
 				(font
@@ -3617,7 +3617,7 @@
 		(instances
 			(project "high_speed"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/f2bbebe1-7e19-419b-a0b6-59692ffc8a76"
-					(reference "D4")
+					(reference "D2")
 					(unit 1)
 				)
 			)

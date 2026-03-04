@@ -770,7 +770,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a9748f01-b984-4328-8d6e-912365c0e972")
-		(property "Reference" "#PWR0101"
+		(property "Reference" "#PWR016"
 			(at 49.53 62.23 0)
 			(effects
 				(font
@@ -820,7 +820,7 @@
 		(instances
 			(project "lamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/daa62c67-c5be-46d0-9e17-179fa08ac5f3"
-					(reference "#PWR0101")
+					(reference "#PWR016")
 					(unit 1)
 				)
 			)
@@ -836,7 +836,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c91958f2-f21f-44d8-84ea-949a60071c28")
-		(property "Reference" "C14"
+		(property "Reference" "C18"
 			(at 33.02 29.2099 0)
 			(effects
 				(font
@@ -908,7 +908,7 @@
 		(instances
 			(project "lamp"
 				(path "/48ddfdd8-68fa-4e63-aa18-bc113cdf8cfa/daa62c67-c5be-46d0-9e17-179fa08ac5f3"
-					(reference "C14")
+					(reference "C18")
 					(unit 1)
 				)
 			)
