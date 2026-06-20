@@ -2,7 +2,29 @@
 # CMakeLists in this exact order for cmake to work correctly
 cmake_minimum_required(VERSION 3.5)
 
+# Exclude unused and potentially problematic ESP-ADF components
+set(EXCLUDE_COMPONENTS "audio_board" "esp_peripherals" "display_service" "bluetooth_service" "dueros_service" "coredump_upload_service" "battery_service" "wifi_service" "input_key_service" "ota_service")
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+
+# Optionally include ESP-ADF components when ADF_PATH is provided
+if(DEFINED ENV{ADF_PATH})
+    # Make ESP-ADF components available to the project. Append so we don't clobber existing settings.
+    if(EXISTS "$ENV{ADF_PATH}/components")
+        list(APPEND EXTRA_COMPONENT_DIRS "$ENV{ADF_PATH}/components")
+        message(STATUS "Including ESP-ADF components from: $ENV{ADF_PATH}/components")
+    else()
+        message(WARNING "ADF components directory not found at: $ENV{ADF_PATH}/components")
+    endif()
+
+    # Some ADF versions provide 'esp_codec' as a separate component under esp-adf-libs.
+    if(EXISTS "$ENV{ADF_PATH}/esp-adf-libs/esp_codec")
+        list(APPEND EXTRA_COMPONENT_DIRS "$ENV{ADF_PATH}/esp-adf-libs/esp_codec")
+        message(STATUS "Including ESP-ADF codec component from: $ENV{ADF_PATH}/esp-adf-libs/esp_codec")
+    endif()
+else()
+    message(STATUS "ADF_PATH not set; skipping ESP-ADF integration")
+endif()
 
 # Set PROJECT_VER to a placeholder - actual version comes from build-time generated files
 # The firmware will read the real version from /storage/firmware_version.txt

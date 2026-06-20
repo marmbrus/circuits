@@ -58,3 +58,4 @@ js/.env.*
 js/.vercel/
 
 .venv/
+.cache/

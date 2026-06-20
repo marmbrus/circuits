@@ -138,7 +138,7 @@ static void console_task(void *arg)
     esp_console_config_t console_config = {
         .max_cmdline_length = 256,
         .max_cmdline_args = 16,
-        .hint_color = atoi(LOG_COLOR_CYAN),
+        .hint_color = 36, // Cyan
         .hint_bold = 0,
     };
     ESP_ERROR_CHECK(esp_console_init(&console_config));

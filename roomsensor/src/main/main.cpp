@@ -15,9 +15,11 @@
 #include "console.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
+#include "SpeakerConfig.h"
 #include "gpio.h"
 #include "filesystem.h"
 #include "netlog.h"
+#include "audio_init.h"
 #include "debug.h"
 #include "status_led.h"
 #include "freertos/FreeRTOS.h"
@@ -146,6 +148,16 @@ extern "C" void app_main(void)
         log_memory_snapshot(TAG, "ota_init_failed");
     } else {
         ESP_LOGI(TAG, "OTA system initialized successfully");
+    }
+
+    // Initialize audio if speaker GPIOs are configured
+    {
+        using namespace config;
+        auto& speaker_cfg = cfg.speaker();
+        if (speaker_cfg.has_sdin() && speaker_cfg.has_sclk() && speaker_cfg.has_lrclk()) {
+            ESP_LOGI(TAG, "Initializing audio with SDIN=%u SCLK=%u LRCLK=%u", (unsigned)speaker_cfg.sdin(), (unsigned)speaker_cfg.sclk(), (unsigned)speaker_cfg.lrclk());
+            audio_component_init();
+        }
     }
 
     ESP_LOGI(TAG, "Startup sequence complete.");
