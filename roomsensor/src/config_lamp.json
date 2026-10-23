@@ -1,0 +1,21 @@
+{
+  "device": {
+    "type": "lamp_0.1"
+  },
+  "wifi": {
+    "statusGPIO": 40
+  },
+  "led1": {
+    "dataGPIO": 11,
+    "enabledGPIO": 15
+  },
+  "a2d1": {
+    "ch1.name": "efuse_temp",
+    "ch2.name": "led_current",
+    "ch3.name": "thermistor",
+    "ch4.enabled": "false"
+  },
+  "i2c": {
+    "48": "ads1115"
+  }
+}
