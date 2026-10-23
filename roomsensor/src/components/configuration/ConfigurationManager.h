@@ -20,6 +20,7 @@ class LEDConfig;
 class A2DConfig;
 class IOConfig;
 class MotionConfig;
+class AudioConfig;
 class I2CConfig;
 
 class ConfigurationManager {
@@ -52,6 +53,7 @@ public:
     A2DConfig& a2d4();
     // Motion sensor
     MotionConfig& motion();
+    AudioConfig& audio();
     // IO expanders
     IOConfig& io1();
     IOConfig& io2();
@@ -99,6 +101,7 @@ private:
     std::unique_ptr<A2DConfig> a2d3_module_;
     std::unique_ptr<A2DConfig> a2d4_module_;
     std::unique_ptr<MotionConfig> motion_module_;
+    std::unique_ptr<AudioConfig> audio_module_;
     std::unique_ptr<IOConfig> io1_module_;
     std::unique_ptr<IOConfig> io2_module_;
     std::unique_ptr<IOConfig> io3_module_;

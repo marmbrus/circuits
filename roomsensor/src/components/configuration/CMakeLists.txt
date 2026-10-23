@@ -8,6 +8,7 @@ idf_component_register(
         "A2DConfig.cpp"
         "IOConfig.cpp"
         "MotionConfig.cpp"
+        "AudioConfig.cpp"
         "I2CConfig.cpp"
         "GameOfLifeConfig.cpp"
     INCLUDE_DIRS "." "../common"

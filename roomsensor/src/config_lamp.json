@@ -15,6 +15,13 @@
     "ch3.name": "thermistor",
     "ch4.enabled": "false"
   },
+  "audio": {
+    "bclkGPIO": 21,
+    "wsGPIO": 47,
+    "doutGPIO": 14,
+    "dinGPIO": 48,
+    "enableGPIO": 13
+  },
   "i2c": {
     "48": "ads1115"
   }

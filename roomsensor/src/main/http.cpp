@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <cstdio>
 #include "console_buffer.h"
+#include "audio_io.h"
 
 static const char *TAG = "http_server";
 
@@ -288,6 +289,14 @@ static const httpd_uri_t index_page = {
     .user_ctx  = NULL
 };
 
+// Live microphone audio (16-bit mono WAV); 404 on boards without a mic
+static const httpd_uri_t mic_route = {
+    .uri       = "/mic.wav",
+    .method    = HTTP_GET,
+    .handler   = audio_io_mic_http_handler,
+    .user_ctx  = NULL
+};
+
 static const httpd_uri_t console_route = {
     .uri       = "/console",
     .method    = HTTP_GET,
@@ -313,6 +322,7 @@ esp_err_t start_webserver(void)
         httpd_register_uri_handler(server, &metrics);
         httpd_register_uri_handler(server, &mqttconfig);
         httpd_register_uri_handler(server, &console_route);
+        httpd_register_uri_handler(server, &mic_route);
         httpd_register_uri_handler(server, &index_page);
         return ESP_OK;
     }
