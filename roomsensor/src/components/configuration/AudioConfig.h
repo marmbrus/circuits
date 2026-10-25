@@ -12,6 +12,7 @@ namespace config {
 // I2S audio: a speaker amp (e.g. MAX98357A), a microphone (e.g. ICS-43434), and
 // playback control. Pins are persisted per board; url and volume are runtime
 // controls: setting url plays that MP3 over HTTP(S), and an empty url stops playback.
+// Volume starts at 0, so nothing is audible until it is set.
 class AudioConfig : public ConfigurationModule {
 public:
     AudioConfig();
@@ -36,6 +37,10 @@ public:
     int enable_gpio() const { return enable_gpio_; }
 
     const std::string& url() const { return url_; }
+    // Incremented on every url update, including a republish of the same url.
+    // Playback follows this rather than generation(), so other updates (a config
+    // reset, a pin change) never start or restart playback.
+    uint32_t url_requests() const { return url_requests_; }
     // 0..100
     int volume() const { return volume_; }
 
@@ -49,7 +54,8 @@ private:
     int enable_gpio_ = -1;
 
     std::string url_;
-    int volume_ = 50;
+    uint32_t url_requests_ = 0;
+    int volume_ = 0;
 
     std::vector<ConfigurationValueDescriptor> descriptors_;
 };

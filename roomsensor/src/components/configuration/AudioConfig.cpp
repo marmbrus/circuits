@@ -14,7 +14,7 @@ AudioConfig::AudioConfig() {
 
     // Runtime (non-persisted) playback controls
     descriptors_.push_back({"url", ConfigValueType::String, nullptr, false});
-    descriptors_.push_back({"volume", ConfigValueType::I32, "50", false});
+    descriptors_.push_back({"volume", ConfigValueType::I32, "0", false});
 }
 
 const char* AudioConfig::name() const {
@@ -46,11 +46,12 @@ esp_err_t AudioConfig::apply_update(const char* key, const char* value_str) {
 
     if (strcmp(key, "url") == 0) {
         url_ = value_str ? value_str : "";
+        ++url_requests_;
         return ESP_OK;
     }
     if (strcmp(key, "volume") == 0) {
         if (value_str == nullptr || value_str[0] == '\0') {
-            volume_ = 50;
+            volume_ = 0;
             return ESP_OK;
         }
         int v = atoi(value_str);
@@ -73,7 +74,7 @@ esp_err_t AudioConfig::to_json(cJSON* root_object) const {
     if (dout_gpio_ >= 0) cJSON_AddNumberToObject(obj, "doutGPIO", dout_gpio_);
     if (din_gpio_ >= 0) cJSON_AddNumberToObject(obj, "dinGPIO", din_gpio_);
     if (enable_gpio_ >= 0) cJSON_AddNumberToObject(obj, "enableGPIO", enable_gpio_);
-    if (!url_.empty()) cJSON_AddStringToObject(obj, "url", url_.c_str());
+    // url is left out so a config reset built from the published config can't start playback
     cJSON_AddNumberToObject(obj, "volume", volume_);
     cJSON_AddItemToObject(root_object, name(), obj);
     return ESP_OK;

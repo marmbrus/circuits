@@ -53,10 +53,10 @@ void AudioPlayer::TaskEntry(void* arg) {
 
 void AudioPlayer::run() {
     const config::AudioConfig& cfg = cfg_manager_->audio();
-    // Start from the current values; only later updates trigger playback
+    // Start from the current values; only later url updates trigger playback
     uint32_t seen_generation = cfg.generation();
+    uint32_t seen_url_requests = cfg.url_requests();
     int volume = cfg.volume();
-    std::string url = cfg.url();
 
     for (;;) {
         if (pipeline_) {
@@ -69,20 +69,19 @@ void AudioPlayer::run() {
         if (generation == seen_generation) continue;
         seen_generation = generation;
 
-        bool volume_changed = cfg.volume() != volume;
-        if (volume_changed) {
+        if (cfg.volume() != volume) {
             // Takes effect immediately; playback doesn't restart
             volume = cfg.volume();
             audio_io_set_volume(volume);
         }
 
-        // A new url, or any update other than volume (republishing the same url,
-        // or a pin change), restarts playback with the current url
-        std::string new_url = cfg.url();
-        if (volume_changed && new_url == url) continue;
-        url = new_url;
+        // Only a url update (including republishing the same url) starts, restarts,
+        // or stops playback
+        uint32_t url_requests = cfg.url_requests();
+        if (url_requests == seen_url_requests) continue;
+        seen_url_requests = url_requests;
         stop();
-        if (!url.empty()) start(url);
+        if (!cfg.url().empty()) start(cfg.url());
     }
 }
 
