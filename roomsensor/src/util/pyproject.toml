@@ -12,6 +12,8 @@ authors = [{ name = "RoomSensor Dev" }]
 dependencies = [
   "pyserial>=3.5",
   "pytest>=8.2",
+  "cryptography>=42",
+  "yubikey-manager>=5",
 ]
 
 [tool.setuptools]

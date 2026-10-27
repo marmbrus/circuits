@@ -9,8 +9,9 @@ idf_component_register(
         "netlog.cpp"
         "gpio.cpp"
         "filesystem.cpp"
+        "mqtt_tls.cpp"
     INCLUDE_DIRS "."
-    REQUIRES i2c leds driver nvs_flash mqtt json esp_wifi esp_app_format esp_http_server esp_http_client esp_https_ota app_update console vfs joltwallet__littlefs serial_console configuration status_led audio_player
+    REQUIRES i2c leds driver nvs_flash mqtt mbedtls json esp_wifi esp_app_format esp_http_server esp_http_client esp_https_ota app_update console vfs joltwallet__littlefs serial_console configuration status_led audio_player
     PRIV_REQUIRES espcoredump
 )
 
