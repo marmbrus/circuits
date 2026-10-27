@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Run ESP-IDF inside Docker against the project in the current directory.
+#
+#   idf build                         -> idf.py build
+#   idf -p /dev/ttyACM0 flash monitor -> idf.py, with the serial port passed through
+#   idf run ./update_js.sh -p /dev/ttyACM0
+#                                     -> any command in the IDF environment
+#   idf shell                         -> interactive shell in the IDF environment
+#
+# Environment:
+#   IDF_VERSION  espressif/idf image tag (default v5.3.2)
+#   PORT/ESPPORT serial port to pass through when no -p/--port is given
+#   IDF_DOCKER_REBUILD=1  force a rebuild of the image
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REPO_ROOT=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
+PROJECT_DIR=$(pwd)
+IDF_VERSION="${IDF_VERSION:-v5.3.2}"
+
+if [[ "$PROJECT_DIR" != "$REPO_ROOT" && "$PROJECT_DIR" != "$REPO_ROOT"/* ]]; then
+  echo "Error: run this from an ESP-IDF project inside $REPO_ROOT" >&2
+  exit 1
+fi
+
+# Tag by Dockerfile contents so edits to it trigger a rebuild automatically.
+DOCKERFILE_HASH=$(sha256sum "$SCRIPT_DIR/Dockerfile" | cut -c1-12)
+IMAGE="circuits-esp-idf:${IDF_VERSION}-${DOCKERFILE_HASH}"
+
+if [[ "${IDF_DOCKER_REBUILD:-0}" == "1" ]] || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  echo "Building $IMAGE ..." >&2
+  docker build \
+    --build-arg IDF_VERSION="$IDF_VERSION" \
+    --build-arg USER_UID="$(id -u)" \
+    --build-arg USER_GID="$(id -g)" \
+    -t "$IMAGE" "$SCRIPT_DIR" >&2
+fi
+
+# Mount the whole repo at the same path so git works and CMake paths match the host.
+RUN_ARGS=(--rm
+  -v "$REPO_ROOT:$REPO_ROOT"
+  -w "$PROJECT_DIR"
+  -v circuits-esp-cache:/home/builder/.cache)
+if [[ -t 0 && -t 1 ]]; then
+  RUN_ARGS+=(-it)
+fi
+
+# Pass the serial port through if one was named.
+PORT="${PORT:-${ESPPORT:-}}"
+ARGS=("$@")
+for ((i = 0; i < ${#ARGS[@]}; i++)); do
+  case "${ARGS[i]}" in
+    -p | --port) PORT="${ARGS[i + 1]:-}" ;;
+    --port=*) PORT="${ARGS[i]#--port=}" ;;
+  esac
+done
+if [[ -n "$PORT" ]]; then
+  if [[ ! -e "$PORT" ]]; then
+    echo "Error: serial port $PORT not found" >&2
+    exit 1
+  fi
+  RUN_ARGS+=(--device "$PORT:$PORT" --group-add "$(stat -c %g "$PORT")" -e PORT="$PORT" -e ESPPORT="$PORT")
+fi
+
+case "${1:-}" in
+  shell) CMD=(bash) ;;
+  run) shift; CMD=("$@") ;;
+  "") CMD=(idf.py --help) ;;
+  *) CMD=(idf.py "$@") ;;
+esac
+
+exec docker run "${RUN_ARGS[@]}" "$IMAGE" "${CMD[@]}"

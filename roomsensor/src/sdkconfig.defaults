@@ -21,3 +21,8 @@ CONFIG_ESP_COREDUMP_LOGS=n
 # Enable bootloader/app rollback support to allow PENDING_VERIFY images to rollback
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 CONFIG_APP_ROLLBACK_ENABLE=y
+
+# ESP-ADF: its headers still use the pre-v10 FreeRTOS type names
+CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
+# ESP-ADF: use the new I2C driver (roomsensor uses it; mixing in the legacy driver aborts at boot)
+CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE=n

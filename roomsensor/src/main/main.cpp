@@ -7,6 +7,7 @@
 #include "wifi.h"
 #include "config.h"
 #include "LEDManager.h"
+#include "AudioPlayer.h"
 #include "cJSON.h"
 #include "communication.h"
 #include "i2c.h"
@@ -138,6 +139,13 @@ extern "C" void app_main(void)
         log_memory_snapshot(TAG, "http_server_start_failed");
     } else {
         ESP_LOGI(TAG, "HTTP server started successfully");
+    }
+
+    // Initialize audio playback (no-op on boards without audio pins configured)
+    static audio::AudioPlayer audio_player;
+    if (audio_player.init(cfg) != ESP_OK) {
+        ESP_LOGE(TAG, "AudioPlayer initialization failed");
+        log_memory_snapshot(TAG, "audio_player_init_failed");
     }
 
     // Initialize OTA update system

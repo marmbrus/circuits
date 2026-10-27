@@ -7,6 +7,7 @@
 #include "A2DConfig.h"
 #include "IOConfig.h"
 #include "MotionConfig.h"
+#include "AudioConfig.h"
 #include "cJSON.h"
 #include "I2CConfig.h"
 #include "nvs.h"
@@ -57,6 +58,9 @@ void ConfigurationManager::register_modules() {
     // Motion module (nullable gpio configuration)
     motion_module_.reset(new MotionConfig());
     modules_.push_back(motion_module_.get());
+    // Audio module (I2S pins, amp enable, and playback control)
+    audio_module_.reset(new AudioConfig());
+    modules_.push_back(audio_module_.get());
 
     // IO expander modules mapped to MCP23008 addresses 0x20..0x27 => io1..io8
     io1_module_.reset(new IOConfig("io1")); modules_.push_back(io1_module_.get());
@@ -114,6 +118,7 @@ IOConfig& ConfigurationManager::io7() { return *io7_module_; }
 IOConfig& ConfigurationManager::io8() { return *io8_module_; }
 
 MotionConfig& ConfigurationManager::motion() { return *motion_module_; }
+AudioConfig& ConfigurationManager::audio() { return *audio_module_; }
 
 I2CConfig& ConfigurationManager::i2cmap() { return *i2cmap_module_; }
 

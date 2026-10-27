@@ -474,6 +474,15 @@ static void mqtt_event_handler(void* arg, esp_event_base_t event_base,
             }
         }
 
+        // Ignore retained audio urls: the broker replays them on every (re)connect, which
+        // would start playback at boot. Live publishes arrive with retain cleared.
+        static const std::string kAudioUrlSuffix = "/config/audio/url";
+        if (event->retain && topic.size() >= kAudioUrlSuffix.size() &&
+            topic.compare(topic.size() - kAudioUrlSuffix.size(), kAudioUrlSuffix.size(), kAudioUrlSuffix) == 0) {
+            ESP_LOGW(TAG, "Ignoring retained %s; publish audio urls without retain", topic.c_str());
+            return;
+        }
+
         // Forward potential config updates to ConfigurationManager
         using namespace config;
         auto& mgr = GetConfigurationManager();
