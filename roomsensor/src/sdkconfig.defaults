@@ -26,3 +26,8 @@ CONFIG_APP_ROLLBACK_ENABLE=y
 CONFIG_FREERTOS_ENABLE_BACKWARD_COMPATIBILITY=y
 # ESP-ADF: use the new I2C driver (roomsensor uses it; mixing in the legacy driver aborts at boot)
 CONFIG_CODEC_I2C_BACKWARD_COMPATIBLE=n
+
+# Trust Let's Encrypt's Gen Y roots too, so OTA from updates.acgt.net doesn't depend on its chain
+# keeping the cross-signs to ISRG Root X1/X2 (see certs/letsencrypt_gen_y_roots.pem)
+CONFIG_MBEDTLS_CUSTOM_CERTIFICATE_BUNDLE=y
+CONFIG_MBEDTLS_CUSTOM_CERTIFICATE_BUNDLE_PATH="certs/letsencrypt_gen_y_roots.pem"

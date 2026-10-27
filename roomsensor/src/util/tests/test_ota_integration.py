@@ -65,7 +65,7 @@ def test_ota_channel_dev_and_status(console: SerialConsole):
 
     # Expect the device to use the dev manifest URL soon after
     assert console.wait_for_clean_after(
-        "Using channel manifest: https://updates.gaia.bio/manifest-dev.json",
+        "Using channel manifest: https://updates.acgt.net/manifest-dev.json",
         boot_mark,
         180,
     ), "device did not switch to dev channel manifest"
