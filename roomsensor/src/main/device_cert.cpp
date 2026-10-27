@@ -1,4 +1,4 @@
-#include "mqtt_tls.h"
+#include "device_cert.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -11,8 +11,14 @@
 #include "mbedtls/pk.h"
 #include "mbedtls/x509_crt.h"
 
-static const char* TAG = "mqtt_tls";
-static const char* NVS_NAMESPACE = "mqtt_tls";
+static const char* TAG = "device_cert";
+static const char* NVS_NAMESPACE = "device_cert";
+
+// Read at boot and kept for the life of the program: the MQTT and HTTP clients keep pointers to
+// them. All three or none.
+static char* s_cert = nullptr;
+static char* s_key = nullptr;
+static char* s_ca = nullptr;
 
 // The PEMs are stored without their terminating NUL; this adds it back. nullptr when missing.
 static char* read_pem(nvs_handle_t nvs, const char* key) {
@@ -47,52 +53,62 @@ static bool common_name_is(const mbedtls_x509_crt* cert, const char* expected) {
     return false;
 }
 
-static bool is_tls_uri(const char* uri) {
-    return uri != nullptr && strncmp(uri, "mqtts://", 8) == 0;
+void device_cert_init(void) {
+    nvs_handle_t nvs;
+    if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvs) == ESP_OK) {
+        s_cert = read_pem(nvs, "cert");
+        s_key = read_pem(nvs, "key");
+        s_ca = read_pem(nvs, "ca");
+        nvs_close(nvs);
+    }
+    char name[24];
+    device_cert_common_name(name, sizeof(name));
+    if (s_cert != nullptr && s_key != nullptr && s_ca != nullptr) {
+        ESP_LOGI(TAG, "Have a certificate for %s", name);
+        return;
+    }
+    ESP_LOGW(TAG, "No certificate for %s: updates.acgt.net will refuse OTA, and an mqtts:// broker the connection", name);
+    free(s_cert);
+    free(s_key);
+    free(s_ca);
+    s_cert = s_key = s_ca = nullptr;
 }
 
-void mqtt_tls_common_name(char* out, size_t len) {
+void device_cert_common_name(char* out, size_t len) {
     uint8_t mac[6] = {0};
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
     snprintf(out, len, "ESP_%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
-void mqtt_tls_configure(esp_mqtt_client_config_t* cfg) {
-    char* cert = nullptr;
-    char* key = nullptr;
-    char* ca = nullptr;
-    nvs_handle_t nvs;
-    if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &nvs) == ESP_OK) {
-        cert = read_pem(nvs, "cert");
-        key = read_pem(nvs, "key");
-        ca = read_pem(nvs, "ca");
-        nvs_close(nvs);
-    }
-    const bool provisioned = cert != nullptr && key != nullptr && ca != nullptr;
-    const bool tls = is_tls_uri(cfg->broker.address.uri);
-
-    if (tls && provisioned) {
-        cfg->broker.verification.certificate = ca;
-        cfg->credentials.authentication.certificate = cert;
-        cfg->credentials.authentication.key = key;
-        char name[24];
-        mqtt_tls_common_name(name, sizeof(name));
-        ESP_LOGI(TAG, "Connecting over TLS as %s", name);
+void device_cert_configure_mqtt(esp_mqtt_client_config_t* cfg) {
+    const char* uri = cfg->broker.address.uri;
+    if (uri == nullptr || strncmp(uri, "mqtts://", 8) != 0) {
+        if (s_cert != nullptr) {
+            ESP_LOGI(TAG, "The broker isn't mqtts://; connecting without the certificate");
+        }
         return;
     }
-    if (tls) {
-        ESP_LOGW(TAG, "Broker is mqtts:// but no client certificate is provisioned; the broker will refuse the connection");
-    } else if (provisioned) {
-        ESP_LOGI(TAG, "Have a client certificate, but the broker isn't mqtts://; connecting without TLS");
+    if (s_cert == nullptr) {
+        ESP_LOGW(TAG, "The broker is mqtts:// but there's no certificate; it will refuse the connection");
+        return;
     }
-    free(cert);
-    free(key);
-    free(ca);
+    cfg->broker.verification.certificate = s_ca;
+    cfg->credentials.authentication.certificate = s_cert;
+    cfg->credentials.authentication.key = s_key;
+    ESP_LOGI(TAG, "Connecting to the broker with the certificate");
 }
 
-esp_err_t mqtt_tls_store(const char* cert_pem, const char* key_pem, const char* ca_pem) {
+void device_cert_configure_http(esp_http_client_config_t* cfg) {
+    if (s_cert == nullptr) {
+        return;
+    }
+    cfg->client_cert_pem = s_cert;
+    cfg->client_key_pem = s_key;
+}
+
+esp_err_t device_cert_store(const char* cert_pem, const char* key_pem, const char* ca_pem) {
     char name[24];
-    mqtt_tls_common_name(name, sizeof(name));
+    device_cert_common_name(name, sizeof(name));
 
     mbedtls_x509_crt cert;
     mbedtls_x509_crt ca;
@@ -113,7 +129,7 @@ esp_err_t mqtt_tls_store(const char* cert_pem, const char* key_pem, const char* 
     } else if (mbedtls_pk_check_pair(&cert.pk, &key, fill_random, nullptr) != 0) {
         ESP_LOGE(TAG, "The key doesn't belong to the certificate");
     } else if (!common_name_is(&cert, name)) {
-        ESP_LOGE(TAG, "The certificate isn't for this device, which is %s", name);
+        ESP_LOGE(TAG, "The certificate isn't for this board, which is %s", name);
     } else {
         nvs_handle_t nvs;
         err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvs);
@@ -136,7 +152,7 @@ esp_err_t mqtt_tls_store(const char* cert_pem, const char* key_pem, const char* 
     return err;
 }
 
-esp_err_t mqtt_tls_erase(void) {
+esp_err_t device_cert_erase(void) {
     nvs_handle_t nvs;
     esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvs);
     if (err != ESP_OK) {
@@ -150,10 +166,10 @@ esp_err_t mqtt_tls_erase(void) {
     return err;
 }
 
-void mqtt_tls_print_status(void) {
+void device_cert_print_status(void) {
     char name[24];
-    mqtt_tls_common_name(name, sizeof(name));
-    printf("MQTT TLS name: %s\n", name);
+    device_cert_common_name(name, sizeof(name));
+    printf("DEVICE CERT name: %s\n", name);
 
     char* pem = nullptr;
     nvs_handle_t nvs;
@@ -162,7 +178,7 @@ void mqtt_tls_print_status(void) {
         nvs_close(nvs);
     }
     if (pem == nullptr) {
-        printf("MQTT TLS certificate: none\n");
+        printf("DEVICE CERT certificate: none\n");
         return;
     }
 
@@ -171,12 +187,12 @@ void mqtt_tls_print_status(void) {
     if (mbedtls_x509_crt_parse(&cert, (const unsigned char*)pem, strlen(pem) + 1) == 0) {
         char dn[160];
         mbedtls_x509_dn_gets(dn, sizeof(dn), &cert.subject);
-        printf("MQTT TLS certificate: %s\n", dn);
+        printf("DEVICE CERT certificate: %s\n", dn);
         mbedtls_x509_dn_gets(dn, sizeof(dn), &cert.issuer);
-        printf("MQTT TLS issuer: %s\n", dn);
-        printf("MQTT TLS expires: %04d-%02d-%02d\n", cert.valid_to.year, cert.valid_to.mon, cert.valid_to.day);
+        printf("DEVICE CERT issuer: %s\n", dn);
+        printf("DEVICE CERT expires: %04d-%02d-%02d\n", cert.valid_to.year, cert.valid_to.mon, cert.valid_to.day);
     } else {
-        printf("MQTT TLS certificate: unreadable\n");
+        printf("DEVICE CERT certificate: unreadable\n");
     }
     mbedtls_x509_crt_free(&cert);
     free(pem);

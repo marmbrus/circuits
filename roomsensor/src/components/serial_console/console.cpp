@@ -10,7 +10,7 @@
 #include "cmd_nvs.h"
 #include "cmd_system.h"
 #include "cmd_ota.h"
-#include "cmd_mqtt_tls.h"
+#include "cmd_device_cert.h"
 #include "gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -50,12 +50,12 @@ static void configure_stdio_uart(void)
     esp_vfs_dev_uart_use_driver(UART_NUM_0);
 }
 
-// Record a typed line in the console buffer, which /console serves over HTTP. The MQTT client
-// key that util/provision.py types in stays out of it.
+// Record a typed line in the console buffer, which /console serves over HTTP. The
+// board's key that util/provision.py types in stays out of it.
 static void record_input(const char *line) {
-    static const char *const SECRET_PREFIX = "mqtt_tls add key ";
+    static const char *const SECRET_PREFIX = "device_cert add key ";
     if (strncmp(line, SECRET_PREFIX, strlen(SECRET_PREFIX)) == 0) {
-        static const char *const REDACTED = "mqtt_tls add key <redacted>";
+        static const char *const REDACTED = "device_cert add key <redacted>";
         console_buffer_append(REDACTED, strlen(REDACTED), CONSOLE_DIR_IN);
     } else {
         console_buffer_append(line, strlen(line), CONSOLE_DIR_IN);
@@ -165,7 +165,7 @@ static void console_task(void *arg)
     register_wifi();
     register_gpio();
     register_ota();
-    register_mqtt_tls();
+    register_device_cert();
     register_console_commands();
 
     ESP_LOGI(TAG_CONSOLE, "Console initialized. Type 'help' to list commands.");

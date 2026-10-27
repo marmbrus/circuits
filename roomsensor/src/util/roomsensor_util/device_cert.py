@@ -1,11 +1,12 @@
-"""MQTT client certificates for the boards, signed by the YubiKey plugged into this computer.
+"""The boards' certificates, signed by the YubiKey plugged into this computer.
 
-The house's MQTT broker (brayden repo, docker/smll/mqtt) takes clients on its TLS listener (8883)
-that have a certificate from one of the house's authorities. Each authority is a YubiKey holding
-a P-256 key in PIV slot 9a, with its CA certificate in the same slot, and PIN and touch policy
-"never" (brayden's docker/smll/yubikey/README.md). The broker names a client by its certificate's
-subject, O=acgt.net,CN=ESP_<mac>, which needs a certificate account on Brayden's Security tab
-before it may publish or subscribe.
+A board presents its certificate to the house's MQTT broker (brayden repo, docker/smll/mqtt) on its
+TLS listener (8883), and to updates.acgt.net for OTA updates (docker/smll/auth). Both take only
+certificates from one of the house's authorities. Each authority is a YubiKey holding a P-256 key
+in PIV slot 9a, with its CA certificate in the same slot, and PIN and touch policy "never"
+(brayden's docker/smll/yubikey/README.md). The broker and Brayden name a board by its
+certificate's subject, O=acgt.net,CN=ESP_<mac>; Brayden makes its broker account when it first
+connects.
 
 A board's certificate is made like Brayden's own (server/crates/integrations/security/src/ca.rs):
 an EC P-256 key, CN=ESP_<mac> and O=acgt.net, good only for client authentication, for five

@@ -13,6 +13,7 @@
 #include "i2c.h"
 #include "http.h"
 #include "ota.h"
+#include "device_cert.h"
 #include "console.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
@@ -44,6 +45,9 @@ extern "C" void app_main(void)
     if (cfg_err != ESP_OK) {
         ESP_LOGE(TAG, "ConfigurationManager initialization failed: %s", esp_err_to_name(cfg_err));
     }
+
+    // The board's certificate, for MQTT and OTA
+    device_cert_init();
 
     // Start the status LED task immediately after reading the configuration.
     init_status_led();

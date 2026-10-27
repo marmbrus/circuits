@@ -14,7 +14,7 @@
 #include "esp_netif_ip_addr.h"
 #include "esp_flash.h"
 #include "telemetry.h"
-#include "mqtt_tls.h"
+#include "device_cert.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
 #include "esp_timer.h"
@@ -144,8 +144,8 @@ void wifi_mqtt_init(void)
     telemetry_configure_lwt(&mqtt_cfg);
     
     if (have_broker) {
-        // Client certificate and broker authorities, for an mqtts:// broker
-        mqtt_tls_configure(&mqtt_cfg);
+        // The board's certificate and the broker's authorities, for an mqtts:// broker
+        device_cert_configure_mqtt(&mqtt_cfg);
         mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
         if (mqtt_client) {
             esp_mqtt_client_register_event(mqtt_client, (esp_mqtt_event_id_t)ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);

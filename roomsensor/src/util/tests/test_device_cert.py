@@ -1,4 +1,4 @@
-"""The MQTT client certificate a board gets, signed by a software stand-in for the YubiKey's CA."""
+"""The certificate a board gets, signed by a software stand-in for the YubiKey's CA."""
 import datetime
 
 import pytest
@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
-from roomsensor_util import mqtt_cert
+from roomsensor_util import device_cert
 
 
 @pytest.fixture(scope="module")
@@ -33,18 +33,18 @@ def authority():
 
 
 def test_common_name():
-    assert mqtt_cert.common_name("AA:BB:CC:00:11:22") == "ESP_aabbcc001122"
-    assert mqtt_cert.common_name("aabbcc001122") == "ESP_aabbcc001122"
+    assert device_cert.common_name("AA:BB:CC:00:11:22") == "ESP_aabbcc001122"
+    assert device_cert.common_name("aabbcc001122") == "ESP_aabbcc001122"
     with pytest.raises(ValueError):
-        mqtt_cert.common_name("aabbcc00112")
+        device_cert.common_name("aabbcc00112")
     with pytest.raises(ValueError):
-        mqtt_cert.common_name("aabbcc00112g")
+        device_cert.common_name("aabbcc00112g")
 
 
 def test_mint(authority):
     ca, sign = authority
     now = datetime.datetime(2026, 10, 27, tzinfo=datetime.timezone.utc)
-    board = mqtt_cert.mint("ESP_aabbcc001122", ca, sign, now=now)
+    board = device_cert.mint("ESP_aabbcc001122", ca, sign, now=now)
     cert = board.certificate
 
     # How the broker writes the subject (use_subject_as_username), which names its account
@@ -65,14 +65,14 @@ def test_mint(authority):
     assert key.public_key() == cert.public_key()
 
     # By default the board trusts only the authority that signed it
-    assert mqtt_cert.authorities(board.ca_pem) == [ca]
+    assert device_cert.authorities(board.ca_pem) == [ca]
     assert x509.load_pem_x509_certificate(board.certificate_pem.encode()) == cert
 
 
 def test_mint_makes_a_new_key_each_time(authority):
     ca, sign = authority
-    first = mqtt_cert.mint("ESP_aabbcc001122", ca, sign)
-    second = mqtt_cert.mint("ESP_aabbcc001122", ca, sign)
+    first = device_cert.mint("ESP_aabbcc001122", ca, sign)
+    second = device_cert.mint("ESP_aabbcc001122", ca, sign)
     assert first.key_pem != second.key_pem
     assert first.certificate.serial_number != second.certificate.serial_number
 
@@ -80,5 +80,5 @@ def test_mint_makes_a_new_key_each_time(authority):
 def test_mint_keeps_a_given_bundle(authority):
     ca, sign = authority
     bundle = ca.public_bytes(serialization.Encoding.PEM).decode() * 2
-    board = mqtt_cert.mint("ESP_aabbcc001122", ca, sign, ca_pem=bundle)
+    board = device_cert.mint("ESP_aabbcc001122", ca, sign, ca_pem=bundle)
     assert board.ca_pem == bundle

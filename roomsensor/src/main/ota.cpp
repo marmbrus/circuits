@@ -24,6 +24,7 @@
 #include "debug.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
+#include "device_cert.h"
 #include <string>
 
 /*
@@ -66,7 +67,9 @@
 #endif
 
 static const char *TAG = "ota";
-static const char *MANIFEST_URL = "https://updates.gaia.bio/manifest.json";
+// Brayden's nginx on smll, which only answers boards presenting a house certificate (device_cert)
+#define UPDATES_BASE_URL "https://updates.acgt.net"
+static const char *MANIFEST_URL = UPDATES_BASE_URL "/manifest.json";
 static char current_version[64] = {0}; // Store current firmware version
 static TaskHandle_t ota_task_handle = NULL;
 static bool ota_running = false;
@@ -318,6 +321,7 @@ static esp_err_t download_web_asset(const char* url, const char* version_hash) {
     esp_http_client_config_t cfg = {};
     cfg.url = url;
     cfg.crt_bundle_attach = esp_crt_bundle_attach;
+    device_cert_configure_http(&cfg);
     cfg.skip_cert_common_name_check = false;
     cfg.timeout_ms = 30000;
     cfg.disable_auto_redirect = false; // follow 30x redirects
@@ -981,6 +985,7 @@ static esp_err_t perform_https_ota_from_url(const char* firmware_url) {
     esp_http_client_config_t config = {};
     config.url = firmware_url;
     config.crt_bundle_attach = esp_crt_bundle_attach;
+    device_cert_configure_http(&config);
     config.skip_cert_common_name_check = false;
     config.buffer_size = 1024;      // reduce RX buffer to save internal RAM
     config.buffer_size_tx = 512;    // reduce TX buffer
@@ -1003,7 +1008,7 @@ static esp_err_t perform_https_ota_from_url(const char* firmware_url) {
 extern "C" esp_err_t ota_force_update(const char* version_hash) {
     // Build URL based on provided hash or manifest
     if (version_hash && version_hash[0] != '\0') {
-        snprintf(g_force_url, sizeof(g_force_url), "https://updates.gaia.bio/firmware-%s.bin", version_hash);
+        snprintf(g_force_url, sizeof(g_force_url), UPDATES_BASE_URL "/firmware-%s.bin", version_hash);
         // Track a friendly version string for status
         snprintf(g_force_version, sizeof(g_force_version), "%s", version_hash);
     } else {
@@ -1137,7 +1142,7 @@ static void ota_update_task(void *pvParameter) {
                             const std::string& ch = cfg.wifi().channel();
                             if (!ch.empty()) {
                                 // manifest-<channel>.json
-                                snprintf(url_buf, sizeof(url_buf), "https://updates.gaia.bio/manifest-%s.json", ch.c_str());
+                                snprintf(url_buf, sizeof(url_buf), UPDATES_BASE_URL "/manifest-%s.json", ch.c_str());
                                 url_buf[sizeof(url_buf)-1] = '\0';
                                 url_to_use = url_buf;
                                 ESP_LOGI(TAG, "Using channel manifest: %s", url_to_use);
@@ -1148,6 +1153,7 @@ static void ota_update_task(void *pvParameter) {
                     config.url = url_to_use;
                     config.event_handler = http_event_handler;
                     config.crt_bundle_attach = esp_crt_bundle_attach;
+                    device_cert_configure_http(&config);
                     config.skip_cert_common_name_check = false;
                     config.timeout_ms = 10000; // Add 10s timeout to avoid hanging
 
@@ -1330,6 +1336,7 @@ esp_err_t check_for_ota_update(void) {
     config.url = MANIFEST_URL;
     config.event_handler = http_event_handler;
     config.crt_bundle_attach = esp_crt_bundle_attach;
+    device_cert_configure_http(&config);
     config.skip_cert_common_name_check = false;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
