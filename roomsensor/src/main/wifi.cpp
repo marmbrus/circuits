@@ -16,6 +16,7 @@
 #include "telemetry.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
+#include "BLEConfig.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -595,8 +596,14 @@ static void wifi_init_sta(void)
     // Start WiFi; we'll connect on WIFI_EVENT_STA_START
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    // Prefer no power save until connected to improve initial association reliability
-    esp_wifi_set_ps(WIFI_PS_NONE);
+    // Prefer no power save until connected to improve initial association reliability.
+    // Bluetooth needs modem sleep to share the radio (IDF aborts on WIFI_PS_NONE once it runs),
+    // so boards set up to scan keep the default; the BLE scanner also sets it before starting.
+    if (config::GetConfigurationManager().ble().enabled()) {
+        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
+    } else {
+        esp_wifi_set_ps(WIFI_PS_NONE);
+    }
 }
 
 SystemState get_system_state(void)
