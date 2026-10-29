@@ -10,6 +10,7 @@
 #include "AudioConfig.h"
 #include "cJSON.h"
 #include "I2CConfig.h"
+#include "BLEConfig.h"
 #include "nvs.h"
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -75,6 +76,10 @@ void ConfigurationManager::register_modules() {
     // I2C address mapping module
     i2cmap_module_.reset(new I2CConfig());
     modules_.push_back(i2cmap_module_.get());
+
+    // Bluetooth LE scanning (off until scan or track is set)
+    ble_module_.reset(new BLEConfig());
+    modules_.push_back(ble_module_.get());
 }
 
 ConfigurationModule* ConfigurationManager::find_module(const char* module_name) {
@@ -121,6 +126,8 @@ MotionConfig& ConfigurationManager::motion() { return *motion_module_; }
 AudioConfig& ConfigurationManager::audio() { return *audio_module_; }
 
 I2CConfig& ConfigurationManager::i2cmap() { return *i2cmap_module_; }
+
+BLEConfig& ConfigurationManager::ble() { return *ble_module_; }
 
 std::vector<LEDConfig*> ConfigurationManager::active_leds() const {
     std::vector<LEDConfig*> result;

@@ -8,6 +8,7 @@
 #include "config.h"
 #include "LEDManager.h"
 #include "AudioPlayer.h"
+#include "BLEScanner.h"
 #include "cJSON.h"
 #include "communication.h"
 #include "i2c.h"
@@ -146,6 +147,12 @@ extern "C" void app_main(void)
     if (audio_player.init(cfg) != ESP_OK) {
         ESP_LOGE(TAG, "AudioPlayer initialization failed");
         log_memory_snapshot(TAG, "audio_player_init_failed");
+    }
+
+    // Start the BLE scanner (Bluetooth itself starts only once the ble module asks to scan)
+    if (ble::init_scanner(cfg) != ESP_OK) {
+        ESP_LOGE(TAG, "BLE scanner initialization failed");
+        log_memory_snapshot(TAG, "ble_scanner_init_failed");
     }
 
     // Initialize OTA update system
