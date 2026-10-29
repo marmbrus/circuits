@@ -9,8 +9,9 @@ does two things, each switched on through the `ble` config module:
   it was heard. Several boards hearing the same tag give a rough position: it's nearest the
   board that hears it loudest.
 
-Bluetooth stays off until one of them is set, so boards that never scan pay nothing for it.
-Once it has started it stays up until the board restarts; clearing both only stops the scan.
+Bluetooth stays off until one of them is set: boards that never scan don't start the controller
+or the NimBLE host, use no airtime, and keep Wi-Fi out of modem sleep. Once it has started it
+stays up until the board restarts; clearing both only stops the scan.
 
 `BLEScanner.cpp` runs NimBLE as an observer and publishes; `../ble_logic` parses addresses,
 track lists and advertisements and keeps the per-window statistics, with host unit tests
@@ -100,8 +101,11 @@ whether the tag is heard while the phone is nearby.
   with BLE configured boots with `WIFI_PS_MIN_MODEM` instead of `WIFI_PS_NONE`, and the scanner
   switches it before starting Bluetooth. Expect a little more Wi-Fi latency, and less
   throughput the higher `duty` is; lower `duty` on boards that stream audio.
-- NimBLE's host allocates from PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); the
-  controller and the discovery table (about 10 KB, only while `scan` is on) use internal RAM.
+- Building Bluetooth in costs every board about 180 KB of flash and 25 KB of internal RAM
+  (static code and data, measured with ESP-IDF v5.3.2), whether or not it scans; about 169 KB
+  of internal RAM stays free. Once started, NimBLE's host allocates from PSRAM
+  (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); the controller and the discovery table (about
+  10 KB, only while `scan` is on) use internal RAM.
 - Bluetooth is enabled in `sdkconfig.defaults`, which only applies when `sdkconfig` is
   generated. An existing build directory keeps Bluetooth off until `sdkconfig` is regenerated
   (delete it, or run `idf.py set-target esp32s3`). Firmware built without Bluetooth logs an

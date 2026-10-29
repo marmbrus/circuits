@@ -9,7 +9,7 @@ class ConfigurationManager;
 namespace ble {
 
 // Starts the BLE scanner's control task. Bluetooth itself (NimBLE, observer only) starts the
-// first time the ble config module asks for scanning, so boards that never scan pay nothing.
+// first time the ble config module asks for scanning, so boards that never scan never start it.
 //
 // Each ble.interval seconds it publishes:
 // - for each tracked device heard: sensor/<mac>/metrics/ble_rssi, a metric reading whose value
