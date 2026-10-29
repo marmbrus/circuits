@@ -212,7 +212,7 @@ static void test_tracked_windows() {
 }
 
 static void test_device_table() {
-    DeviceTable t(2);
+    DeviceTable<> t(2);
     Address a{1, 1, 1, 1, 1, 1};
     Address b{2, 2, 2, 2, 2, 2};
     Address c{3, 3, 3, 3, 3, 3};
@@ -247,6 +247,59 @@ static void test_device_table() {
     CHECK(t.take(&dropped).empty() && dropped == 0);
 }
 
+// Counts what passes through it, to check where the table's storage comes from
+static size_t g_live_bytes = 0;
+static size_t g_allocations = 0;
+
+template <class T>
+struct CountingAllocator {
+    using value_type = T;
+    CountingAllocator() = default;
+    template <class U>
+    CountingAllocator(const CountingAllocator<U>&) {}
+    T* allocate(size_t n) {
+        g_live_bytes += n * sizeof(T);
+        ++g_allocations;
+        return static_cast<T*>(::operator new(n * sizeof(T)));
+    }
+    void deallocate(T* p, size_t n) {
+        g_live_bytes -= n * sizeof(T);
+        ::operator delete(p);
+    }
+};
+template <class T, class U>
+bool operator==(const CountingAllocator<T>&, const CountingAllocator<U>&) { return true; }
+template <class T, class U>
+bool operator!=(const CountingAllocator<T>&, const CountingAllocator<U>&) { return false; }
+
+static void test_device_table_allocator() {
+    {
+        DeviceTable<CountingAllocator<SeenDevice>> t(128);
+        CHECK(g_live_bytes == 0);                       // nothing until discovery starts
+
+        t.take();                                       // discovery on: room for a full window
+        CHECK(g_live_bytes == 128 * sizeof(SeenDevice));
+
+        size_t allocations = g_allocations;
+        for (int i = 0; i < 100; ++i) {
+            Address a{0xc0, 0, 0, 0, 0, (uint8_t)i};
+            CHECK(t.record(a, 1, -60, Advertisement{}));
+        }
+        CHECK(g_allocations == allocations);            // recording never allocates
+
+        {
+            auto entries = t.take();                    // the window's entries, plus a fresh table
+            CHECK(entries.size() == 100);
+            CHECK(g_live_bytes == 2 * 128 * sizeof(SeenDevice));
+        }
+        CHECK(g_live_bytes == 128 * sizeof(SeenDevice));
+
+        t.release();                                    // discovery off: all of it goes back
+        CHECK(g_live_bytes == 0);
+    }
+    CHECK(g_live_bytes == 0);
+}
+
 int main() {
     test_parse_address();
     test_address_from_le_and_type();
@@ -255,6 +308,7 @@ int main() {
     test_rssi_stats();
     test_tracked_windows();
     test_device_table();
+    test_device_table_allocator();
     if (failures) {
         fprintf(stderr, "%d check(s) failed\n", failures);
         return 1;

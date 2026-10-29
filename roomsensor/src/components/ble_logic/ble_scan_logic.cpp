@@ -289,45 +289,4 @@ std::vector<TrackedWindows::Report> TrackedWindows::take() {
     return reports;
 }
 
-bool DeviceTable::record(const Address& addr, uint8_t addr_type, int8_t rssi, const Advertisement& adv) {
-    if (rssi == kRssiUnavailable) return false;
-    for (Entry& e : entries_) {
-        if (e.addr == addr) {
-            e.addr_type = addr_type;
-            e.rssi.add(rssi);
-            e.adv.merge(adv);
-            return true;
-        }
-    }
-    if (entries_.size() >= capacity_) {
-        ++dropped_;
-        return false;
-    }
-    Entry e;
-    e.addr = addr;
-    e.addr_type = addr_type;
-    e.rssi.add(rssi);
-    e.adv = adv;
-    entries_.push_back(e);
-    return true;
-}
-
-std::vector<DeviceTable::Entry> DeviceTable::take(size_t* dropped) {
-    std::vector<Entry> out;
-    out.swap(entries_);
-    entries_.reserve(capacity_);
-    if (dropped) *dropped = dropped_;
-    dropped_ = 0;
-    std::sort(out.begin(), out.end(), [](const Entry& a, const Entry& b) {
-        if (a.rssi.max != b.rssi.max) return a.rssi.max > b.rssi.max;
-        return a.addr < b.addr;
-    });
-    return out;
-}
-
-void DeviceTable::release() {
-    std::vector<Entry>().swap(entries_);
-    dropped_ = 0;
-}
-
 } // namespace ble

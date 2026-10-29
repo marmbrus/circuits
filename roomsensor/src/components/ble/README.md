@@ -104,8 +104,8 @@ whether the tag is heard while the phone is nearby.
 - Building Bluetooth in costs every board about 180 KB of flash and 25 KB of internal RAM
   (static code and data, measured with ESP-IDF v5.3.2), whether or not it scans; about 169 KB
   of internal RAM stays free. Once started, NimBLE's host allocates from PSRAM
-  (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); the controller and the discovery table (about
-  10 KB, only while `scan` is on) use internal RAM.
+  (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`) and the controller from internal RAM. The
+  discovery table (about 10 KB, only while `scan` is on) is kept in PSRAM too.
 - Bluetooth is enabled in `sdkconfig.defaults`, which only applies when `sdkconfig` is
   generated. An existing build directory keeps Bluetooth off until `sdkconfig` is regenerated
   (delete it, or run `idf.py set-target esp32s3`). Firmware built without Bluetooth logs an

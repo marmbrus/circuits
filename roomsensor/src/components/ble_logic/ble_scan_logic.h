@@ -5,7 +5,9 @@
 // components/ble/BLEScanner.cpp feeds it advertisements from NimBLE and publishes what it
 // collects.
 
+#include <algorithm>
 #include <array>
+#include <memory>
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
@@ -122,35 +124,76 @@ private:
     std::vector<Advertisement> ads_;
 };
 
-// Every device heard during the current window, for discovery reports.
+// One device heard during a discovery window.
+struct SeenDevice {
+    Address addr{};
+    uint8_t addr_type = 0;
+    RssiStats rssi;
+    Advertisement adv;
+};
+
+// Every device heard during the current window, for discovery reports. Alloc places the
+// table's storage: the scanner keeps it in PSRAM, since a full table is about 10 KB.
+template <class Alloc = std::allocator<SeenDevice>>
 class DeviceTable {
 public:
-    struct Entry {
-        Address addr{};
-        uint8_t addr_type = 0;
-        RssiStats rssi;
-        Advertisement adv;
-    };
+    using Entry = SeenDevice;
+    using Entries = std::vector<Entry, Alloc>;
 
     explicit DeviceTable(size_t capacity) : capacity_(capacity) {}
 
     // Records one advertisement. A new device is dropped (and counted) once the table is full.
-    bool record(const Address& addr, uint8_t addr_type, int8_t rssi, const Advertisement& adv);
+    bool record(const Address& addr, uint8_t addr_type, int8_t rssi, const Advertisement& adv) {
+        if (rssi == kRssiUnavailable) return false;
+        for (Entry& e : entries_) {
+            if (e.addr == addr) {
+                e.addr_type = addr_type;
+                e.rssi.add(rssi);
+                e.adv.merge(adv);
+                return true;
+            }
+        }
+        if (entries_.size() >= capacity_) {
+            ++dropped_;
+            return false;
+        }
+        Entry e;
+        e.addr = addr;
+        e.addr_type = addr_type;
+        e.rssi.add(rssi);
+        e.adv = adv;
+        entries_.push_back(e);
+        return true;
+    }
 
     // The window's devices, strongest (by max RSSI) first, and how many new devices were
     // dropped because the table was full. Clears the table for the next window, with room for
     // capacity devices so record() doesn't allocate in the BLE host task.
-    std::vector<Entry> take(size_t* dropped = nullptr);
+    Entries take(size_t* dropped = nullptr) {
+        Entries out;
+        out.swap(entries_);
+        entries_.reserve(capacity_);
+        if (dropped) *dropped = dropped_;
+        dropped_ = 0;
+        std::sort(out.begin(), out.end(), [](const Entry& a, const Entry& b) {
+            if (a.rssi.max != b.rssi.max) return a.rssi.max > b.rssi.max;
+            return a.addr < b.addr;
+        });
+        return out;
+    }
 
     // Empties the table and frees its memory, for while discovery is off.
-    void release();
+    void release() {
+        Entries().swap(entries_);
+        dropped_ = 0;
+    }
 
     size_t size() const { return entries_.size(); }
 
 private:
     size_t capacity_;
     size_t dropped_ = 0;
-    std::vector<Entry> entries_;
+    Entries entries_;
 };
 
 } // namespace ble

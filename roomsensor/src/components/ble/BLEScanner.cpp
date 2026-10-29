@@ -8,6 +8,7 @@
 #include "system_state.h"
 
 #include "cJSON.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -16,6 +17,7 @@
 #include "sdkconfig.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
@@ -40,13 +42,37 @@ static constexpr TickType_t kTickPeriod = pdMS_TO_TICKS(500);
 static constexpr size_t kDiscoveryCapacity = 128;
 static constexpr size_t kMaxReportedDevices = 64;
 
+// Keeps the discovery table (about 10 KB when full) out of internal RAM, which Wi-Fi, the BLE
+// controller and DMA need, falling back to internal RAM if PSRAM is short. Allocations under
+// CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL would otherwise go to internal RAM first.
+template <class T>
+struct SpiramPreferredAllocator {
+    using value_type = T;
+    SpiramPreferredAllocator() = default;
+    template <class U>
+    SpiramPreferredAllocator(const SpiramPreferredAllocator<U>&) {}
+    T* allocate(size_t n) {
+        void* p = heap_caps_malloc_prefer(n * sizeof(T), 2, MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT);
+        // As operator new does without exceptions: a std::vector can't take a null
+        if (p == nullptr) abort();
+        return static_cast<T*>(p);
+    }
+    void deallocate(T* p, size_t) { heap_caps_free(p); }
+};
+template <class T, class U>
+bool operator==(const SpiramPreferredAllocator<T>&, const SpiramPreferredAllocator<U>&) { return true; }
+template <class T, class U>
+bool operator!=(const SpiramPreferredAllocator<T>&, const SpiramPreferredAllocator<U>&) { return false; }
+
+using DiscoveryTable = DeviceTable<SpiramPreferredAllocator<SeenDevice>>;
+
 static config::ConfigurationManager* s_cfg = nullptr;
 static TaskHandle_t s_task = nullptr;
 
 // Guards everything the BLE host task writes and the control task reads
 static SemaphoreHandle_t s_lock = nullptr;
 static TrackedWindows s_tracked;
-static DeviceTable s_devices(kDiscoveryCapacity);
+static DiscoveryTable s_devices(kDiscoveryCapacity);
 static bool s_discovery = false;
 
 static void format_mac_nosep_lower(char* out, size_t out_len) {
@@ -120,7 +146,7 @@ static void publish_tracked(const TrackedWindows::Report& r, double window_sec) 
 }
 
 // sensor/<mac>/ble/devices: every device heard during the window, strongest first
-static void publish_discovery(const std::vector<DeviceTable::Entry>& entries, size_t dropped,
+static void publish_discovery(const DiscoveryTable::Entries& entries, size_t dropped,
                               const config::BLEConfig::Settings& s, double window_sec) {
     char mac[13];
     format_mac_nosep_lower(mac, sizeof(mac));
@@ -137,7 +163,7 @@ static void publish_discovery(const std::vector<DeviceTable::Entry>& entries, si
     cJSON* devices = cJSON_AddArrayToObject(root, "devices");
 
     size_t listed = 0;
-    for (const DeviceTable::Entry& e : entries) {
+    for (const SeenDevice& e : entries) {
         if (s.has_min_rssi && e.rssi.max < s.min_rssi) continue;
         if (listed >= kMaxReportedDevices) break;
         ++listed;
@@ -361,7 +387,7 @@ static void control_task(void* arg) {
             window_start_us = now_us;
 
             std::vector<TrackedWindows::Report> reports;
-            std::vector<DeviceTable::Entry> entries;
+            DiscoveryTable::Entries entries;
             size_t dropped = 0;
             xSemaphoreTake(s_lock, portMAX_DELAY);
             reports = s_tracked.take();
