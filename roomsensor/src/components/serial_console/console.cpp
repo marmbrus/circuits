@@ -11,6 +11,7 @@
 #include "cmd_system.h"
 #include "cmd_ota.h"
 #include "cmd_config.h"
+#include "cmd_hd108.h"
 #include "gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -153,6 +154,7 @@ static void console_task(void *arg)
     register_gpio();
     register_ota();
     register_config();
+    register_hd108_debug();
     register_console_commands();
 
     ESP_LOGI(TAG_CONSOLE, "Console initialized. Type 'help' to list commands.");
