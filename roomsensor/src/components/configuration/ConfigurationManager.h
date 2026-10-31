@@ -66,6 +66,9 @@ public:
     // I2C address->driver mapping
     I2CConfig& i2cmap();
 
+    // Builds a cJSON object with the entire configuration (caller frees with cJSON_Delete)
+    cJSON* build_full_config_json() const;
+
     // Returns all LED configs that are active (dataGPIO is set)
     std::vector<LEDConfig*> active_leds() const;
 
@@ -84,8 +87,6 @@ private:
     // Finds module by name
     ConfigurationModule* find_module(const char* module_name);
 
-    // Builds a cJSON object with the entire configuration
-    cJSON* build_full_config_json() const;
 
     // Owned module instances
     std::unique_ptr<WifiConfig> wifi_module_;
