@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+import base64
+import contextlib
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -122,6 +125,81 @@ def apply_config_file(console: SerialConsole, config_path: pathlib.Path):
     print(f"Finished applying {config_path.name}.")
 
 
+# Base64 characters per `device_cert add` line; a console line holds 255.
+CERT_CHUNK = 192
+
+
+def run_device_cert(console: SerialConsole, args: str, timeout_s: float = 10.0) -> str:
+    """Runs `device_cert <args>` on the board and returns its output, or raises if it fails."""
+    mark = console.get_clean_mark()
+    console.write_line(f"device_cert {args}")
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        out = console.get_clean_text()[mark:]
+        for answer in ("DEVICE CERT ok", "DEVICE CERT error"):
+            i = out.find(answer)
+            if i != -1 and "\n" in out[i:]:
+                if answer == "DEVICE CERT error":
+                    # The board logs why under its device_cert tag
+                    why = [l.strip() for l in out.splitlines() if "device_cert:" in l or "DEVICE CERT error" in l]
+                    raise RuntimeError("\n".join(why))
+                return out
+        time.sleep(0.02)
+    raise RuntimeError(f"No answer to 'device_cert {args.split()[0]}'; does the board's firmware have it?")
+
+
+def provision_device_cert(console: SerialConsole, authority, ca_pem: Optional[str]) -> None:
+    """Mints the board's certificate with the YubiKey and stores it on the board."""
+    from roomsensor_util import device_cert
+
+    status = run_device_cert(console, "status")
+    match = re.search(r"DEVICE CERT name: (ESP_[0-9a-f]{12})", status)
+    if not match:
+        raise RuntimeError("The board didn't say its certificate name")
+    name = match.group(1)
+    print(f"Minting a certificate for {name} with YubiKey {authority.serial}...")
+    cert = device_cert.mint(name, authority.certificate, authority.sign, ca_pem=ca_pem)
+
+    run_device_cert(console, "begin")
+    for part, pem in (("cert", cert.certificate_pem), ("key", cert.key_pem), ("ca", cert.ca_pem)):
+        b64 = base64.b64encode(pem.encode()).decode()
+        for i in range(0, len(b64), CERT_CHUNK):
+            run_device_cert(console, f"add {part} {b64[i:i + CERT_CHUNK]}")
+    run_device_cert(console, "commit")
+    print(f"  Stored {device_cert.describe(cert.certificate)}, serial {cert.certificate.serial_number:x}, "
+          f"until {cert.certificate.not_valid_after_utc:%Y-%m-%d}")
+    print(f"  It's used for OTA from updates.acgt.net, and for MQTT once wifi.mqtt_broker is "
+          f"mqtts://mqtt.acgt.net:8883. Brayden names it O={device_cert.ORGANIZATION},CN={name}.")
+
+
+def open_authority(stack: contextlib.ExitStack, serial: Optional[int], ca_path: Optional[str]):
+    """The YubiKey's authority, held open on `stack`, and the CA bundle for the board (None: the
+    YubiKey's own CA certificate). Exits if either isn't usable."""
+    try:
+        from roomsensor_util import device_cert
+    except ImportError as e:
+        print(f"--device-cert needs yubikey-manager ({e}). Install with: pip install yubikey-manager", file=sys.stderr)
+        sys.exit(1)
+    try:
+        authority = stack.enter_context(device_cert.YubiKeyAuthority(serial))
+    except Exception as e:  # noqa: BLE001
+        print(f"Error: can't use the YubiKey: {e}", file=sys.stderr)
+        sys.exit(1)
+    print(f"Board certificates: YubiKey {authority.serial}, {device_cert.describe(authority.certificate)}")
+
+    ca_pem = None
+    if ca_path:
+        try:
+            ca_pem = pathlib.Path(ca_path).read_text()
+            bundle = device_cert.authorities(ca_pem)
+        except Exception as e:  # noqa: BLE001
+            print(f"Error: can't read the authorities in {ca_path}: {e}", file=sys.stderr)
+            sys.exit(1)
+        if authority.certificate not in bundle:
+            print(f"Warning: {ca_path} doesn't have YubiKey {authority.serial}'s CA certificate", file=sys.stderr)
+    return authority, ca_pem
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Flash and provision the device with configuration from JSON files.",
@@ -142,6 +220,18 @@ def main() -> None:
         "--program",
         action="store_true",
         help="Only program configuration (skip flashing, equivalent to --skip-flash)."
+    )
+    parser.add_argument(
+        "--device-cert",
+        action="store_true",
+        help="Give the board a new certificate (CN=ESP_<mac>, O=acgt.net) for MQTT and OTA,\n"
+             "signed by the CA on the YubiKey plugged into this computer."
+    )
+    parser.add_argument("--yubikey", type=int, help="Serial of the YubiKey to sign with, when more than one is plugged in")
+    parser.add_argument(
+        "--mqtt-ca",
+        help="PEM file of the authorities the board checks the broker's certificate against\n"
+             "(default: the YubiKey's CA certificate). On smll: ~/.brayden/config/security/mqtt/broker/ca.pem"
     )
     args = parser.parse_args()
     
@@ -164,6 +254,10 @@ def main() -> None:
         except Exception as e:
             print(f"Error: Could not read file {config_file}: {e}", file=sys.stderr)
             sys.exit(1)
+    stack = contextlib.ExitStack()
+    authority, mqtt_ca_pem = None, None
+    if args.device_cert:
+        authority, mqtt_ca_pem = open_authority(stack, args.yubikey, args.mqtt_ca)
     # --- End: Fail-fast validation ---
 
     # The script is in util/, so the project root is one level up.
@@ -224,7 +318,16 @@ def main() -> None:
         for config_file in args.config_files:
             apply_config_file(console, pathlib.Path(config_file))
 
-        # 3. Restart the device to apply all settings
+        # 3. Give the board its certificate
+        if authority is not None:
+            try:
+                provision_device_cert(console, authority, mqtt_ca_pem)
+            except Exception as e:  # noqa: BLE001
+                # No dump of the serial output here: it has the key in it
+                print(f"Error: certificate not stored: {e}", file=sys.stderr)
+                sys.exit(1)
+
+        # 4. Restart the device to apply all settings
         print("Configuration applied. Restarting device...")
         console.write_line("restart")
         console.send_return()
@@ -232,6 +335,7 @@ def main() -> None:
 
     finally:
         console.close()
+        stack.close()
 
     print("\nProvisioning complete.")
 
