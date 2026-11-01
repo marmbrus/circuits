@@ -8,6 +8,7 @@
 #include "filter_resample.h"
 
 #include "driver/gpio.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 
 namespace audio {
@@ -38,7 +39,9 @@ esp_err_t AudioPlayer::init(config::ConfigurationManager& cfg_manager) {
     if (!cfg.has_output_pins()) return ESP_OK;
     set_amp_enabled(false);
 
-    BaseType_t ok = xTaskCreatePinnedToCore(&AudioPlayer::TaskEntry, "audio-ctrl", 4096, this, 5, &task_, 1);
+    // Stack in PSRAM: internal RAM is scarce once WiFi and I2S are up, and this task never writes flash
+    BaseType_t ok = xTaskCreatePinnedToCoreWithCaps(&AudioPlayer::TaskEntry, "audio-ctrl", 4096, this, 5, &task_, 1,
+                                                    MALLOC_CAP_SPIRAM);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create audio control task");
         return ESP_FAIL;
