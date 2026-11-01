@@ -1493,6 +1493,26 @@
 		(uuid "fe2b23ff-eaac-45f0-b473-20878dafdaff")
 	)
 	(label "3v3"
+		(at 81.28 97.79 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "5b617ab5-398c-42fb-8ef2-5c6dc7920dbc")
+	)
+	(wire
+		(pts
+			(xy 73.66 97.79) (xy 81.28 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "960f8331-0b80-413a-a2aa-d0373de7e186")
+	)
+	(label "3v3"
 		(at 139.7 60.96 0)
 		(effects
 			(font
@@ -2209,6 +2229,16 @@
 				)
 				(justify left top)
 			)
+		)
+		(pin "3v3" input
+			(at 73.66 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+			(uuid "dc33cf6c-a027-4655-b6fb-ec0d0a7bd28d")
 		)
 		(pin "VUSB" input
 			(at 73.66 78.74 0)
