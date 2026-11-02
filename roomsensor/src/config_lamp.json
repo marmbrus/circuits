@@ -20,7 +20,10 @@
     "wsGPIO": 47,
     "doutGPIO": 14,
     "dinGPIO": 48,
-    "enableGPIO": 13
+    "enableGPIO": 13,
+    "highpassHz": 200,
+    "eqHz": 11000,
+    "eqGainDb": -6
   },
   "i2c": {
     "48": "ads1115"

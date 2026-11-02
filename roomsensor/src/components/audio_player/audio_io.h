@@ -5,7 +5,8 @@
 // Both chips sit on one set of BCLK/WS lines, so the port runs full duplex at a
 // fixed rate with 32-bit slots (the ICS-43434 mic needs 64 BCLK cycles per frame):
 //   - TX: an ESP-ADF output element feeds decoded 16-bit stereo audio at
-//     AUDIO_IO_SAMPLE_RATE; it is expanded to 32-bit slots and scaled by the volume.
+//     AUDIO_IO_SAMPLE_RATE; it is filtered for the speaker (see audio_io_set_filters),
+//     expanded to 32-bit slots and scaled by the volume.
 //     With nothing playing, the channel sends silence.
 //   - RX: a task reads the mic continuously and streams it to HTTP clients of
 //     GET /mic.wav as 16-bit mono PCM WAV at AUDIO_IO_SAMPLE_RATE.
@@ -33,6 +34,11 @@ esp_err_t audio_io_init(const audio_io_pins_t *pins);
 
 // 0..100; applied to audio written by the output element
 void audio_io_set_volume(int volume);
+
+// Speaker tuning applied before the volume: a 2nd-order Butterworth high-pass at
+// highpass_hz and a one-octave peaking filter of eq_gain_db at eq_hz. 0 Hz disables
+// either. Takes effect on the next buffer, including during playback.
+void audio_io_set_filters(int highpass_hz, int eq_hz, int eq_gain_db);
 
 // ADF element that writes 16-bit stereo audio at AUDIO_IO_SAMPLE_RATE to the speaker.
 // Use it as the last element of a pipeline; the pipeline owns and frees it.

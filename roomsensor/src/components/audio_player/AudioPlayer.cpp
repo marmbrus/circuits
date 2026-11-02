@@ -53,6 +53,7 @@ esp_err_t AudioPlayer::init(config::ConfigurationManager& cfg_manager) {
     esp_err_t err = audio_io_init(&pins);
     if (err != ESP_OK) return err;
     audio_io_set_volume(cfg.volume());
+    audio_io_set_filters(cfg.highpass_hz(), cfg.eq_hz(), cfg.eq_gain_db());
 
     if (!cfg.has_output_pins()) return ESP_OK;
     set_amp_enabled(false);
@@ -78,6 +79,7 @@ void AudioPlayer::run() {
     uint32_t seen_generation = cfg.generation();
     uint32_t seen_url_requests = cfg.url_requests();
     int volume = cfg.volume();
+    int highpass_hz = cfg.highpass_hz(), eq_hz = cfg.eq_hz(), eq_gain_db = cfg.eq_gain_db();
 
     for (;;) {
         if (pipeline_) {
@@ -94,6 +96,12 @@ void AudioPlayer::run() {
             // Takes effect immediately; playback doesn't restart
             volume = cfg.volume();
             audio_io_set_volume(volume);
+        }
+        if (cfg.highpass_hz() != highpass_hz || cfg.eq_hz() != eq_hz || cfg.eq_gain_db() != eq_gain_db) {
+            highpass_hz = cfg.highpass_hz();
+            eq_hz = cfg.eq_hz();
+            eq_gain_db = cfg.eq_gain_db();
+            audio_io_set_filters(highpass_hz, eq_hz, eq_gain_db);
         }
 
         // Only a url update (including republishing the same url) starts, restarts,

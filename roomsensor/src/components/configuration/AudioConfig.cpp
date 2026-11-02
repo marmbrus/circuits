@@ -11,6 +11,10 @@ AudioConfig::AudioConfig() {
     descriptors_.push_back({"doutGPIO", ConfigValueType::I32, nullptr, true});
     descriptors_.push_back({"dinGPIO", ConfigValueType::I32, nullptr, true});
     descriptors_.push_back({"enableGPIO", ConfigValueType::I32, nullptr, true});
+    // Speaker tuning, persisted per board (0 disables each filter)
+    descriptors_.push_back({"highpassHz", ConfigValueType::I32, "0", true});
+    descriptors_.push_back({"eqHz", ConfigValueType::I32, "0", true});
+    descriptors_.push_back({"eqGainDb", ConfigValueType::I32, "0", true});
 
     // Runtime (non-persisted) playback controls
     descriptors_.push_back({"url", ConfigValueType::String, nullptr, false});
@@ -35,6 +39,18 @@ esp_err_t AudioConfig::set_gpio(int& field, const char* value_str) {
     return ESP_OK;
 }
 
+esp_err_t AudioConfig::set_int(int& field, const char* value_str, int min, int max) {
+    // Empty clears the setting back to 0 (off)
+    if (value_str == nullptr || value_str[0] == '\0') {
+        field = 0;
+        return ESP_OK;
+    }
+    int v = atoi(value_str);
+    if (v < min || v > max) return ESP_ERR_INVALID_ARG;
+    field = v;
+    return ESP_OK;
+}
+
 esp_err_t AudioConfig::apply_update(const char* key, const char* value_str) {
     if (key == nullptr) return ESP_ERR_INVALID_ARG;
 
@@ -43,6 +59,10 @@ esp_err_t AudioConfig::apply_update(const char* key, const char* value_str) {
     if (strcmp(key, "doutGPIO") == 0) return set_gpio(dout_gpio_, value_str);
     if (strcmp(key, "dinGPIO") == 0) return set_gpio(din_gpio_, value_str);
     if (strcmp(key, "enableGPIO") == 0) return set_gpio(enable_gpio_, value_str);
+
+    if (strcmp(key, "highpassHz") == 0) return set_int(highpass_hz_, value_str, 0, 20000);
+    if (strcmp(key, "eqHz") == 0) return set_int(eq_hz_, value_str, 0, 20000);
+    if (strcmp(key, "eqGainDb") == 0) return set_int(eq_gain_db_, value_str, -12, 12);
 
     if (strcmp(key, "url") == 0) {
         url_ = value_str ? value_str : "";
@@ -75,6 +95,11 @@ esp_err_t AudioConfig::to_json(cJSON* root_object) const {
     if (din_gpio_ >= 0) cJSON_AddNumberToObject(obj, "dinGPIO", din_gpio_);
     if (enable_gpio_ >= 0) cJSON_AddNumberToObject(obj, "enableGPIO", enable_gpio_);
     // url is left out so a config reset built from the published config can't start playback
+    if (highpass_hz_ > 0) cJSON_AddNumberToObject(obj, "highpassHz", highpass_hz_);
+    if (eq_hz_ > 0) {
+        cJSON_AddNumberToObject(obj, "eqHz", eq_hz_);
+        cJSON_AddNumberToObject(obj, "eqGainDb", eq_gain_db_);
+    }
     cJSON_AddNumberToObject(obj, "volume", volume_);
     cJSON_AddItemToObject(root_object, name(), obj);
     return ESP_OK;

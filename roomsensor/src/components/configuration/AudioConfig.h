@@ -12,6 +12,7 @@ namespace config {
 // I2S audio: a speaker amp (e.g. MAX98357A), a microphone (e.g. ICS-43434), and
 // playback control. Pins are persisted per board; url and volume are runtime
 // controls: setting url plays that MP3 over HTTP(S), and an empty url stops playback.
+// highpassHz, eqHz and eqGainDb tune the output for the board's speaker and are persisted.
 // Volume starts at 0, so nothing is audible until it is set.
 class AudioConfig : public ConfigurationModule {
 public:
@@ -44,14 +45,25 @@ public:
     // 0..100
     int volume() const { return volume_; }
 
+    // Speaker tuning: a 2nd-order high-pass at highpass_hz() and a one-octave peaking
+    // filter of eq_gain_db() at eq_hz(); 0 Hz disables either
+    int highpass_hz() const { return highpass_hz_; }
+    int eq_hz() const { return eq_hz_; }
+    int eq_gain_db() const { return eq_gain_db_; }
+
 private:
     esp_err_t set_gpio(int& field, const char* value_str);
+    esp_err_t set_int(int& field, const char* value_str, int min, int max);
 
     int bclk_gpio_ = -1;
     int ws_gpio_ = -1;
     int dout_gpio_ = -1;
     int din_gpio_ = -1;
     int enable_gpio_ = -1;
+
+    int highpass_hz_ = 0;
+    int eq_hz_ = 0;
+    int eq_gain_db_ = 0;
 
     std::string url_;
     uint32_t url_requests_ = 0;

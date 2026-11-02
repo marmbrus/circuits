@@ -1,5 +1,6 @@
 #include "audio_io.h"
 
+#include <math.h>
 #include <stdatomic.h>
 #include <string.h>
 
@@ -28,6 +29,21 @@ static i2s_chan_handle_t s_rx = NULL;
 
 // Output gain in Q15 (32768 == unity)
 static atomic_int s_gain_q15 = 32768 / 4;
+
+// Biquad coefficients (normalised so a0 == 1). Double-buffered: the setter fills the
+// inactive set and then publishes its index, so the output task never sees a half-written set.
+typedef struct {
+    bool enabled;
+    float b0, b1, b2, a1, a2;
+} biquad_t;
+
+typedef struct {
+    biquad_t highpass;
+    biquad_t eq;
+} filters_t;
+
+static filters_t s_filters[2];
+static atomic_int s_filters_active = 0;
 
 static SemaphoreHandle_t s_clients_lock = NULL;
 static StreamBufferHandle_t s_clients[MIC_MAX_CLIENTS];
@@ -95,6 +111,53 @@ void audio_io_set_volume(int volume)
 }
 
 // ---------------------------------------------------------------------------
+// Speaker tuning
+
+// RBJ Audio EQ Cookbook high-pass with Q = 1/sqrt(2) (Butterworth)
+static biquad_t make_highpass(float fc)
+{
+    float w0 = 2.0f * (float)M_PI * fc / AUDIO_IO_SAMPLE_RATE;
+    float alpha = sinf(w0) / (2.0f * 0.70710678f);
+    float c = cosf(w0), a0 = 1.0f + alpha;
+    return (biquad_t){ true, (1.0f + c) / 2.0f / a0, -(1.0f + c) / a0, (1.0f + c) / 2.0f / a0,
+                       -2.0f * c / a0, (1.0f - alpha) / a0 };
+}
+
+// RBJ peaking filter with a one-octave bandwidth (Q ~ 1.41)
+static biquad_t make_peaking(float fc, float gain_db)
+{
+    float A = powf(10.0f, gain_db / 40.0f);
+    float w0 = 2.0f * (float)M_PI * fc / AUDIO_IO_SAMPLE_RATE;
+    float alpha = sinf(w0) / (2.0f * 1.41421356f);
+    float c = cosf(w0), a0 = 1.0f + alpha / A;
+    return (biquad_t){ true, (1.0f + alpha * A) / a0, -2.0f * c / a0, (1.0f - alpha * A) / a0,
+                       -2.0f * c / a0, (1.0f - alpha / A) / a0 };
+}
+
+void audio_io_set_filters(int highpass_hz, int eq_hz, int eq_gain_db)
+{
+    int next = !atomic_load(&s_filters_active);
+    filters_t *f = &s_filters[next];
+    // Above ~0.45 of the sample rate the filters stop making sense; treat as off
+    const int max_hz = AUDIO_IO_SAMPLE_RATE * 45 / 100;
+    f->highpass = (biquad_t){ 0 };
+    f->eq = (biquad_t){ 0 };
+    if (highpass_hz > 0 && highpass_hz < max_hz) f->highpass = make_highpass((float)highpass_hz);
+    if (eq_hz > 0 && eq_hz < max_hz && eq_gain_db != 0) f->eq = make_peaking((float)eq_hz, (float)eq_gain_db);
+    atomic_store(&s_filters_active, next);
+    ESP_LOGI(TAG, "Speaker filters: high-pass %d Hz, eq %d Hz %+d dB", highpass_hz, eq_hz, eq_gain_db);
+}
+
+// Transposed direct form II; z holds the two state values for one channel
+static inline float biquad_run(const biquad_t *q, float z[2], float x)
+{
+    float y = q->b0 * x + z[0];
+    z[0] = q->b1 * x - q->a1 * y + z[1];
+    z[1] = q->b2 * x - q->a2 * y;
+    return y;
+}
+
+// ---------------------------------------------------------------------------
 // Speaker output element
 
 static int output_write(audio_element_handle_t self, char *buffer, int len, TickType_t ticks_to_wait, void *context)
@@ -104,14 +167,25 @@ static int output_write(audio_element_handle_t self, char *buffer, int len, Tick
 
     const int16_t *in = (const int16_t *)buffer;
     int total_samples = len / (int)sizeof(int16_t);
-    int gain = atomic_load(&s_gain_q15);
+    // Per-channel filter state (input is interleaved stereo); only this task touches it
+    static float hp_z[2][2], eq_z[2][2];
+    const filters_t *f = &s_filters[atomic_load(&s_filters_active)];
+    // Q15 gain, times 2^16 to move the 16-bit sample into the top of the 32-bit slot
+    float scale = (float)atomic_load(&s_gain_q15) * 2.0f;
     int done = 0;
     while (done < total_samples) {
         int n = total_samples - done;
         if (n > (int)(sizeof(out) / sizeof(out[0]))) n = sizeof(out) / sizeof(out[0]);
         for (int i = 0; i < n; i++) {
-            // 16-bit sample, scaled, placed in the top of the 32-bit slot
-            out[i] = (int32_t)in[done + i] * gain * 2;
+            int ch = (done + i) & 1;
+            float x = (float)in[done + i];
+            if (f->highpass.enabled) x = biquad_run(&f->highpass, hp_z[ch], x);
+            if (f->eq.enabled) x = biquad_run(&f->eq, eq_z[ch], x);
+            // The eq boost can push past 16-bit full scale; clip instead of wrapping
+            float y = x * scale;
+            if (y > 2147483520.0f) y = 2147483520.0f;
+            if (y < -2147483648.0f) y = -2147483648.0f;
+            out[i] = (int32_t)y;
         }
         size_t written = 0;
         esp_err_t err = i2s_channel_write(s_tx, out, n * sizeof(int32_t), &written, ticks_to_wait);
