@@ -83,6 +83,16 @@ if (COMMAND littlefs_create_partition_image)
     # Make LittleFS image depend on our version update target
     # The actual target name is littlefs_storage_bin, not storage
     add_dependencies(littlefs_storage_bin update_git_version)
+
+    # Bundle sounds/ into the image as /storage/sounds (fsdata itself is generated, and
+    # update_js.sh wipes it, so the sources live in sounds/)
+    add_custom_target(copy_sounds ALL
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${CMAKE_SOURCE_DIR}/fsdata/sounds
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/sounds ${CMAKE_SOURCE_DIR}/fsdata/sounds
+        COMMENT "Copying sounds into fsdata"
+        VERBATIM
+    )
+    add_dependencies(littlefs_storage_bin copy_sounds)
 else()
     message(STATUS "littlefs_create_partition_image not available; relying on update_js.sh")
 endif()

@@ -1,6 +1,7 @@
 #include "audio_elements.h"
 
 #include "esp_crt_bundle.h"
+#include "fatfs_stream.h"
 #include "http_stream.h"
 #include "filter_resample.h"
 #include "mp3_decoder.h"
@@ -22,6 +23,15 @@ audio_element_handle_t audio_elements_create_http_reader(void)
     http_stream_cfg_t cfg = HTTP_STREAM_CFG_DEFAULT();
     cfg.crt_bundle_attach = esp_crt_bundle_attach;
     return http_stream_init(&cfg);
+}
+
+audio_element_handle_t audio_elements_create_file_reader(void)
+{
+    // fatfs_stream reads through the VFS, so it works for LittleFS too. Its stack must stay in
+    // internal RAM (the default) because flash reads disable the cache PSRAM depends on.
+    fatfs_stream_cfg_t cfg = FATFS_STREAM_CFG_DEFAULT();
+    cfg.type = AUDIO_STREAM_READER;
+    return fatfs_stream_init(&cfg);
 }
 
 audio_element_handle_t audio_elements_create_mp3_decoder(void)

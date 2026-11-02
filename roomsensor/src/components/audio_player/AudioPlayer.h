@@ -15,8 +15,10 @@ struct audio_event_iface;
 
 namespace audio {
 
-// Plays MP3 audio from an HTTP(S) URL on the speaker, driven by the "audio"
-// configuration module. Publishing audio.url starts playback (publishing the same
+// Plays MP3 audio on the speaker, driven by the "audio"
+// configuration module. audio.url is either an HTTP(S) URL or file://<name>, which plays
+// /storage/sounds/<name> from the sounds bundled in the storage partition (roomsensor/src/sounds).
+// Publishing audio.url starts playback (publishing the same
 // url again replays it), an empty url stops it, and audio.volume (0..100) adjusts
 // the level. Also starts the shared I2S port, which streams the microphone at
 // GET /mic.wav (see audio_io.h). Boards without audio pins configured do nothing.
@@ -43,7 +45,7 @@ private:
     TaskHandle_t task_ = nullptr;
 
     audio_pipeline* pipeline_ = nullptr;
-    audio_element* http_reader_ = nullptr;
+    audio_element* reader_ = nullptr;
     audio_element* mp3_decoder_ = nullptr;
     audio_element* resampler_ = nullptr;
     audio_element* output_ = nullptr;

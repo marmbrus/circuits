@@ -11,9 +11,27 @@
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 
+#include <cstring>
+
 namespace audio {
 
 static const char* TAG = "AudioPlayer";
+
+// Bundled sounds: file://<name> plays kSoundsDir/<name>
+static constexpr const char* kFileScheme = "file://";
+static constexpr const char* kSoundsDir = "/storage/sounds/";
+
+// Maps audio.url to what the reader element opens: HTTP(S) URLs pass through, file://<name>
+// becomes a path under kSoundsDir. Returns an empty string for anything else.
+static std::string resolve_source(const std::string& url, bool* is_file) {
+    *is_file = false;
+    if (url.rfind("http://", 0) == 0 || url.rfind("https://", 0) == 0) return url;
+    if (url.rfind(kFileScheme, 0) != 0) return "";
+    std::string name = url.substr(strlen(kFileScheme));
+    if (name.empty() || name.find("..") != std::string::npos) return "";
+    *is_file = true;
+    return kSoundsDir + name;
+}
 
 // How often the control task checks for configuration changes
 static constexpr TickType_t kPollTicks = pdMS_TO_TICKS(100);
@@ -89,7 +107,13 @@ void AudioPlayer::run() {
 }
 
 esp_err_t AudioPlayer::start(const std::string& url) {
-    ESP_LOGI(TAG, "Playing %s", url.c_str());
+    bool is_file = false;
+    std::string source = resolve_source(url, &is_file);
+    if (source.empty()) {
+        ESP_LOGE(TAG, "Unsupported audio url %s (use http(s)://... or file://<name>)", url.c_str());
+        return ESP_ERR_INVALID_ARG;
+    }
+    ESP_LOGI(TAG, "Playing %s", source.c_str());
 
     pipeline_ = audio_elements_create_pipeline();
     if (!pipeline_) {
@@ -97,26 +121,26 @@ esp_err_t AudioPlayer::start(const std::string& url) {
         return ESP_FAIL;
     }
 
-    http_reader_ = audio_elements_create_http_reader();
+    reader_ = is_file ? audio_elements_create_file_reader() : audio_elements_create_http_reader();
     mp3_decoder_ = audio_elements_create_mp3_decoder();
     // The speaker runs at a fixed rate shared with the mic, so resample every stream to it
     resampler_ = audio_elements_create_resampler(AUDIO_IO_SAMPLE_RATE);
     output_ = audio_io_create_output_element();
 
     // Register whatever was created so stop() frees it even if a later element failed
-    if (http_reader_) audio_pipeline_register(pipeline_, http_reader_, "http");
+    if (reader_) audio_pipeline_register(pipeline_, reader_, "reader");
     if (mp3_decoder_) audio_pipeline_register(pipeline_, mp3_decoder_, "mp3");
     if (resampler_) audio_pipeline_register(pipeline_, resampler_, "resample");
     if (output_) audio_pipeline_register(pipeline_, output_, "speaker");
-    if (!http_reader_ || !mp3_decoder_ || !resampler_ || !output_) {
+    if (!reader_ || !mp3_decoder_ || !resampler_ || !output_) {
         ESP_LOGE(TAG, "Failed to create audio elements");
         stop();
         return ESP_FAIL;
     }
 
-    const char* link_tag[4] = {"http", "mp3", "resample", "speaker"};
+    const char* link_tag[4] = {"reader", "mp3", "resample", "speaker"};
     audio_pipeline_link(pipeline_, &link_tag[0], 4);
-    audio_element_set_uri(http_reader_, url.c_str());
+    audio_element_set_uri(reader_, source.c_str());
 
     events_ = audio_elements_create_event_iface();
     audio_pipeline_set_listener(pipeline_, events_);
@@ -142,7 +166,7 @@ void AudioPlayer::stop() {
     if (events_) audio_event_iface_destroy(events_);
 
     pipeline_ = nullptr;
-    http_reader_ = nullptr;
+    reader_ = nullptr;
     mp3_decoder_ = nullptr;
     resampler_ = nullptr;
     output_ = nullptr;
