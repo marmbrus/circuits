@@ -1,25 +1,26 @@
 #include "audio_io.h"
+#include "mic_codec.h"
 
 #include <stdatomic.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "driver/i2s_std.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
-#include "freertos/stream_buffer.h"
 #include "freertos/task.h"
+#include "freertos/idf_additions.h"
+#include "esp_heap_caps.h"
 
 static const char *TAG = "audio_io";
+
+_Static_assert(AUDIO_IO_MIC_SAMPLE_RATE == AUDIO_IO_SAMPLE_RATE / MIC_CODEC_DECIMATION,
+               "audio_io.h's mic rate must match mic_codec's decimation");
 
 // Bytes of 16-bit stereo input the output element converts per write
 #define OUTPUT_BUFFER_BYTES   2048
 // Mic frames read from I2S per loop (one frame = left + right 32-bit slots)
 #define MIC_READ_FRAMES       256
-#define MIC_MAX_CLIENTS       2
-// Per-client buffer of 16-bit mono samples (~185 ms at 44.1 kHz)
-#define MIC_CLIENT_BUFFER     16384
-#define MIC_CHUNK_BYTES       2048
 
 static i2s_chan_handle_t s_tx = NULL;
 static i2s_chan_handle_t s_rx = NULL;
@@ -27,8 +28,10 @@ static i2s_chan_handle_t s_rx = NULL;
 // Output gain in Q15 (32768 == unity)
 static atomic_int s_gain_q15 = 32768 / 4;
 
-static SemaphoreHandle_t s_clients_lock = NULL;
-static StreamBufferHandle_t s_clients[MIC_MAX_CLIENTS];
+// Where finished mic blocks go while streaming (audio_io_set_mic_sink)
+static audio_io_mic_sink_t s_mic_sink = NULL;
+static void *s_mic_sink_ctx = NULL;
+static atomic_bool s_mic_streaming = false;
 
 static void mic_task(void *arg);
 
@@ -62,18 +65,37 @@ esp_err_t audio_io_init(const audio_io_pins_t *pins)
             .invert_flags = { 0 },
         },
     };
+    // Return errors rather than abort: the DMA buffers need internal RAM, and a board short of it
+    // should come up without audio instead of rebooting over and over
     if (s_tx) {
-        ESP_ERROR_CHECK(i2s_channel_init_std_mode(s_tx, &std_cfg));
-        ESP_ERROR_CHECK(i2s_channel_enable(s_tx));
+        err = i2s_channel_init_std_mode(s_tx, &std_cfg);
+        if (err == ESP_OK) err = i2s_channel_enable(s_tx);
     }
-    if (s_rx) {
-        ESP_ERROR_CHECK(i2s_channel_init_std_mode(s_rx, &std_cfg));
-        ESP_ERROR_CHECK(i2s_channel_enable(s_rx));
+    if (err == ESP_OK && s_rx) {
+        err = i2s_channel_init_std_mode(s_rx, &std_cfg);
+        if (err == ESP_OK) err = i2s_channel_enable(s_rx);
+    }
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "I2S setup failed: %s", esp_err_to_name(err));
+        if (s_tx) {
+            i2s_channel_disable(s_tx);
+            i2s_del_channel(s_tx);
+            s_tx = NULL;
+        }
+        if (s_rx) {
+            i2s_channel_disable(s_rx);
+            i2s_del_channel(s_rx);
+            s_rx = NULL;
+        }
+        return err;
     }
 
     if (s_rx) {
-        s_clients_lock = xSemaphoreCreateMutex();
-        if (!s_clients_lock || xTaskCreatePinnedToCore(mic_task, "audio-mic", 4096, NULL, 6, NULL, 1) != pdPASS) {
+        // The mic task's stack can live in PSRAM (it only reads I2S and encodes into static
+        // buffers), sparing internal RAM for DMA
+        BaseType_t ok = xTaskCreatePinnedToCoreWithCaps(mic_task, "audio-mic", 4096, NULL, 6, NULL, 1, MALLOC_CAP_SPIRAM);
+        if (ok != pdPASS) ok = xTaskCreatePinnedToCore(mic_task, "audio-mic", 4096, NULL, 6, NULL, 1);
+        if (ok != pdPASS) {
             ESP_LOGE(TAG, "Failed to start mic task");
             return ESP_FAIL;
         }
@@ -120,6 +142,14 @@ static int output_write(audio_element_handle_t self, char *buffer, int len, Tick
     return done * sizeof(int16_t);
 }
 
+// Nothing to open (I2S runs from boot), but ADF only moves an element to its running state
+// through its open callback: without one the element's task spins without ever calling process.
+static esp_err_t output_open(audio_element_handle_t self)
+{
+    (void)self;
+    return ESP_OK;
+}
+
 static int output_process(audio_element_handle_t self, char *in_buffer, int in_len)
 {
     int r_size = audio_element_input(self, in_buffer, in_len);
@@ -141,10 +171,16 @@ audio_element_handle_t audio_io_create_output_element(void)
         return NULL;
     }
     audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
+    cfg.open = output_open;
     cfg.process = output_process;
     cfg.write = output_write;
     cfg.buffer_len = OUTPUT_BUFFER_BYTES;
     cfg.tag = "speaker";
+    // ADF's default 2 KB overflowed as soon as the element logged (every log line goes through
+    // netlog's hook, which formats it again). The task only writes to I2S, never to flash, so its
+    // stack can live in PSRAM like the other pipeline elements'.
+    cfg.task_stack = 4096;
+    cfg.stack_in_ext = true;
     audio_element_handle_t el = audio_element_init(&cfg);
     if (el) audio_element_set_music_info(el, AUDIO_IO_SAMPLE_RATE, 2, 16);
     return el;
@@ -156,122 +192,53 @@ audio_element_handle_t audio_io_create_output_element(void)
 static void mic_task(void *arg)
 {
     static int32_t frames[MIC_READ_FRAMES * 2];
-    static int16_t samples[MIC_READ_FRAMES];
+    static mic_decimator_t decimator;
+    static uint8_t block[MIC_BLOCK_BYTES(AUDIO_IO_MIC_BLOCK_SAMPLES)];
+    static mic_block_writer_t writer;
+    mic_decimator_init(&decimator, AUDIO_IO_SAMPLE_RATE);
+    mic_block_writer_init(&writer, block, AUDIO_IO_MIC_BLOCK_SAMPLES, AUDIO_IO_MIC_SAMPLE_RATE);
+    bool was_streaming = false;
 
     for (;;) {
+        // Keep reading even when not streaming, so the RX DMA never backs up
         size_t bytes_read = 0;
         if (i2s_channel_read(s_rx, frames, sizeof(frames), &bytes_read, portMAX_DELAY) != ESP_OK) continue;
+        bool streaming = atomic_load(&s_mic_streaming) && s_mic_sink != NULL;
+        if (!streaming) {
+            was_streaming = false;
+            continue;
+        }
+        if (!was_streaming) {
+            // Each stream starts clean: no stale filter history, a fresh encoder
+            mic_decimator_reset(&decimator);
+            mic_block_writer_reset(&writer);
+            was_streaming = true;
+        }
         int n = bytes_read / (2 * sizeof(int32_t));
         for (int i = 0; i < n; i++) {
             // The ICS-43434's L/R pin is tied low, so it drives the left slot with
             // 24-bit samples left-justified in 32 bits; keep the top 16 bits
-            samples[i] = (int16_t)(frames[2 * i] >> 16);
-        }
-
-        xSemaphoreTake(s_clients_lock, portMAX_DELAY);
-        for (int c = 0; c < MIC_MAX_CLIENTS; c++) {
-            // Never block on a slow client; it just loses audio
-            if (s_clients[c]) xStreamBufferSend(s_clients[c], samples, n * sizeof(int16_t), 0);
-        }
-        xSemaphoreGive(s_clients_lock);
-    }
-}
-
-static int mic_client_add(StreamBufferHandle_t sb)
-{
-    int slot = -1;
-    xSemaphoreTake(s_clients_lock, portMAX_DELAY);
-    for (int c = 0; c < MIC_MAX_CLIENTS; c++) {
-        if (!s_clients[c]) {
-            s_clients[c] = sb;
-            slot = c;
-            break;
+            int16_t sample = (int16_t)(frames[2 * i] >> 16);
+            int16_t decimated;
+            if (!mic_decimator_push(&decimator, sample, &decimated)) continue;
+            size_t size = mic_block_writer_push(&writer, decimated);
+            if (size) s_mic_sink(block, size, s_mic_sink_ctx);
         }
     }
-    xSemaphoreGive(s_clients_lock);
-    return slot;
 }
 
-static void mic_client_remove(int slot)
+bool audio_io_has_mic(void)
 {
-    xSemaphoreTake(s_clients_lock, portMAX_DELAY);
-    s_clients[slot] = NULL;
-    xSemaphoreGive(s_clients_lock);
+    return s_rx != NULL;
 }
 
-static void put_le32(uint8_t *p, uint32_t v)
+void audio_io_set_mic_sink(audio_io_mic_sink_t sink, void *ctx)
 {
-    p[0] = v; p[1] = v >> 8; p[2] = v >> 16; p[3] = v >> 24;
+    s_mic_sink_ctx = ctx;
+    s_mic_sink = sink;
 }
 
-static void put_le16(uint8_t *p, uint16_t v)
+void audio_io_set_mic_streaming(bool on)
 {
-    p[0] = v; p[1] = v >> 8;
-}
-
-// Streaming WAV header: the RIFF and data sizes are unknown, so use the maximum
-static void build_wav_header(uint8_t hdr[44])
-{
-    const uint16_t channels = 1, bits = 16;
-    memcpy(hdr, "RIFF", 4);
-    put_le32(hdr + 4, 0xFFFFFFFF);
-    memcpy(hdr + 8, "WAVEfmt ", 8);
-    put_le32(hdr + 16, 16);
-    put_le16(hdr + 20, 1); // PCM
-    put_le16(hdr + 22, channels);
-    put_le32(hdr + 24, AUDIO_IO_SAMPLE_RATE);
-    put_le32(hdr + 28, AUDIO_IO_SAMPLE_RATE * channels * bits / 8);
-    put_le16(hdr + 32, channels * bits / 8);
-    put_le16(hdr + 34, bits);
-    memcpy(hdr + 36, "data", 4);
-    put_le32(hdr + 40, 0xFFFFFFFF);
-}
-
-static void mic_client_task(void *arg)
-{
-    httpd_req_t *req = (httpd_req_t *)arg;
-    static const char *busy = "Too many microphone listeners";
-
-    StreamBufferHandle_t sb = xStreamBufferCreate(MIC_CLIENT_BUFFER, 1);
-    int slot = sb ? mic_client_add(sb) : -1;
-    if (slot < 0) {
-        httpd_resp_set_status(req, "503 Service Unavailable");
-        httpd_resp_send(req, busy, HTTPD_RESP_USE_STRLEN);
-    } else {
-        ESP_LOGI(TAG, "Mic listener %d connected", slot);
-        httpd_resp_set_type(req, "audio/wav");
-        httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-        uint8_t hdr[44];
-        build_wav_header(hdr);
-        static uint8_t chunk[MIC_MAX_CLIENTS][MIC_CHUNK_BYTES];
-        if (httpd_resp_send_chunk(req, (const char *)hdr, sizeof(hdr)) == ESP_OK) {
-            for (;;) {
-                size_t n = xStreamBufferReceive(sb, chunk[slot], MIC_CHUNK_BYTES, pdMS_TO_TICKS(1000));
-                if (n == 0) continue;
-                if (httpd_resp_send_chunk(req, (const char *)chunk[slot], n) != ESP_OK) break;
-            }
-        }
-        mic_client_remove(slot);
-        ESP_LOGI(TAG, "Mic listener %d disconnected", slot);
-    }
-
-    if (sb) vStreamBufferDelete(sb);
-    httpd_req_async_handler_complete(req);
-    vTaskDelete(NULL);
-}
-
-esp_err_t audio_io_mic_http_handler(httpd_req_t *req)
-{
-    if (!s_rx) {
-        return httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "No microphone configured");
-    }
-    // Stream from a separate task so the web server stays responsive
-    httpd_req_t *async_req = NULL;
-    esp_err_t err = httpd_req_async_handler_begin(req, &async_req);
-    if (err != ESP_OK) return err;
-    if (xTaskCreate(mic_client_task, "mic-http", 4096, async_req, 5, NULL) != pdPASS) {
-        httpd_req_async_handler_complete(async_req);
-        return ESP_FAIL;
-    }
-    return ESP_OK;
+    atomic_store(&s_mic_streaming, on);
 }

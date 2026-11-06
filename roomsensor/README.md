@@ -5,6 +5,7 @@ A compact ESP32-S3–based room sensor board integrating multiple environmental 
 ### Core MCU & Buttons
 - **MCU: ESP32‑S3‑WROOM‑1** (`U201`)
   - Dual‑core Xtensa with Wi‑Fi + BLE
+  - BLE scanning reports nearby devices and tracked tags' signal strength over MQTT (see [src/components/ble](src/components/ble/README.md))
   - Native USB for programming and CDC
   - Serial port header for debuging
 - **Buttons** (`SW201`, `SW202`): Boot/Mode and Reset

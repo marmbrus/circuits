@@ -6,4 +6,6 @@ factory,  app,  factory, ,        4000K,
 ota_0,    app,  ota_0,   ,        4000K,
 ota_1,    app,  ota_1,   ,        4000K,
 coredump, data, coredump, ,        128K,
+# Unused since the web UI went (it held its LittleFS). Kept for files the firmware may want
+# later, such as short WAVs to play locally; the partition table can't change over OTA anyway.
 storage,  data, littlefs, ,        4000K,

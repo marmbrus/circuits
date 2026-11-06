@@ -41,7 +41,6 @@ Thumbs.db
 
 # Project specific
 credentials.json
-fsdata/
 fsbuild/
 
 # JS UI (Vite/React)

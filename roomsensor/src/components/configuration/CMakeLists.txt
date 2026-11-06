@@ -11,8 +11,9 @@ idf_component_register(
         "AudioConfig.cpp"
         "I2CConfig.cpp"
         "GameOfLifeConfig.cpp"
+        "BLEConfig.cpp"
     INCLUDE_DIRS "." "../common"
-    REQUIRES nvs_flash json
+    REQUIRES nvs_flash json ble_logic
 )
 
 

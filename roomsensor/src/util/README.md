@@ -37,6 +37,19 @@ Notes
 - All output is captured in an in-memory buffer and also logged to the console for debugging.
 
 
+Listening to a board's mic
+--------------------------
+
+Boards with a mic stream it over MQTT on `sensor/<mac>/audio/mic` while their `audio/mic` config is on: IMA-ADPCM at 14.7 kHz, one message per 100 ms, about 7.4 KB/s (`roomsensor_util/mic.py` decodes it; the firmware's `components/audio_player/mic_codec.h` has the format). `mic_listen.py` needs `pip install -e '.[mic]'`:
+
+```bash
+python mic_listen.py 9c139ebc0eb0 --enable --seconds 10 --out room.wav
+python mic_listen.py 9c139ebc0eb0 --enable --raw | ffplay -f s16le -ar 14700 -ch_layout mono -nodisp -
+```
+
+`--enable` turns the board's mic on for the session and off at exit; without it, set `sensor/<mac>/config/audio/mic` yourself. Gaps in the blocks' sequence numbers (dropped while the link was slow) are reported and filled with silence.
+
+
 Board certificates
 ------------------
 

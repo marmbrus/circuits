@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MicStream.h"
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -18,8 +19,9 @@ namespace audio {
 // Plays MP3 audio from an HTTP(S) URL on the speaker, driven by the "audio"
 // configuration module. Publishing audio.url starts playback (publishing the same
 // url again replays it), an empty url stops it, and audio.volume (0..100) adjusts
-// the level. Also starts the shared I2S port, which streams the microphone at
-// GET /mic.wav (see audio_io.h). Boards without audio pins configured do nothing.
+// the level. Also starts the shared I2S port and, on boards with a mic, MicStream,
+// which streams it over MQTT while audio.mic is on. Boards without audio pins
+// configured do nothing.
 class AudioPlayer {
 public:
     AudioPlayer() = default;
@@ -34,7 +36,9 @@ private:
     void run();
 
     esp_err_t start(const std::string& url);
+    // Ends playback, and hands the radio back to Bluetooth
     void stop();
+    void stop_pipeline();
     // Returns false once playback has finished or failed
     bool poll_pipeline_events();
     void set_amp_enabled(bool enabled);
@@ -48,6 +52,10 @@ private:
     audio_element* resampler_ = nullptr;
     audio_element* output_ = nullptr;
     audio_event_iface* events_ = nullptr;
+    // Whether this player holds Bluetooth down (ble::suspend) for the current playback
+    bool bluetooth_suspended_ = false;
+    // Streams the mic over MQTT while audio.mic is on
+    MicStream mic_stream_;
 };
 
 } // namespace audio

@@ -5,7 +5,7 @@ ESP-IDF on the host. The image contains:
 
 - ESP-IDF v5.3.2 (`espressif/idf`), patched with ESP-ADF's FreeRTOS patch
 - ESP-ADF v2.7 at `$ADF_PATH` (`/opt/esp/adf`), for the I2S audio parts
-- Node 22 (roomsensor's web UI) and `jq` (`deploy_ota.sh`)
+- `jq` (`deploy_ota.sh`)
 
 The image is built on first use, and rebuilt whenever this Dockerfile changes.
 
@@ -18,7 +18,7 @@ cd roomsensor/src
 ../../docker/esp-idf/idf set-target esp32s3
 ../../docker/esp-idf/idf build
 ../../docker/esp-idf/idf -p /dev/ttyACM0 flash monitor
-../../docker/esp-idf/idf run ./update_js.sh -p /dev/ttyACM0   # any command
+../../docker/esp-idf/idf run esptool.py version              # any command
 ../../docker/esp-idf/idf shell                                # interactive shell
 ```
 
@@ -48,7 +48,6 @@ offset. For roomsensor:
 | `partition_table/partition-table.bin` | `0x8000` |
 | `ota_data_initial.bin` | `0x10000` |
 | `sensorv2.bin` (firmware) | `0x20000` |
-| `storage.bin` (LittleFS: web UI and version files) | `0xc08000` |
 
 Flash everything from the container:
 
@@ -64,12 +63,8 @@ cd build
 esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
 ```
 
-Two things to watch for with roomsensor:
+One thing to watch for with roomsensor:
 
-- **A full flash can wipe the web UI.** `idf build` packs `storage.bin` from
-  `fsdata/`, but it doesn't build the web UI into it. Run
-  `../../docker/esp-idf/idf run ./update_js.sh -p /dev/ttyACM0` to build the UI
-  and flash the filesystem, or flash only the firmware (below).
 - **A firmware-only update must reset the OTA boot record.** A board that has
   taken an OTA update boots from its OTA slot, so writing `sensorv2.bin` alone
   has no effect. Write `ota_data_initial.bin` with it so the board boots the
