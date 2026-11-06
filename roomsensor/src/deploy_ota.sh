@@ -130,7 +130,7 @@ if [ ! -f "$BIN_FILE" ]; then
 fi
 
 # Check binary file size for sanity
-BIN_SIZE=$(stat -f%z "$BIN_FILE")
+BIN_SIZE=$(wc -c < "$BIN_FILE" | tr -d " ")
 echo "Using binary: $BIN_FILE (size: $BIN_SIZE bytes)"
 
 # Create filenames with git hash
