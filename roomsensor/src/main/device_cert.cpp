@@ -126,8 +126,8 @@ esp_err_t device_cert_store(const char* cert_pem, const char* key_pem, const cha
         ESP_LOGE(TAG, "The key doesn't parse: -0x%04x", -ret);
     } else if ((ret = mbedtls_x509_crt_parse(&ca, (const unsigned char*)ca_pem, strlen(ca_pem) + 1)) != 0) {
         ESP_LOGE(TAG, "The authorities don't parse: %d", ret);
-    } else if (mbedtls_pk_check_pair(&cert.pk, &key, fill_random, nullptr) != 0) {
-        ESP_LOGE(TAG, "The key doesn't belong to the certificate");
+    } else if ((ret = mbedtls_pk_check_pair(&cert.pk, &key, fill_random, nullptr)) != 0) {
+        ESP_LOGE(TAG, "The key doesn't belong to the certificate: -0x%04x", -ret);
     } else if (!common_name_is(&cert, name)) {
         ESP_LOGE(TAG, "The certificate isn't for this board, which is %s", name);
     } else {

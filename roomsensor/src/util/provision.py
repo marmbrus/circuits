@@ -148,6 +148,26 @@ def run_device_cert(console: SerialConsole, args: str, timeout_s: float = 10.0) 
     raise RuntimeError(f"No answer to 'device_cert {args.split()[0]}'; does the board's firmware have it?")
 
 
+# How many times the certificate is sent before giving up.
+CERT_ATTEMPTS = 3
+
+
+def send_device_cert(console: SerialConsole, parts) -> None:
+    """Sends the PEMs in `parts` ((name, pem), ...) to the board and commits them. After each piece,
+    the board says how many characters it holds for that part, which must be what was sent: a
+    stray byte on its serial input would otherwise corrupt the key unnoticed."""
+    run_device_cert(console, "begin")
+    for part, pem in parts:
+        b64 = base64.b64encode(pem.encode()).decode()
+        for i in range(0, len(b64), CERT_CHUNK):
+            out = run_device_cert(console, f"add {part} {b64[i:i + CERT_CHUNK]}")
+            held = re.search(rf"DEVICE CERT ok: {part} has (\d+) characters", out)
+            expected = min(i + CERT_CHUNK, len(b64))
+            if not held or int(held.group(1)) != expected:
+                raise RuntimeError(f"the board holds {held.group(1) if held else 'an unknown number of'} characters of {part}, not {expected}")
+    run_device_cert(console, "commit")
+
+
 def provision_device_cert(console: SerialConsole, authority, ca_pem: Optional[str]) -> None:
     """Gets the board's certificate, from Brayden or the YubiKey plugged in here, and stores it on the board."""
     from roomsensor_util import device_cert
@@ -163,12 +183,17 @@ def provision_device_cert(console: SerialConsole, authority, ca_pem: Optional[st
         print(f"Minting a certificate for {name} with YubiKey {authority.serial}...")
         cert = device_cert.mint(name, authority.certificate, authority.sign, ca_pem=ca_pem)
 
-    run_device_cert(console, "begin")
-    for part, pem in (("cert", cert.certificate_pem), ("key", cert.key_pem), ("ca", cert.ca_pem)):
-        b64 = base64.b64encode(pem.encode()).decode()
-        for i in range(0, len(b64), CERT_CHUNK):
-            run_device_cert(console, f"add {part} {b64[i:i + CERT_CHUNK]}")
-    run_device_cert(console, "commit")
+    parts = (("cert", cert.certificate_pem), ("key", cert.key_pem), ("ca", cert.ca_pem))
+    for attempt in range(1, CERT_ATTEMPTS + 1):
+        try:
+            send_device_cert(console, parts)
+            break
+        except RuntimeError as e:
+            # A stray byte on the board's serial input corrupts a piece; the same key and
+            # certificate can simply be sent again
+            if attempt == CERT_ATTEMPTS:
+                raise
+            print(f"  The board didn't take it ({str(e).splitlines()[-1]}); sending it again ({attempt + 1}/{CERT_ATTEMPTS})...")
     print(f"  Stored {device_cert.describe(cert.certificate)}, serial {cert.certificate.serial_number:x}, "
           f"until {cert.certificate.not_valid_after_utc:%Y-%m-%d}")
     print(f"  It's used for OTA from updates.acgt.net, and for MQTT once wifi.mqtt_broker is "
@@ -317,7 +342,9 @@ def main() -> None:
             print("Error: Did not see 'Console initialized' message.", file=sys.stderr)
             console.dump_recent_output()
             sys.exit(1)
-        if not console.wait_for("Startup sequence complete", timeout_s=10):
+        # Startup waits up to 70 s for its boot message to reach the MQTT broker, which a board
+        # whose broker or certificate isn't right yet never manages
+        if not console.wait_for("Startup sequence complete", timeout_s=90):
             print("Error: Did not see 'Startup sequence complete' message.", file=sys.stderr)
             console.dump_recent_output()
             sys.exit(1)

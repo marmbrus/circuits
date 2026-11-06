@@ -9,7 +9,7 @@ Everything runs from `roomsensor/src`. The target is an ESP32-S3 with 16 MB flas
 
 ## Toolchain
 
-- **Docker (preferred):** `../../docker/esp-idf/idf <idf.py args>`. It also takes `idf run <cmd>` and `idf shell`. See `docker/esp-idf/README.md`. If `build/` came from a host IDF, run `idf fullclean` once.
+- **Docker (preferred):** `../../docker/esp-idf/idf <idf.py args>`. It also takes `idf run <cmd>` and `idf shell`. See `docker/esp-idf/README.md`. If `build/` came from a host IDF, run `idf fullclean` once. You need the `docker` group. The image is tagged by its Dockerfile alone and built with the UID of whoever built it first, so on a shared machine it may not be able to write `build/` for you (`Permission denied` on `build`). Run it as yourself instead of rebuilding someone else's tag: `docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp/idfhome -v $REPO:$REPO -w $PWD <image> idf.py build` (add `--group-add dialout --device PORT:PORT` to flash).
 - **macOS:** Docker can't reach USB serial ports, and the wrapper's `stat -c` is GNU-only, so `idf -p … flash` fails. Build in Docker, then flash from the host with `esptool` (`pip install esptool`). Ports look like `/dev/cu.usbserial-*` or `/dev/cu.usbmodem*`.
 - **Host IDF:** `util/provision.py`'s flash step hard-codes `. ~/esp/v5.3/esp-idf/export.sh && idf.py erase-flash flash`. Without that install, pass `--skip-flash`.
 - **Python utilities:** `cd util && python3 -m venv .venv && . .venv/bin/activate && pip install -e .` (pyserial and `cryptography`). Add `'.[yubikey]'` only to sign with a YubiKey plugged in locally (`--yubikey`); it builds `pyscard`, which needs `swig` and `libpcsclite-dev`.
@@ -20,7 +20,7 @@ Everything runs from `roomsensor/src`. The target is an ESP32-S3 with 16 MB flas
 | File | Format | Role |
 |---|---|---|
 | `partitions.csv` | ESP-IDF partition CSV: `Name, Type, SubType, Offset, Size, Flags` | Flash layout (table below) |
-| `sdkconfig.defaults` | Kconfig lines (`CONFIG_X=y`) | Seed for the generated, gitignored `sdkconfig`. Delete `sdkconfig` and run `set-target esp32s3` to pick up changes. |
+| `sdkconfig.defaults` | Kconfig lines (`CONFIG_X=y`) | Seed for the generated, gitignored `sdkconfig`, including the target (`esp32s3`; without it a fresh build targets the plain ESP32 and overflows IRAM). Delete `sdkconfig` to pick up changes. It also puts TLS, Wi-Fi and lwIP buffers in PSRAM: with them in internal RAM, MQTT over TLS leaves too little for the HTTP server, audio DMA (I2S aborts, a boot loop) and the OTA task. |
 | `build/*.bin` | Raw images | Written by `idf.py flash` / esptool |
 | `build/flash_args` | esptool args file (`--flash_mode …` then `offset file` pairs) | `esptool.py --chip esp32s3 -p PORT write_flash @flash_args`, run from `build/` |
 | `build/flasher_args.json` | JSON: `flash_files` maps offset→file, plus a per-image `{offset, file}` | Read by `update_js.sh` to find the `storage` offset |
@@ -141,6 +141,9 @@ Each step answers with a line starting `DEVICE CERT ok` or `DEVICE CERT error`.
 After the board connects, it publishes its effective config on MQTT at `sensor/<mac>/config/current`.
 
 ## Things that bite
+
+- **Boards on the IoT network (`10.13.0.0/24`) reach smll through the firewall:** 8883 for the TLS broker and 443 for `updates.acgt.net`. A blocked port shows as `esp-tls: select() timeout` before any TLS.
+- **Startup waits up to 70 s for its boot message to reach MQTT,** so a board whose broker or certificate isn't right yet takes that long to say `Startup sequence complete`. The console works from about 1.5 s.
 
 - **`erase-flash` wipes NVS,** including the Wi-Fi settings, tags, board config and the board certificate. Only use it on a blank board or when you have the JSON to replay, and add `--device-cert`.
 - **A board without a certificate can't update itself.** `updates.acgt.net` refuses it, and an `mqtts://` broker refuses the connection. The boot log says which.
