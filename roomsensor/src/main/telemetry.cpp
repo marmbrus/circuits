@@ -16,6 +16,10 @@
 #include "freertos/task.h"
 #include "debug.h"
 #include "esp_core_dump.h"  // ESP-IDF v5.3 coredump APIs
+#include "esp_heap_caps.h"
+#include "esp_memory_utils.h"
+#include <string.h>
+#include "freertos/idf_additions.h"
 
 static const char* TAG = "telemetry";
 
@@ -25,6 +29,36 @@ static void format_mac_nosep_lower(char* out, size_t out_len) {
     snprintf(out, out_len, "%02x%02x%02x%02x%02x%02x",
              device_mac[0], device_mac[1], device_mac[2],
              device_mac[3], device_mac[4], device_mac[5]);
+}
+
+// The core dump found at boot, read once (see telemetry_capture_boot_info): it is written only by
+// a crash, just before the reboot, so it can't change while the board runs. Reading it needs flash
+// access, which the telemetry task's PSRAM stack can't do.
+static struct {
+    bool present = false;
+    bool reason_ok = false;
+    bool summary_ok = false;
+    char reason[200] = {0};
+    esp_core_dump_summary_t summary = {};
+} s_panic;
+
+void telemetry_capture_boot_info(void) {
+    s_panic.present = esp_core_dump_image_check() == ESP_OK;
+    if (!s_panic.present) return;
+#if defined(CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH) && defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
+    s_panic.reason_ok = esp_core_dump_get_panic_reason(s_panic.reason, sizeof(s_panic.reason)) == ESP_OK;
+    s_panic.summary_ok = esp_core_dump_get_summary(&s_panic.summary) == ESP_OK;
+#endif
+    ESP_LOGW(TAG, "Core dump from the last crash found; it is reported in the boot message");
+}
+
+static void erase_core_dump_task(void* arg) {
+    (void)arg;
+    esp_err_t er = esp_core_dump_image_erase();
+    if (er != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to erase core dump after reporting: %s", esp_err_to_name(er));
+    }
+    vTaskDelete(nullptr);
 }
 
 // Single consolidated telemetry task lifecycle
@@ -57,6 +91,45 @@ static const char* reset_reason_to_str(esp_reset_reason_t reason) {
     }
 }
 
+// The task closest to overflowing its stack (the least unused stack, by its high-water mark), and
+// how many tasks keep their stacks in internal RAM. Walking every stack pauses the scheduler for
+// a moment, so this is refreshed once a minute rather than every heartbeat. The console's
+// `tasks` command lists every task's high-water mark.
+static void add_stack_summary(cJSON* root) {
+#if configUSE_TRACE_FACILITY
+    static int64_t s_last_us = 0;
+    static char s_min_task[configMAX_TASK_NAME_LEN] = {0};
+    static uint32_t s_min_free = 0;
+    static uint32_t s_internal_tasks = 0;
+    int64_t now_us = esp_timer_get_time();
+    if (s_last_us == 0 || now_us - s_last_us >= 60 * 1000000LL) {
+        UBaseType_t capacity = uxTaskGetNumberOfTasks() + 4;
+        TaskStatus_t* tasks = (TaskStatus_t*)heap_caps_malloc(capacity * sizeof(TaskStatus_t),
+                                                              MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (tasks == nullptr) return;
+        UBaseType_t n = uxTaskGetSystemState(tasks, capacity, nullptr);
+        s_min_free = UINT32_MAX;
+        s_internal_tasks = 0;
+        for (UBaseType_t i = 0; i < n; i++) {
+            // On ESP-IDF stack high-water marks are in bytes
+            uint32_t free_bytes = tasks[i].usStackHighWaterMark;
+            if (free_bytes < s_min_free) {
+                s_min_free = free_bytes;
+                strlcpy(s_min_task, tasks[i].pcTaskName, sizeof(s_min_task));
+            }
+            if (esp_ptr_internal(tasks[i].pxStackBase)) s_internal_tasks++;
+        }
+        heap_caps_free(tasks);
+        s_last_us = now_us;
+    }
+    cJSON_AddStringToObject(root, "min_stack_task", s_min_task);
+    cJSON_AddNumberToObject(root, "min_stack_free_bytes", (double)s_min_free);
+    cJSON_AddNumberToObject(root, "internal_stack_tasks", (double)s_internal_tasks);
+#else
+    (void)root;
+#endif
+}
+
 static void publish_device_status_once(void) {
     // Gather cheap stats
     uint64_t uptime_ms = esp_timer_get_time() / 1000ULL;
@@ -83,6 +156,13 @@ static void publish_device_status_once(void) {
     cJSON_AddNumberToObject(root, "largest_spiram_bytes", (double)largest_spiram);
     cJSON_AddNumberToObject(root, "total_internal_bytes", (double)total_internal);
     cJSON_AddNumberToObject(root, "total_spiram_bytes", (double)total_spiram);
+    // Low-water marks since boot: internal RAM, and the part of it DMA can reach, which runs
+    // out first (I2S buffers, the AES DMA buffers TLS needs, the Bluetooth controller)
+    cJSON_AddNumberToObject(root, "min_free_internal_bytes", (double)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL));
+    cJSON_AddNumberToObject(root, "free_dma_bytes", (double)heap_caps_get_free_size(MALLOC_CAP_DMA));
+    cJSON_AddNumberToObject(root, "min_free_dma_bytes", (double)heap_caps_get_minimum_free_size(MALLOC_CAP_DMA));
+    cJSON_AddNumberToObject(root, "largest_dma_bytes", (double)heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+    add_stack_summary(root);
 
     // Absolute UTC timestamp in ISO 8601 format
     time_t now_secs = time(nullptr);
@@ -188,16 +268,15 @@ static void publish_device_info(void) {
         const char* reason_str = reset_reason_to_str(reason);
         cJSON_AddStringToObject(device_json, "cause", reason_str);
 
-        // Optional panic summary if coredump present
-        if (esp_core_dump_image_check() == ESP_OK) {
+        // Optional panic summary if a core dump was found at boot
+        if (s_panic.present) {
 #if defined(CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH) && defined(CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF)
             cJSON* panic_obj = cJSON_CreateObject();
-            char panic_reason[200] = {0};
-            if (esp_core_dump_get_panic_reason(panic_reason, sizeof(panic_reason)) == ESP_OK) {
-                cJSON_AddStringToObject(panic_obj, "reason_text", panic_reason);
+            if (s_panic.reason_ok) {
+                cJSON_AddStringToObject(panic_obj, "reason_text", s_panic.reason);
             }
-            esp_core_dump_summary_t summary = {};
-            if (esp_core_dump_get_summary(&summary) == ESP_OK) {
+            if (s_panic.summary_ok) {
+                const esp_core_dump_summary_t& summary = s_panic.summary;
                 cJSON_AddStringToObject(panic_obj, "task", summary.exc_task);
                 cJSON_AddNumberToObject(panic_obj, "pc", (double)summary.exc_pc);
 #if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2)
@@ -232,12 +311,12 @@ static void publish_device_info(void) {
     // Retained boot info
     publish_to_topic("device", device_string, 1, 1);
 
-    // If coredump was present and we reported a panic summary, erase it now
-    // to avoid re-reporting on next boot. Only do this after attempting to publish.
-    if (esp_core_dump_image_check() == ESP_OK) {
-        esp_err_t er = esp_core_dump_image_erase();
-        if (er != ESP_OK) {
-            ESP_LOGW(TAG, "Failed to erase core dump after reporting: %s", esp_err_to_name(er));
+    // If a core dump was present, erase it now to avoid re-reporting it on the next boot. Only
+    // after attempting to publish. Erasing is a flash operation, which this task's PSRAM stack
+    // can't do, so a short-lived task with an internal stack does it.
+    if (s_panic.present) {
+        if (xTaskCreate(&erase_core_dump_task, "coredump_erase", 3072, nullptr, tskIDLE_PRIORITY + 1, nullptr) != pdPASS) {
+            ESP_LOGW(TAG, "Failed to start the task that erases the core dump");
         }
     }
 
@@ -302,7 +381,13 @@ static void telemetry_task_entry(void* arg) {
 void telemetry_report_connected(void) {
     // Called on MQTT connect. Start the consolidated telemetry task once per boot.
     if (s_telemetry_task == nullptr) {
-        BaseType_t ok = xTaskCreatePinnedToCore(&telemetry_task_entry, "telemetry", 4096, nullptr, tskIDLE_PRIORITY + 2, &s_telemetry_task, tskNO_AFFINITY);
+        // Stack in PSRAM to spare internal RAM. The task must not touch flash (IDF asserts if a task
+        // with an external stack does): the core dump is read at boot and erased by its own task.
+        BaseType_t ok = xTaskCreatePinnedToCoreWithCaps(&telemetry_task_entry, "telemetry", 4096, nullptr, tskIDLE_PRIORITY + 2,
+                                                        &s_telemetry_task, tskNO_AFFINITY, MALLOC_CAP_SPIRAM);
+        if (ok != pdPASS) {
+            ok = xTaskCreatePinnedToCore(&telemetry_task_entry, "telemetry", 4096, nullptr, tskIDLE_PRIORITY + 2, &s_telemetry_task, tskNO_AFFINITY);
+        }
         if (ok != pdPASS) {
             ESP_LOGE(TAG, "Failed to create telemetry task; publishing boot inline");
             s_telemetry_task = nullptr;

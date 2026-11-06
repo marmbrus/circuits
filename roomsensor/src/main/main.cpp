@@ -9,6 +9,7 @@
 #include "LEDManager.h"
 #include "AudioPlayer.h"
 #include "BLEScanner.h"
+#include "telemetry.h"
 #include "cJSON.h"
 #include "communication.h"
 #include "i2c.h"
@@ -50,12 +51,8 @@ extern "C" void app_main(void)
     // The board's certificate, for MQTT and OTA
     device_cert_init();
 
-    // Start the BLE scanner. On boards set up to scan this starts Bluetooth too, which has to
-    // come first: its controller needs internal RAM, which Wi-Fi, the console and audio use up.
-    if (ble::init_scanner(cfg) != ESP_OK) {
-        ESP_LOGE(TAG, "BLE scanner initialization failed");
-        log_memory_snapshot(TAG, "ble_scanner_init_failed");
-    }
+    // What the boot message reports about the last crash, read now while this task can read flash
+    telemetry_capture_boot_info();
 
     // Start the status LED task immediately after reading the configuration.
     init_status_led();
@@ -160,6 +157,14 @@ extern "C" void app_main(void)
         log_memory_snapshot(TAG, "audio_player_init_failed");
     }
 
+    // Start the BLE scanner, and Bluetooth itself on boards set up to scan. It comes after audio,
+    // so that on a board short of internal RAM Bluetooth is what fails (it then logs the error and
+    // stays off) rather than audio, and before OTA, whose task needs its own 12 KB.
+    if (ble::init_scanner(cfg) != ESP_OK) {
+        ESP_LOGE(TAG, "BLE scanner initialization failed");
+        log_memory_snapshot(TAG, "ble_scanner_init_failed");
+    }
+
     // Initialize OTA update system
     if (ota_init() != ESP_OK) {
         ESP_LOGW(TAG, "OTA initialization failed");
@@ -170,8 +175,7 @@ extern "C" void app_main(void)
 
     ESP_LOGI(TAG, "Startup sequence complete.");
 
-    // Idle loop to keep app_main task alive while yielding CPU
-    while (true) {
-        vTaskDelay(pdMS_TO_TICKS(100000));
-    }
+    // Returning ends the main task, and IDF frees its stack (internal RAM). Everything started
+    // above lives on in its own tasks, and what they were handed outlives this function (cfg,
+    // and the static LED manager and audio player).
 }

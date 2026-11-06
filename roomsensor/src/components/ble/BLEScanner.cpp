@@ -69,6 +69,9 @@ using DiscoveryTable = DeviceTable<SpiramPreferredAllocator<SeenDevice>>;
 
 static config::ConfigurationManager* s_cfg = nullptr;
 static TaskHandle_t s_task = nullptr;
+// suspend() asks the control task to shut Bluetooth down, and waits for it on s_suspend_done
+static volatile bool s_suspend_requested = false;
+static SemaphoreHandle_t s_suspend_done = nullptr;
 
 // Guards everything the BLE host task writes and the control task reads
 static SemaphoreHandle_t s_lock = nullptr;
@@ -216,6 +219,8 @@ static constexpr int64_t kScanRetryUs = 10 * 1000000LL;
 static bool s_nimble_started = false;
 static bool s_nimble_failed = false;
 static volatile bool s_synced = false;
+// Whether the host task was created with its stack in PSRAM (it then deletes itself WithCaps)
+static bool s_host_task_with_caps = false;
 static uint8_t s_own_addr_type = 0;
 // What the running scan was started with
 static bool s_scan_active = false;
@@ -265,9 +270,13 @@ static void on_reset(int reason) {
 
 static void host_task(void* param) {
     (void)param;
-    // Returns only if nimble_port_stop() is called, which nothing does: Bluetooth runs until reboot
+    // Returns once nimble_port_stop() is called (see stop_nimble)
     nimble_port_run();
-    vTaskSuspend(nullptr);
+    if (s_host_task_with_caps) {
+        vTaskDeleteWithCaps(nullptr);
+    } else {
+        nimble_port_freertos_deinit();
+    }
 }
 
 static bool start_nimble() {
@@ -283,11 +292,9 @@ static bool start_nimble() {
 
     esp_err_t err = nimble_port_init();
     if (err != ESP_OK) {
-        // Most likely out of memory; don't retry every tick, only after a reboot. The controller
-        // needs internal RAM, which is gone once the rest of the firmware has started, so
-        // Bluetooth starts at boot on boards with ble configured (see init_scanner).
-        ESP_LOGE(TAG, "Bluetooth init failed: %s%s", esp_err_to_name(err),
-                 err == ESP_ERR_NO_MEM ? "; restart the board to start it at boot" : "");
+        // Most likely out of internal RAM, which the controller needs about 30 KB of. Don't retry
+        // every tick: only after a reboot, or the next time OTA hands Bluetooth back (resume()).
+        ESP_LOGE(TAG, "Bluetooth init failed: %s", esp_err_to_name(err));
         s_nimble_failed = true;
         return false;
     }
@@ -295,13 +302,30 @@ static bool start_nimble() {
     ble_hs_cfg.reset_cb = on_reset;
     // What nimble_port_freertos_init() does, with the stack in PSRAM to spare internal RAM: the
     // host never touches flash (bonds aren't stored, CONFIG_BT_NIMBLE_NVS_PERSIST is off)
-    if (xTaskCreatePinnedToCoreWithCaps(host_task, "nimble_host", NIMBLE_HS_STACK_SIZE, nullptr,
-                                        configMAX_PRIORITIES - 4, nullptr, NIMBLE_CORE, MALLOC_CAP_SPIRAM) != pdPASS) {
+    s_host_task_with_caps = xTaskCreatePinnedToCoreWithCaps(host_task, "nimble_host", NIMBLE_HS_STACK_SIZE, nullptr,
+                                                            configMAX_PRIORITIES - 4, nullptr, NIMBLE_CORE,
+                                                            MALLOC_CAP_SPIRAM) == pdPASS;
+    if (!s_host_task_with_caps) {
         nimble_port_freertos_init(host_task);
     }
     s_nimble_started = true;
     ESP_LOGI(TAG, "Bluetooth started");
     return true;
+}
+
+// Shuts Bluetooth down entirely, returning the controller's internal RAM
+static void stop_nimble() {
+    if (!s_nimble_started) return;
+    if (s_synced && ble_gap_disc_active()) ble_gap_disc_cancel();
+    int rc = nimble_port_stop();
+    if (rc != 0) ESP_LOGW(TAG, "Bluetooth host stop failed (rc=%d)", rc);
+    esp_err_t err = nimble_port_deinit();
+    if (err != ESP_OK) ESP_LOGW(TAG, "Bluetooth deinit failed: %s", esp_err_to_name(err));
+    s_nimble_started = false;
+    s_synced = false;
+    // Wi-Fi no longer shares the radio, so it can leave modem sleep: faster downloads
+    esp_wifi_set_ps(WIFI_PS_NONE);
+    ESP_LOGI(TAG, "Bluetooth stopped");
 }
 
 static void start_scan(bool active, int duty_percent) {
@@ -330,24 +354,33 @@ static void start_scan(bool active, int duty_percent) {
     ESP_LOGI(TAG, "Scanning (%s, %d%% duty)", active ? "active" : "passive", duty_percent);
 }
 
-// Brings Bluetooth and the scan in line with the settings
+// Brings Bluetooth and the scan in line with the settings. Bluetooth runs while ble is configured,
+// unless OTA has asked for it to stop (suspend()). The scan runs only while MQTT is connected:
+// readings can't be published otherwise, and scanning slows Wi-Fi down while it (re)connects.
 static void reconcile_scan(const config::BLEConfig::Settings& s) {
-    bool want = s.enabled();
-    if (want && !start_nimble()) return;
-    if (!s_nimble_started || !s_synced) return;
+    bool want_bluetooth = s.enabled() && !s_suspend_requested;
+    if (!want_bluetooth) {
+        stop_nimble();
+        if (s_suspend_requested) xSemaphoreGive(s_suspend_done);
+        return;
+    }
+    if (!start_nimble()) return;
+    if (!s_synced) return;
 
+    bool want_scan = get_system_state() == FULLY_CONNECTED;
     bool running = ble_gap_disc_active() != 0;
-    if (running && (!want || s.scan != s_scan_active || s.duty_percent != s_scan_duty)) {
+    if (running && (!want_scan || s.scan != s_scan_active || s.duty_percent != s_scan_duty)) {
         ble_gap_disc_cancel();
         running = false;
-        if (!want) ESP_LOGI(TAG, "Scanning stopped");
+        if (!want_scan) ESP_LOGI(TAG, "Scanning paused until MQTT is connected");
     }
-    if (want && !running && esp_timer_get_time() >= s_next_scan_attempt_us) start_scan(s.scan, s.duty_percent);
+    if (want_scan && !running && esp_timer_get_time() >= s_next_scan_attempt_us) start_scan(s.scan, s.duty_percent);
 }
 
 #else  // !CONFIG_BT_NIMBLE_ENABLED
 
 static void reconcile_scan(const config::BLEConfig::Settings& s) {
+    if (s_suspend_requested) xSemaphoreGive(s_suspend_done);
     static bool warned = false;
     if (s.enabled() && !warned) {
         ESP_LOGE(TAG, "ble is configured, but this firmware was built without Bluetooth (CONFIG_BT_NIMBLE_ENABLED)");
@@ -413,7 +446,7 @@ static void control_task(void* arg) {
                      (unsigned)reports.size(), (unsigned)(entries.size() + dropped));
         }
 
-        vTaskDelay(kTickPeriod);
+        ulTaskNotifyTake(pdTRUE, kTickPeriod);
     }
 }
 
@@ -421,10 +454,10 @@ esp_err_t init_scanner(config::ConfigurationManager& cfg) {
     if (s_task != nullptr) return ESP_OK;
     s_cfg = &cfg;
     s_lock = xSemaphoreCreateMutex();
-    if (s_lock == nullptr) return ESP_ERR_NO_MEM;
+    s_suspend_done = xSemaphoreCreateBinary();
+    if (s_lock == nullptr || s_suspend_done == nullptr) return ESP_ERR_NO_MEM;
 #if CONFIG_BT_NIMBLE_ENABLED
-    // The Bluetooth controller allocates its memory from internal RAM only. Start it now, before
-    // Wi-Fi, the console and audio, while there's room; once they're up, too little is left.
+    // Start Bluetooth now, before the OTA task takes its share of internal RAM
     if (cfg.ble().enabled()) start_nimble();
 #endif
     // Its stack can live in PSRAM: the task never touches flash (which would need internal RAM)
@@ -436,6 +469,27 @@ esp_err_t init_scanner(config::ConfigurationManager& cfg) {
         return ESP_FAIL;
     }
     return ESP_OK;
+}
+
+bool suspend(TickType_t timeout) {
+    if (s_task == nullptr) return true;
+    xSemaphoreTake(s_suspend_done, 0);  // drop a stale signal
+    s_suspend_requested = true;
+    xTaskNotifyGive(s_task);
+    if (xSemaphoreTake(s_suspend_done, timeout) != pdTRUE) {
+        ESP_LOGW(TAG, "Bluetooth didn't stop in time");
+        return false;
+    }
+    return true;
+}
+
+void resume() {
+    if (s_task == nullptr || !s_suspend_requested) return;
+#if defined(CONFIG_BT_NIMBLE_ENABLED)
+    s_nimble_failed = false;  // the RAM it lacked may be free now
+#endif
+    s_suspend_requested = false;
+    xTaskNotifyGive(s_task);
 }
 
 } // namespace ble

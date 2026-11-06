@@ -1,3 +1,4 @@
+#include "BLEScanner.h"
 #include "ota.h"
 #include "esp_log.h"
 #include "esp_http_client.h"
@@ -1002,7 +1003,12 @@ static esp_err_t perform_https_ota_from_url(const char* firmware_url) {
         return ESP_OK;
     };
 
-    return esp_https_ota(&ota_config);
+    esp_err_t ret = esp_https_ota(&ota_config);
+    // How close the download came to the end of this task's stack (in bytes; on success the board
+    // reboots, so this is the only chance to see it)
+    ESP_LOGI(TAG, "OTA download done (%s); OTA task stack never had less than %u bytes free",
+             esp_err_to_name(ret), (unsigned)uxTaskGetStackHighWaterMark(nullptr));
+    return ret;
 }
 
 extern "C" esp_err_t ota_force_update(const char* version_hash) {
@@ -1125,6 +1131,13 @@ static void ota_update_task(void *pvParameter) {
                     check_count++;
                     ESP_LOGI(TAG, "Checking for updates");
 
+                    // A check is rare (every OTA_CHECK_INTERVAL_MS) and short, but its TLS handshake
+                    // takes about 11 KB of internal DMA-capable RAM, and any download it starts takes
+                    // more, along with the radio. So Bluetooth, whose controller holds about 30 KB of
+                    // that RAM, shuts down for the check and whatever it leads to. After a firmware
+                    // update the board reboots before it would start again.
+                    ble::suspend(pdMS_TO_TICKS(5000));
+
                     // Debug: Memory before HTTP request
                     size_t heap_before_http = esp_get_free_heap_size();
                     (void)heap_before_http;
@@ -1190,6 +1203,7 @@ static void ota_update_task(void *pvParameter) {
                         }
                         esp_http_client_cleanup(client);
                     }
+                    ble::resume();
                 }
             }
         } else {

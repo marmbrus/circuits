@@ -9,9 +9,11 @@ does two things, each switched on through the `ble` config module:
   it was heard. Several boards hearing the same tag give a rough position: it's nearest the
   board that hears it loudest.
 
-Bluetooth stays off until one of them is set: boards that never scan don't start the controller
-or the NimBLE host, use no airtime, and keep Wi-Fi out of modem sleep. Once it has started it
-stays up until the board restarts; clearing both only stops the scan.
+Bluetooth runs only while one of them is set: boards that never scan don't start the controller
+or the NimBLE host, use no airtime, and keep Wi-Fi out of modem sleep. Clearing both shuts it
+down again. It scans only while MQTT is connected (readings couldn't be published otherwise, and
+scanning slows Wi-Fi down while it connects), and it shuts down for a few seconds during each
+OTA check (see "Radio and memory").
 
 `BLEScanner.cpp` runs NimBLE as an observer and publishes; `../ble_logic` parses addresses,
 track lists and advertisements and keeps the per-window statistics, with host unit tests
@@ -109,20 +111,32 @@ whether the tag is heard while the phone is nearby.
   running board is short of: on a lamp with audio (measured on `ESP_9c139ebc0eb0`), Wi-Fi, MQTT,
   the console, the HTTP server, the I2S DMA buffers and the OTA task left about 14 KB. To make
   room:
-  - Bluetooth starts early in boot, before Wi-Fi and audio, on boards whose `ble` module is
-    already set up. Turning `scan` or `track` on later also works now, but it's the start at
-    boot that's sure of the memory.
   - The stacks of tasks that never touch flash live in PSRAM: `ble-ctrl`, `nimble_host`,
-    `netlog`, `metrics_task`, `status_led_task` and `audio-mic`, and so does netlog's queue
-    (about 13 KB). A task that reads or writes flash (NVS, partitions, the core dump, LittleFS)
-    must keep an internal stack: IDF asserts otherwise.
-  - TLS uses software AES (`CONFIG_MBEDTLS_HARDWARE_AES` off). Hardware AES needs a DMA
-    bounce buffer in internal RAM for the TLS buffers, which are in PSRAM, and with Bluetooth
-    running MQTT and the OTA check ran out of it and dropped their connections.
+    `netlog`, `metrics_task`, `status_led_task`, `telemetry` and `audio-mic`, and so does
+    netlog's queue (about 13 KB). A task that reads or writes flash (NVS, partitions, the core
+    dump, LittleFS) must keep an internal stack: IDF asserts otherwise, and the board reboots
+    in a loop. That's why telemetry reads the core dump once at boot, from `app_main`, and
+    erases it from a short-lived task of its own.
+  - `app_main` returns once startup is done, which frees the main task's stack.
+  - Bluetooth starts after audio and before the OTA task. On a board too short of internal
+    RAM, Bluetooth is what fails (it logs the error and stays off), not audio.
+  - OTA checks shut Bluetooth down. A check is short and rare (every
+    `OTA_CHECK_INTERVAL_MS`, about 17 minutes), but its TLS handshake takes about 11 KB of
+    internal DMA-capable RAM, which with Bluetooth running left 2.4 KB; hardware AES needs
+    some of it for each TLS record (TLS buffers are in PSRAM). With Bluetooth down for the
+    check, and through any download it starts, the low point is about 31 KB. Wi-Fi leaves modem
+    sleep meanwhile, so downloads run at full speed. Scanning pauses for 3 to 4 seconds per
+    check; Bluetooth starts again after it, or not at all after a firmware update, which
+    reboots.
   - Audio no longer aborts when its I2S DMA buffers can't be allocated; the board comes up
     without audio instead of rebooting in a loop.
-  With all that, the audio lamp above boots with about 18 KB of internal RAM free while
-  scanning (and 45 to 49 KB without Bluetooth), against 14 KB before Bluetooth was added.
+
+  On the lamp, while scanning: about 20 KB of internal RAM and 12 KB of DMA-capable RAM free in
+  steady state, never below about 6.5 KB DMA-capable outside OTA checks. Before Bluetooth was
+  added the lamp ran with 14 KB of internal RAM free. `device/status` reports these
+  (`free_dma_bytes`, `min_free_dma_bytes`, `min_free_internal_bytes`, and the task closest to
+  overflowing its stack), and the console's `tasks` command lists every task's stack
+  high-water mark.
 - Bluetooth is enabled in `sdkconfig.defaults`, which only applies when `sdkconfig` is
   generated. An existing build directory keeps Bluetooth off until `sdkconfig` is regenerated
   (delete it, or run `idf.py set-target esp32s3`). Firmware built without Bluetooth logs an
