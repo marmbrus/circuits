@@ -7,10 +7,11 @@ if [ -n "$IDF_PATH" ]; then
     source "$IDF_PATH/export.sh"
 fi
 
-# Configuration
-SERVER="gaia"
-REMOTE_DIR="/mnt/containers/data/updates"
-BASE_URL="https://updates.gaia.bio"
+# Configuration: Brayden's nginx on smll serves REMOTE_DIR as updates.acgt.net, to boards with a
+# house certificate only (brayden repo, docker/smll/auth). Uploading needs the brayden group.
+SERVER="${OTA_SERVER:-smll.home}"  # [user@]host; OTA_SERVER overrides
+REMOTE_DIR="/home/brayden/updates"
+BASE_URL="https://updates.acgt.net"
 BIN_FILE="build/sensorv2.bin"
 
 # JS build paths
@@ -129,7 +130,7 @@ if [ ! -f "$BIN_FILE" ]; then
 fi
 
 # Check binary file size for sanity
-BIN_SIZE=$(stat -f%z "$BIN_FILE")
+BIN_SIZE=$(wc -c < "$BIN_FILE" | tr -d " ")
 echo "Using binary: $BIN_FILE (size: $BIN_SIZE bytes)"
 
 # Create filenames with git hash
