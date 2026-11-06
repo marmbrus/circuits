@@ -1,6 +1,7 @@
 #include "audio_io.h"
 
 #include <stdatomic.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "driver/i2s_std.h"
@@ -145,6 +146,14 @@ static int output_write(audio_element_handle_t self, char *buffer, int len, Tick
     return done * sizeof(int16_t);
 }
 
+// Nothing to open (I2S runs from boot), but ADF only moves an element to its running state
+// through its open callback: without one the element's task spins without ever calling process.
+static esp_err_t output_open(audio_element_handle_t self)
+{
+    (void)self;
+    return ESP_OK;
+}
+
 static int output_process(audio_element_handle_t self, char *in_buffer, int in_len)
 {
     int r_size = audio_element_input(self, in_buffer, in_len);
@@ -166,10 +175,16 @@ audio_element_handle_t audio_io_create_output_element(void)
         return NULL;
     }
     audio_element_cfg_t cfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
+    cfg.open = output_open;
     cfg.process = output_process;
     cfg.write = output_write;
     cfg.buffer_len = OUTPUT_BUFFER_BYTES;
     cfg.tag = "speaker";
+    // ADF's default 2 KB overflowed as soon as the element logged (every log line goes through
+    // netlog's hook, which formats it again). The task only writes to I2S, never to flash, so its
+    // stack can live in PSRAM like the other pipeline elements'.
+    cfg.task_stack = 4096;
+    cfg.stack_in_ext = true;
     audio_element_handle_t el = audio_element_init(&cfg);
     if (el) audio_element_set_music_info(el, AUDIO_IO_SAMPLE_RATE, 2, 16);
     return el;
@@ -252,16 +267,35 @@ static void build_wav_header(uint8_t hdr[44])
     put_le32(hdr + 40, 0xFFFFFFFF);
 }
 
+// What the HTTP handler hands a listener's task
+typedef struct {
+    httpd_req_t *req;
+    bool stack_in_psram;  // the task then has to delete itself WithCaps
+} mic_client_args_t;
+
 static void mic_client_task(void *arg)
 {
-    httpd_req_t *req = (httpd_req_t *)arg;
-    static const char *busy = "Too many microphone listeners";
+    mic_client_args_t args = *(mic_client_args_t *)arg;
+    free(arg);
+    httpd_req_t *req = args.req;
 
-    StreamBufferHandle_t sb = xStreamBufferCreate(MIC_CLIENT_BUFFER, 1);
+    // 16 KB per listener: in PSRAM, as internal RAM rarely has a block that size free.
+    // Allocated here rather than with xStreamBufferCreateWithCaps: in IDF 5.3 its delete
+    // counterpart frees the buffer twice (it deletes it as a semaphore).
+    StaticStreamBuffer_t *sb_struct = heap_caps_malloc(sizeof(StaticStreamBuffer_t), MALLOC_CAP_SPIRAM);
+    uint8_t *sb_storage = heap_caps_malloc(MIC_CLIENT_BUFFER, MALLOC_CAP_SPIRAM);
+    StreamBufferHandle_t sb = NULL;
+    if (sb_struct && sb_storage) {
+        sb = xStreamBufferCreateStatic(MIC_CLIENT_BUFFER, 1, sb_storage, sb_struct);
+    }
     int slot = sb ? mic_client_add(sb) : -1;
-    if (slot < 0) {
+    if (!sb) {
+        ESP_LOGE(TAG, "No memory for a mic listener's buffer");
         httpd_resp_set_status(req, "503 Service Unavailable");
-        httpd_resp_send(req, busy, HTTPD_RESP_USE_STRLEN);
+        httpd_resp_send(req, "Out of memory", HTTPD_RESP_USE_STRLEN);
+    } else if (slot < 0) {
+        httpd_resp_set_status(req, "503 Service Unavailable");
+        httpd_resp_send(req, "Too many microphone listeners", HTTPD_RESP_USE_STRLEN);
     } else {
         ESP_LOGI(TAG, "Mic listener %d connected", slot);
         httpd_resp_set_type(req, "audio/wav");
@@ -281,8 +315,14 @@ static void mic_client_task(void *arg)
     }
 
     if (sb) vStreamBufferDelete(sb);
+    heap_caps_free(sb_storage);
+    heap_caps_free(sb_struct);
     httpd_req_async_handler_complete(req);
-    vTaskDelete(NULL);
+    if (args.stack_in_psram) {
+        vTaskDeleteWithCaps(NULL);
+    } else {
+        vTaskDelete(NULL);
+    }
 }
 
 esp_err_t audio_io_mic_http_handler(httpd_req_t *req)
@@ -294,7 +334,22 @@ esp_err_t audio_io_mic_http_handler(httpd_req_t *req)
     httpd_req_t *async_req = NULL;
     esp_err_t err = httpd_req_async_handler_begin(req, &async_req);
     if (err != ESP_OK) return err;
-    if (xTaskCreate(mic_client_task, "mic-http", 4096, async_req, 5, NULL) != pdPASS) {
+    mic_client_args_t *args = malloc(sizeof(*args));
+    if (!args) {
+        httpd_req_async_handler_complete(async_req);
+        return ESP_ERR_NO_MEM;
+    }
+    args->req = async_req;
+    // The task only moves samples from its buffer to the socket, never touching flash, so its
+    // stack can live in PSRAM
+    args->stack_in_psram = true;
+    BaseType_t ok = xTaskCreateWithCaps(mic_client_task, "mic-http", 4096, args, 5, NULL, MALLOC_CAP_SPIRAM);
+    if (ok != pdPASS) {
+        args->stack_in_psram = false;
+        ok = xTaskCreate(mic_client_task, "mic-http", 4096, args, 5, NULL);
+    }
+    if (ok != pdPASS) {
+        free(args);
         httpd_req_async_handler_complete(async_req);
         return ESP_FAIL;
     }
