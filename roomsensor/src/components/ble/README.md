@@ -114,10 +114,14 @@ whether the tag is heard while the phone is nearby.
   - The stacks of tasks that never touch flash live in PSRAM: `ble-ctrl`, `nimble_host`,
     `netlog`, `metrics_task`, `status_led_task`, `telemetry` and `audio-mic`, and so does
     netlog's queue (about 13 KB). A task that reads or writes flash (NVS, partitions, the core
-    dump, LittleFS) must keep an internal stack: IDF asserts otherwise, and the board reboots
+    dump) must keep an internal stack: IDF asserts otherwise, and the board reboots
     in a loop. That's why telemetry reads the core dump once at boot, from `app_main`, and
     erases it from a short-lived task of its own.
   - `app_main` returns once startup is done, which frees the main task's stack.
+  - The HTTP server (the web UI, `/mic.wav`) and the LittleFS it served from are gone: about
+    13.5 KB. The mic streams over MQTT instead (`audio.mic`, `util/mic_listen.py`), riding the
+    existing TLS connection, so it needs no handshake and Bluetooth keeps scanning while it
+    runs.
   - Bluetooth starts after audio and before the OTA task. On a board too short of internal
     RAM, Bluetooth is what fails (it logs the error and stays off), not audio.
   - OTA checks shut Bluetooth down. A check is short and rare (every
@@ -136,9 +140,9 @@ whether the tag is heard while the phone is nearby.
   - Audio no longer aborts when its I2S DMA buffers can't be allocated; the board comes up
     without audio instead of rebooting in a loop.
 
-  On the lamp, while scanning: about 20 KB of internal RAM and 12 KB of DMA-capable RAM free in
-  steady state, never below about 6.5 KB DMA-capable outside OTA checks. Before Bluetooth was
-  added the lamp ran with 14 KB of internal RAM free. `device/status` reports these
+  On the lamp, while scanning: about 41 KB of internal RAM and 33 KB of DMA-capable RAM free in
+  steady state, never below 29.5 KB and 22 KB since boot (OTA check included). Before Bluetooth
+  was added the lamp ran with 14 KB of internal RAM free. `device/status` reports these
   (`free_dma_bytes`, `min_free_dma_bytes`, `min_free_internal_bytes`, and the task closest to
   overflowing its stack), and the console's `tasks` command lists every task's stack
   high-water mark.

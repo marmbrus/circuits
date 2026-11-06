@@ -13,14 +13,12 @@
 #include "cJSON.h"
 #include "communication.h"
 #include "i2c.h"
-#include "http.h"
 #include "ota.h"
 #include "device_cert.h"
 #include "console.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
 #include "gpio.h"
-#include "filesystem.h"
 #include "netlog.h"
 #include "debug.h"
 #include "status_led.h"
@@ -134,20 +132,6 @@ extern "C" void app_main(void)
         log_memory_snapshot(TAG, "i2c_init_failed");
     } else {
         ESP_LOGI(TAG, "I2C subsystem initialized successfully");
-    }
-
-    // Mount LittleFS (reusing 'storage' partition label)
-    if (webfs::init("storage", false) != ESP_OK) {
-        ESP_LOGW(TAG, "LittleFS mount failed; web UI may not be available");
-        log_memory_snapshot(TAG, "littlefs_mount_failed");
-    }
-
-    // Start HTTP webserver
-    if (start_webserver() != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to start HTTP server");
-        log_memory_snapshot(TAG, "http_server_start_failed");
-    } else {
-        ESP_LOGI(TAG, "HTTP server started successfully");
     }
 
     // Initialize audio playback (no-op on boards without audio pins configured)

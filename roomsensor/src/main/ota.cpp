@@ -21,7 +21,7 @@
 #include "config.h"
 #include "system_state.h"
 #include "communication.h"
-#include "filesystem.h"
+#include "build_info.h"
 #include "debug.h"
 #include "ConfigurationManager.h"
 #include "WifiConfig.h"
@@ -33,8 +33,9 @@
  * ========================
  *
  * Core OTA Decision Logic:
- * The ONLY factor for deciding whether to upgrade is comparing embedded build timestamp
- * (FIRMWARE_BUILD_TIMESTAMP) with the timestamp in the server manifest (build_timestamp_epoch).
+ * The ONLY factor for deciding whether to upgrade is comparing this build's timestamp
+ * (BUILD_INFO_TIMESTAMP, stamped by build_info.sh) with the timestamp in the server manifest
+ * (build_timestamp_epoch, which deploy_ota.sh takes from the same stamp).
  * If server timestamp > local timestamp, perform upgrade
  *
  * Version Format:
@@ -49,7 +50,6 @@
  * Status Reporting:
  * - DEV_BUILD: Running from factory partition (regardless of version)
  * - UPGRADING_FIRMWARE: When a firmware update is in progress
- * - UPGRADING_WEB: When a web asset update is in progress
  * - UP_TO_DATE: When running latest version available on server
  * - ERROR: When an update fails
  *
@@ -58,14 +58,9 @@
  * 2. Task waits for full system connectivity (WiFi + MQTT)
  * 3. When connected, periodically checks server for manifest
  * 4. Parses manifest and compares build timestamps
- * 5. If newer version exists, triggers OTA update (firmware first, then web)
+ * 5. If newer version exists, triggers OTA update
  * 6. Reports status to MQTT at key points (boot, network connection, before/after updates)
  */
-
-// Build timestamp is provided as FIRMWARE_BUILD_TIMESTAMP compile definition
-#ifndef FIRMWARE_BUILD_TIMESTAMP
-#error "FIRMWARE_BUILD_TIMESTAMP not defined - check CMakeLists.txt"
-#endif
 
 static const char *TAG = "ota";
 // Brayden's nginx on smll, which only answers boards presenting a house certificate (device_cert)
@@ -79,20 +74,23 @@ static bool ota_running = false;
 // Event group to signal that network is connected
 static EventGroupHandle_t network_event_group;
 
-// Get the embedded build timestamp (set at compile time)
-static const time_t FIRMWARE_BUILD_TIME = (time_t)FIRMWARE_BUILD_TIMESTAMP;
+// This build's timestamp (build_info.sh)
+static const time_t FIRMWARE_BUILD_TIME = (time_t)BUILD_INFO_TIMESTAMP;
 
 // NVS keys (for logging purposes only, not for decision-making)
 static const char* NVS_NAMESPACE = "ota";
 static const char* NVS_LAST_OTA_TIME = "last_ota_time";
 static const char* NVS_LAST_OTA_HASH = "last_ota_hash";
+// The update this board expects to boot into next (ota_state_t)
+static const char* NVS_EXPECTED_PARTITION = "exp_partition";
+static const char* NVS_EXPECTED_VERSION = "exp_version";
+static const char* NVS_EXPECTED_TIMESTAMP = "exp_timestamp";
 
 // Unified OTA status types (single status per device)
 typedef enum {
     OTA_STATUS_DEV_BUILD,
     OTA_STATUS_UPGRADING_FIRMWARE,
     OTA_STATUS_AWAITING_VALIDATION,
-    OTA_STATUS_UPGRADING_WEB,
     OTA_STATUS_ROLLED_BACK,
     OTA_STATUS_UP_TO_DATE,
     OTA_STATUS_ERROR,
@@ -101,336 +99,70 @@ typedef enum {
 // Store remote version info for status reporting
 static char remote_version[64] = {0};
 static time_t remote_timestamp = 0;
-static char web_remote_version[33] = {0};
-static time_t web_remote_timestamp = 0;
-static char web_local_version[33] = {0};
-static time_t web_local_timestamp = 0;
-static char web_last_error[96] = {0};
-// Local firmware timestamp derived from storage (revYYYYMMDDHHMMSS)
+// This build's timestamp, as compared with the manifest's (see load_local_firmware_info)
 static time_t local_fw_timestamp = 0;
 // Force-OTA overrides (used by console command)
 static bool g_force_ota = false;
 static char g_force_url[256] = {0};
 static char g_force_version[64] = {0};
 
-// Represents the state stored in /storage/ota_state.json
+// The update this board expects to boot into, kept in NVS between writing it and rebooting:
+// booting anything else means the update rolled back
 typedef struct {
     char expected_partition[16];
     char ota_version[64];
     time_t ota_timestamp;
 } ota_state_t;
-static ota_state_t g_ota_state = {0};
 
 // Forward declare
-static char* read_text_file(const char* path);
-static bool write_text_file_atomic(const char* path, const char* text);
 static void report_ota_status(ota_status_t status, const char* error_message);
 static esp_err_t perform_https_ota_from_url(const char* firmware_url);
 
-// Read the OTA state file (/storage/ota_state.json)
 static bool read_ota_state(ota_state_t* state) {
     if (!state) return false;
     memset(state, 0, sizeof(ota_state_t));
-    char* s = read_text_file("/storage/ota_state.json");
-    if (!s) return false;
-
-    cJSON* root = cJSON_Parse(s);
-    free(s);
-    if (!root) return false;
-
-    cJSON* part = cJSON_GetObjectItem(root, "expected_partition");
-    cJSON* ver = cJSON_GetObjectItem(root, "ota_version");
-    cJSON* ts = cJSON_GetObjectItem(root, "ota_timestamp");
-
-    if (cJSON_IsString(part)) strncpy(state->expected_partition, part->valuestring, sizeof(state->expected_partition) - 1);
-    if (cJSON_IsString(ver)) strncpy(state->ota_version, ver->valuestring, sizeof(state->ota_version) - 1);
-    if (cJSON_IsNumber(ts)) state->ota_timestamp = (time_t)ts->valuedouble;
-
-    cJSON_Delete(root);
+    nvs_handle_t n;
+    if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &n) != ESP_OK) return false;
+    size_t len = sizeof(state->expected_partition);
+    if (nvs_get_str(n, NVS_EXPECTED_PARTITION, state->expected_partition, &len) != ESP_OK) {
+        state->expected_partition[0] = '\0';
+    }
+    len = sizeof(state->ota_version);
+    if (nvs_get_str(n, NVS_EXPECTED_VERSION, state->ota_version, &len) != ESP_OK) {
+        state->ota_version[0] = '\0';
+    }
+    int64_t ts = 0;
+    if (nvs_get_i64(n, NVS_EXPECTED_TIMESTAMP, &ts) == ESP_OK) state->ota_timestamp = (time_t)ts;
+    nvs_close(n);
     return state->expected_partition[0] != '\0';
 }
 
-// Write to the OTA state file (/storage/ota_state.json)
 static bool write_ota_state(const ota_state_t* state) {
     if (!state) return false;
-    cJSON* root = cJSON_CreateObject();
-    if (!root) return false;
-
-    cJSON_AddStringToObject(root, "expected_partition", state->expected_partition);
-    cJSON_AddStringToObject(root, "ota_version", state->ota_version);
-    cJSON_AddNumberToObject(root, "ota_timestamp", (double)state->ota_timestamp);
-
-    char* txt = cJSON_PrintUnformatted(root);
-    bool ok = false;
-    if (txt) {
-        ok = write_text_file_atomic("/storage/ota_state.json", txt);
-        free(txt);
-    }
-    cJSON_Delete(root);
+    nvs_handle_t n;
+    if (nvs_open(NVS_NAMESPACE, NVS_READWRITE, &n) != ESP_OK) return false;
+    bool ok = nvs_set_str(n, NVS_EXPECTED_PARTITION, state->expected_partition) == ESP_OK &&
+              nvs_set_str(n, NVS_EXPECTED_VERSION, state->ota_version) == ESP_OK &&
+              nvs_set_i64(n, NVS_EXPECTED_TIMESTAMP, (int64_t)state->ota_timestamp) == ESP_OK &&
+              nvs_commit(n) == ESP_OK;
+    nvs_close(n);
     return ok;
 }
 
-// Clear the OTA state file
 static void clear_ota_state(void) {
-    remove("/storage/ota_state.json");
+    nvs_handle_t n;
+    if (nvs_open(NVS_NAMESPACE, NVS_READWRITE, &n) != ESP_OK) return;
+    nvs_erase_key(n, NVS_EXPECTED_PARTITION);
+    nvs_erase_key(n, NVS_EXPECTED_VERSION);
+    nvs_erase_key(n, NVS_EXPECTED_TIMESTAMP);
+    nvs_commit(n);
+    nvs_close(n);
 }
 
-// Helper: convert struct tm interpreted as UTC to epoch
-// (unused) UTC mktime helper removed
-
-// Load local firmware info from /storage/firmware.json if present
+// This build's version and timestamp, which the firmware carries itself (build_info.sh)
 static void load_local_firmware_info(void) {
-    const char* path = "/storage/firmware.json";
-    char* s = read_text_file(path);
-    if (!s) return;
-    cJSON* root = cJSON_Parse(s);
-    if (!root) { free(s); return; }
-    const cJSON* v = cJSON_GetObjectItem(root, "local_version");
-    const cJSON* t = cJSON_GetObjectItem(root, "local_build_timestamp_epoch");
-    if (cJSON_IsString(v)) {
-        strncpy(current_version, v->valuestring, sizeof(current_version) - 1);
-    }
-    if (cJSON_IsNumber(t)) {
-        local_fw_timestamp = (time_t)t->valuedouble;
-    }
-    cJSON_Delete(root);
-    free(s);
-}
-
-// Persist local firmware info to /storage/firmware.json
-static void save_local_firmware_info(const char* version, time_t ts_epoch) {
-    cJSON* root = cJSON_CreateObject();
-    if (!root) return;
-    cJSON_AddStringToObject(root, "local_version", version ? version : "");
-    cJSON_AddStringToObject(root, "local_git_describe", version ? version : "");
-    char iso[64]; struct tm tm_time; gmtime_r(&ts_epoch, &tm_time);
-    strftime(iso, sizeof(iso), "%Y-%m-%dT%H:%M:%SZ", &tm_time);
-    cJSON_AddStringToObject(root, "local_build_timestamp", iso);
-    cJSON_AddNumberToObject(root, "local_build_timestamp_epoch", (double)ts_epoch);
-    char* txt = cJSON_PrintUnformatted(root);
-    if (txt) {
-        write_text_file_atomic("/storage/firmware.json", txt);
-        free(txt);
-    }
-    cJSON_Delete(root);
-}
-
-// Helper: read a small JSON file fully into memory
-static char* read_text_file(const char* path) {
-    FILE* f = fopen(path, "rb");
-    if (!f) return NULL;
-    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return NULL; }
-    long sz = ftell(f);
-    if (sz < 0 || sz > 64 * 1024) { fclose(f); return NULL; }
-    if (fseek(f, 0, SEEK_SET) != 0) { fclose(f); return NULL; }
-    char* buf = (char*)malloc((size_t)sz + 1);
-    if (!buf) { fclose(f); return NULL; }
-    size_t n = fread(buf, 1, (size_t)sz, f);
-    fclose(f);
-    if (n != (size_t)sz) { free(buf); return NULL; }
-    buf[n] = 0;
-    return buf;
-}
-
-// Helper: write buffer to a file atomically via temp path then rename
-static bool write_text_file_atomic(const char* path, const char* text) {
-    char tmp[128];
-    snprintf(tmp, sizeof(tmp), "%s.tmp", path);
-    FILE* f = fopen(tmp, "wb");
-    if (!f) return false;
-    size_t len = strlen(text);
-    bool ok = fwrite(text, 1, len, f) == len;
-    fclose(f);
-    if (!ok) { remove(tmp); return false; }
-    if (rename(tmp, path) != 0) { remove(tmp); return false; }
-    return true;
-}
-
-// Helper: copy a file
-static bool copy_file(const char* src, const char* dst) {
-    FILE* in = fopen(src, "rb");
-    if (!in) return false;
-    char tmp[128];
-    snprintf(tmp, sizeof(tmp), "%s.tmp", dst);
-    FILE* out = fopen(tmp, "wb");
-    if (!out) { fclose(in); return false; }
-    uint8_t buf[2048];
-    size_t n;
-    bool ok = true;
-    while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
-        if (fwrite(buf, 1, n, out) != n) { ok = false; break; }
-    }
-    fclose(in);
-    if (fclose(out) != 0) ok = false;
-    if (!ok) { remove(tmp); return false; }
-    if (rename(tmp, dst) != 0) { remove(tmp); return false; }
-    return true;
-}
-
-// Load local web app info from /storage/webapp.json
-static void load_local_web_info(void) {
-    web_local_version[0] = '\0';
-    web_local_timestamp = 0;
-    const char* path = "/storage/webapp.json";
-    char* s = read_text_file(path);
-    if (!s) {
-        ESP_LOGI(TAG, "No local webapp.json found; assuming no local web info");
-        return;
-    }
-    cJSON* root = cJSON_Parse(s);
-    if (!root) { free(s); return; }
-    const cJSON* v = cJSON_GetObjectItem(root, "local_version");
-    const cJSON* vd = cJSON_GetObjectItem(root, "local_git_describe");
-    const cJSON* t = cJSON_GetObjectItem(root, "local_build_timestamp_epoch");
-    if (cJSON_IsString(vd)) {
-        strncpy(web_local_version, vd->valuestring, sizeof(web_local_version) - 1);
-    } else if (cJSON_IsString(v)) {
-        strncpy(web_local_version, v->valuestring, sizeof(web_local_version) - 1);
-    }
-    if (cJSON_IsNumber(t)) {
-        web_local_timestamp = (time_t)t->valuedouble;
-    }
-    cJSON_Delete(root);
-    free(s);
-}
-
-// Persist local web app info to /storage/webapp.json
-static void save_local_web_info(const char* version, time_t ts_epoch) {
-    cJSON* root = cJSON_CreateObject();
-    if (!root) return;
-    cJSON_AddStringToObject(root, "local_version", version ? version : "");
-    // ISO time
-    char iso[64];
-    struct tm tm_time;
-    gmtime_r(&ts_epoch, &tm_time);
-    strftime(iso, sizeof(iso), "%Y-%m-%dT%H:%M:%SZ", &tm_time);
-    cJSON_AddStringToObject(root, "local_build_timestamp", iso);
-    cJSON_AddNumberToObject(root, "local_build_timestamp_epoch", (double)ts_epoch);
-    char* txt = cJSON_PrintUnformatted(root);
-    if (txt) {
-        write_text_file_atomic("/storage/webapp.json", txt);
-        free(txt);
-    }
-    cJSON_Delete(root);
-}
-
-// Download URL to a temp file and then copy to the final targets
-static esp_err_t download_web_asset(const char* url, const char* version_hash) {
-    if (!url || !version_hash || strlen(version_hash) == 0) return ESP_ERR_INVALID_ARG;
-    ESP_LOGI(TAG, "Downloading web asset from %s", url);
-
-    esp_http_client_config_t cfg = {};
-    cfg.url = url;
-    cfg.crt_bundle_attach = esp_crt_bundle_attach;
-    device_cert_configure_http(&cfg);
-    cfg.skip_cert_common_name_check = false;
-    cfg.timeout_ms = 30000;
-    cfg.disable_auto_redirect = false; // follow 30x redirects
-
-    esp_http_client_handle_t client = esp_http_client_init(&cfg);
-    if (!client) return ESP_FAIL;
-    // Be explicit about headers
-    esp_http_client_set_header(client, "User-Agent", "roomsensor-ota/1.0");
-    esp_http_client_set_header(client, "Accept-Encoding", "identity");
-    esp_err_t err = esp_http_client_open(client, 0);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to open web URL: %s", esp_err_to_name(err));
-        esp_http_client_cleanup(client);
-        return err;
-    }
-
-    // Read and validate headers
-    int64_t hdrs = esp_http_client_fetch_headers(client);
-    int status = esp_http_client_get_status_code(client);
-    long long content_length = esp_http_client_get_content_length(client);
-    ESP_LOGI(TAG, "Web GET status=%d, content_length=%lld (hdrs=%lld)", status, content_length, (long long)hdrs);
-    if (status < 200 || status >= 300) {
-        ESP_LOGE(TAG, "Unexpected HTTP status for web asset: %d", status);
-        esp_http_client_close(client);
-        esp_http_client_cleanup(client);
-        return ESP_FAIL;
-    }
-
-    const char* tmp_path = "/storage/.web_download.tmp";
-    FILE* f = fopen(tmp_path, "wb");
-    if (!f) {
-        ESP_LOGE(TAG, "Failed to open temp file for web download");
-        esp_http_client_close(client);
-        esp_http_client_cleanup(client);
-        return ESP_FAIL;
-    }
-
-    uint8_t buf[2048];
-    int read_total = 0;
-    while (1) {
-        int r = esp_http_client_read(client, (char*)buf, sizeof(buf));
-        if (r < 0) {
-            ESP_LOGE(TAG, "Error reading web content: %d", r);
-            fclose(f);
-            remove(tmp_path);
-            esp_http_client_close(client);
-            esp_http_client_cleanup(client);
-            return ESP_FAIL;
-        }
-        if (r == 0) break; // connection closed
-        if (fwrite(buf, 1, (size_t)r, f) != (size_t)r) {
-            ESP_LOGE(TAG, "Error writing temp web file");
-            fclose(f);
-            remove(tmp_path);
-            esp_http_client_close(client);
-            esp_http_client_cleanup(client);
-            return ESP_FAIL;
-        }
-        read_total += r;
-    }
-    fclose(f);
-    esp_http_client_close(client);
-    esp_http_client_cleanup(client);
-
-    if (read_total <= 0) {
-        ESP_LOGE(TAG, "Downloaded web asset is empty (status=%d, content_length=%lld)", status, content_length);
-        remove(tmp_path);
-        return ESP_FAIL;
-    }
-
-    char versioned_path[128];
-    snprintf(versioned_path, sizeof(versioned_path), "/storage/index-%s.html.gz", version_hash);
-
-    // Prune old versions: keep at most current + this new version
-    // Remove any existing previous version different from current and new
-    // Read local manifest to know the current version filename
-    char* cur_info = read_text_file("/storage/webapp.json");
-    char cur_ver[64] = {0};
-    if (cur_info) {
-        cJSON* j = cJSON_Parse(cur_info);
-        if (j) {
-            const cJSON* v = cJSON_GetObjectItem(j, "local_version");
-            if (cJSON_IsString(v)) strncpy(cur_ver, v->valuestring, sizeof(cur_ver)-1);
-            cJSON_Delete(j);
-        }
-        free(cur_info);
-    }
-
-    // Copy temp to versioned and current
-    if (!copy_file(tmp_path, versioned_path)) {
-        ESP_LOGE(TAG, "Failed to write versioned web file");
-        remove(tmp_path);
-        return ESP_FAIL;
-    }
-    if (!copy_file(tmp_path, "/storage/index.html.gz")) {
-        ESP_LOGE(TAG, "Failed to update current index.html.gz");
-        remove(tmp_path);
-        return ESP_FAIL;
-    }
-
-    // Remove older archived version if it exists and differs from new/current
-    if (cur_ver[0] && strcmp(cur_ver, version_hash) != 0) {
-        char old_path[128];
-        snprintf(old_path, sizeof(old_path), "/storage/index-%s.html.gz", cur_ver);
-        remove(old_path);
-    }
-    remove(tmp_path);
-    return ESP_OK;
+    strncpy(current_version, BUILD_INFO_VERSION, sizeof(current_version) - 1);
+    local_fw_timestamp = FIRMWARE_BUILD_TIME;
 }
 
 // Determine whether system time has been synchronized (via SNTP)
@@ -488,20 +220,13 @@ static void get_current_version() {
     ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
              running->type, running->subtype, running->address);
 
-    // Require JSON metadata
     load_local_firmware_info();
-    if (current_version[0] == '\0' || local_fw_timestamp == 0) {
-        ESP_LOGE(TAG, "Missing /storage/firmware.json or required fields. current_version='%s' ts=%ld", current_version, (long)local_fw_timestamp);
-        assert(0 && "firmware.json missing or incomplete");
-    }
-
-    // Display effective local timestamp source
     time_t effective_ts = local_fw_timestamp;
     char build_time_str[64];
     struct tm build_timeinfo;
     gmtime_r(&effective_ts, &build_timeinfo);
     strftime(build_time_str, sizeof(build_time_str), "%Y-%m-%d %H:%M:%S UTC", &build_timeinfo);
-    ESP_LOGI(TAG, "Current firmware time (effective): %s (epoch: %ld)", build_time_str, (long)effective_ts);
+    ESP_LOGI(TAG, "Current firmware: %s, built %s (epoch: %ld)", current_version, build_time_str, (long)effective_ts);
 
     // Check if the current app is marked as valid
     const esp_partition_t *validated = esp_ota_get_boot_partition();
@@ -566,10 +291,6 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
     cJSON *version = cJSON_GetObjectItem(root, "version");
     cJSON *url = cJSON_GetObjectItem(root, "url");
     cJSON *build_timestamp_epoch = cJSON_GetObjectItem(root, "build_timestamp_epoch");
-    // Web fields (optional)
-    cJSON *web_version = cJSON_GetObjectItem(root, "web_version");
-    cJSON *web_url = cJSON_GetObjectItem(root, "web_url");
-    cJSON *web_build_timestamp_epoch = cJSON_GetObjectItem(root, "web_build_timestamp_epoch");
 
     if (!cJSON_IsString(version) || !cJSON_IsString(url)) {
         ESP_LOGE(TAG, "Manifest missing required fields");
@@ -612,10 +333,6 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         is_factory = true;
     }
 
-    // Load local web info from LittleFS
-    load_local_web_info();
-
-    // Use storage-derived timestamp if available, else embedded build timestamp
     time_t local_effective_ts = local_fw_timestamp;
 
     // Handle forced OTA path first: bypass timestamp comparison
@@ -631,7 +348,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
             ESP_LOGI(TAG, "Forced OTA successful; saving info and rebooting");
             time_t now_ts = time(NULL);
             if (now_ts <= 0) now_ts = remote_timestamp > 0 ? remote_timestamp : 0;
-            // Record attempt in NVS; DO NOT update firmware.json until validation passes
+            // Record the attempt in NVS
             save_ota_info((now_ts > 0 ? now_ts : FIRMWARE_BUILD_TIME), remote_version_str);
             g_force_ota = false; g_force_url[0]=0; g_force_version[0]=0;
             cJSON_Delete(root);
@@ -754,7 +471,7 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
                 (long)remote_timestamp, (long)local_effective_ts);
     }
 
-    // If we reach here, no firmware update is needed; proceed to classification and then web app if applicable
+    // If we reach here, no firmware update is needed; classify and report
 
     // Compute predicates early for linear classification
     char running_ver[64] = {0};
@@ -796,99 +513,27 @@ static bool parse_manifest_and_check_update(char *manifest_data) {
         return false;
     }
 
-    // Linear classification (firmware) before web work
+    // Linear classification
     bool remote_newer = (remote_timestamp > 0 && local_fw_timestamp > 0 && remote_timestamp > local_fw_timestamp);
     bool remote_older = (remote_timestamp > 0 && local_fw_timestamp > 0 && remote_timestamp < local_fw_timestamp);
 
     // ROLLED_BACK if server newer and we already tried this manifest version
     if (remote_newer && same_as_last_attempt_pre) {
         ESP_LOGI(TAG, "State: ROLLED_BACK (remote_newer && same_as_last_attempt)");
-        // fall-through to web handling; final status after web may remain ROLLED_BACK unless web fails
-        // set a flag via local var
-        ota_status_t fw_state = OTA_STATUS_ROLLED_BACK;
-
-        // Web handling below will run; after that, finalize status
-        // Reset last error before web check
-        web_last_error[0] = '\0';
-        if (cJSON_IsString(web_version)) strncpy(web_remote_version, web_version->valuestring, sizeof(web_remote_version) - 1); else web_remote_version[0] = '\0';
-        web_remote_timestamp = 0; if (cJSON_IsNumber(web_build_timestamp_epoch)) web_remote_timestamp = (time_t)web_build_timestamp_epoch->valuedouble;
-        load_local_web_info();
-
-        bool web_ok = true;
-        if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
-            const char* remote_web_url = web_url->valuestring;
-            const char* remote_web_hash = web_remote_version;
-            if (web_local_timestamp > 0 && web_local_timestamp > web_remote_timestamp) {
-                ESP_LOGI(TAG, "Local web assets newer than server; skipping web update");
-            } else if (web_local_timestamp > 0 && web_local_timestamp == web_remote_timestamp) {
-                ESP_LOGI(TAG, "Web assets up to date");
-            } else {
-                ESP_LOGI(TAG, "Updating web assets to %s", remote_web_hash);
-                report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
-                vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
-                esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
-                if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
-                else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
-            }
-        }
-
-        ota_status_t final_status = (web_ok ? fw_state : OTA_STATUS_ERROR);
-        report_ota_status(final_status, (final_status == OTA_STATUS_ERROR && web_last_error[0]) ? web_last_error : NULL);
+        report_ota_status(OTA_STATUS_ROLLED_BACK, NULL);
         cJSON_Delete(root);
         return false;
     }
 
-    // DEV_BUILD (factory newer than server). Ensure dev local timestamp remains the max of known local sources.
+    // DEV_BUILD (factory newer than server)
     if (is_factory && remote_older) {
         ESP_LOGI(TAG, "State: DEV_BUILD (factory && remote_older)");
-        // For dev images, firmware.json is the source of truth. No need to adjust timestamp.
-
-        // Handle web and finalize
-        web_last_error[0] = '\0';
-        if (cJSON_IsString(web_version)) strncpy(web_remote_version, web_version->valuestring, sizeof(web_remote_version) - 1); else web_remote_version[0] = '\0';
-        web_remote_timestamp = 0; if (cJSON_IsNumber(web_build_timestamp_epoch)) web_remote_timestamp = (time_t)web_build_timestamp_epoch->valuedouble;
-        load_local_web_info();
-        bool web_ok = true;
-        if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
-            const char* remote_web_url = web_url->valuestring; const char* remote_web_hash = web_remote_version;
-            if (!(web_local_timestamp > 0 && web_local_timestamp >= web_remote_timestamp)) {
-                report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
-                vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
-                esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
-                if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
-                else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
-            }
-        }
-        report_ota_status(web_ok ? OTA_STATUS_DEV_BUILD : OTA_STATUS_ERROR, (!web_ok && web_last_error[0]) ? web_last_error : NULL);
+        report_ota_status(OTA_STATUS_DEV_BUILD, NULL);
         cJSON_Delete(root);
         return false;
     }
 
-    // Firmware OK candidate (not newer): we require web_ok to claim UP_TO_DATE
-    web_last_error[0] = '\0';
-    if (cJSON_IsString(web_version)) strncpy(web_remote_version, web_version->valuestring, sizeof(web_remote_version) - 1); else web_remote_version[0] = '\0';
-    web_remote_timestamp = 0; if (cJSON_IsNumber(web_build_timestamp_epoch)) web_remote_timestamp = (time_t)web_build_timestamp_epoch->valuedouble;
-    load_local_web_info();
-    bool web_ok = true;
-    if (cJSON_IsString(web_url) && web_remote_timestamp > 0) {
-        const char* remote_web_url = web_url->valuestring; const char* remote_web_hash = web_remote_version;
-        if (web_local_timestamp > 0 && web_local_timestamp > web_remote_timestamp) {
-            // newer, ok
-        } else if (web_local_timestamp > 0 && web_local_timestamp == web_remote_timestamp) {
-            // equal, ok
-        } else {
-            report_ota_status(OTA_STATUS_UPGRADING_WEB, NULL);
-            vTaskDelay(pdMS_TO_TICKS(100)); // allow mqtt to publish
-            esp_err_t wret = download_web_asset(remote_web_url, remote_web_hash);
-            if (wret == ESP_OK) { save_local_web_info(remote_web_hash, web_remote_timestamp); strncpy(web_local_version, remote_web_hash, sizeof(web_local_version)-1); web_local_timestamp = web_remote_timestamp; }
-            else { snprintf(web_last_error, sizeof(web_last_error), "web download failed: %s", esp_err_to_name(wret)); web_ok = false; }
-        }
-    }
-
-    ota_status_t final_status = OTA_STATUS_UP_TO_DATE;
-    if (!web_ok) final_status = OTA_STATUS_ERROR;
-
-    report_ota_status(final_status, (final_status == OTA_STATUS_ERROR && web_last_error[0]) ? web_last_error : NULL);
+    report_ota_status(OTA_STATUS_UP_TO_DATE, NULL);
     cJSON_Delete(root);
     return false;
 }
@@ -1106,14 +751,8 @@ static void ota_update_task(void *pvParameter) {
         if (validation_deadline != 0 && (int32_t)(xTaskGetTickCount() - validation_deadline) >= 0) {
             validation_deadline = 0; // single-shot
             mark_app_valid();
-            // After validation, persist the new local firmware info so future cycles use it
-            if (read_ota_state(&g_ota_state) && g_ota_state.ota_version[0] != '\0') {
-                save_local_firmware_info(g_ota_state.ota_version, g_ota_state.ota_timestamp);
-                local_fw_timestamp = g_ota_state.ota_timestamp;
-                strncpy(current_version, g_ota_state.ota_version, sizeof(current_version)-1);
-            }
             clear_ota_state(); // OTA is complete and validated
-            // Force an immediate re-check of the manifest to update status to UP_TO_DATE or UPGRADING_WEB
+            // Force an immediate re-check of the manifest to update status to UP_TO_DATE
             last_network_check_time = 0;
         }
 
@@ -1242,10 +881,6 @@ esp_err_t ota_init(void) {
     // Get current firmware version and partition info
     ESP_LOGI(TAG, "Getting current firmware version");
     get_current_version();
-
-    // Ensure LittleFS is mounted for web OTA reads/writes
-    ESP_LOGI(TAG, "Initializing web filesystem");
-    webfs::init("storage", false);
 
     // Check if we're running from factory partition (for future use)
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -1386,7 +1021,6 @@ static void report_ota_status(ota_status_t status, const char* error_message) {
     switch (status) {
         case OTA_STATUS_DEV_BUILD: status_str = "DEV_BUILD"; break;
         case OTA_STATUS_UPGRADING_FIRMWARE: status_str = "UPGRADING_FIRMWARE"; break;
-        case OTA_STATUS_UPGRADING_WEB: status_str = "UPGRADING_WEB"; break;
         case OTA_STATUS_AWAITING_VALIDATION: status_str = "AWAITING_VALIDATION"; break;
         case OTA_STATUS_ROLLED_BACK: status_str = "ROLLED_BACK"; break;
         case OTA_STATUS_UP_TO_DATE: status_str = "UP_TO_DATE"; break;
@@ -1442,22 +1076,8 @@ static void report_ota_status(ota_status_t status, const char* error_message) {
         ESP_LOGD(TAG, "Adding remote_build_time to status: %s", remote_time_str);
     }
 
-    // Web versions/times
-    if (web_local_version[0]) cJSON_AddStringToObject(ota_json, "web_local_version", web_local_version);
-    if (web_remote_version[0]) cJSON_AddStringToObject(ota_json, "web_remote_version", web_remote_version);
-    if (web_local_timestamp > 0) {
-        char t[64]; struct tm tm1; gmtime_r(&web_local_timestamp, &tm1);
-        strftime(t, sizeof(t), "%Y-%m-%dT%H:%M:%SZ", &tm1);
-        cJSON_AddStringToObject(ota_json, "web_local_build_time", t);
-    }
-    if (web_remote_timestamp > 0) {
-        char t[64]; struct tm tm2; gmtime_r(&web_remote_timestamp, &tm2);
-        strftime(t, sizeof(t), "%Y-%m-%dT%H:%M:%SZ", &tm2);
-        cJSON_AddStringToObject(ota_json, "web_remote_build_time", t);
-    }
-    if (status == OTA_STATUS_ERROR) {
-        if (error_message && strlen(error_message) > 0) cJSON_AddStringToObject(ota_json, "error", error_message);
-        else if (web_last_error[0]) cJSON_AddStringToObject(ota_json, "error", web_last_error);
+    if (status == OTA_STATUS_ERROR && error_message && strlen(error_message) > 0) {
+        cJSON_AddStringToObject(ota_json, "error", error_message);
     }
 
     // Convert to string and publish
@@ -1480,9 +1100,6 @@ void ota_report_status(void) {
     const esp_partition_t *running = esp_ota_get_running_partition();
     bool is_factory = (running && running->subtype == ESP_PARTITION_SUBTYPE_APP_FACTORY);
 
-    // load local firmware info (required)
-    current_version[0] = '\0';
-    local_fw_timestamp = 0;
     load_local_firmware_info();
 
     // last attempt hash

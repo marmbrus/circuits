@@ -18,6 +18,8 @@ dependencies = [
 [project.optional-dependencies]
 # Only for provision.py --device-cert --yubikey, signing with a YubiKey plugged in here
 yubikey = ["yubikey-manager>=5"]
+# Only for mic_listen.py, which listens to a board's mic over MQTT
+mic = ["paho-mqtt>=2"]
 
 [tool.setuptools]
 include-package-data = true

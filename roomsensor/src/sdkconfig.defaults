@@ -33,7 +33,7 @@ CONFIG_MBEDTLS_CUSTOM_CERTIFICATE_BUNDLE=y
 CONFIG_MBEDTLS_CUSTOM_CERTIFICATE_BUNDLE_PATH="certs/letsencrypt_gen_y_roots.pem"
 
 # TLS (MQTT over mqtts://, OTA) takes its buffers from PSRAM: internal RAM is too short for them
-# alongside Wi-Fi, the HTTP server and audio DMA, which then fail to allocate (I2S aborts)
+# alongside Wi-Fi and audio DMA, which then fail to allocate (I2S aborts)
 CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
 # and so do Wi-Fi's and lwIP's, leaving internal RAM for task stacks (OTA's) and DMA
 CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y

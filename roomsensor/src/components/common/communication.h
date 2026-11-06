@@ -6,6 +6,8 @@
 
 // Add new MQTT publish helper function
 esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos = 1, int retain = 0);
+// Publishes binary data, not retained, to a full topic (e.g. sensor/<mac>/audio/mic)
+esp_err_t publish_binary(const char* topic, const void* data, int len, int qos);
 
 #ifdef __cplusplus
 extern "C" {

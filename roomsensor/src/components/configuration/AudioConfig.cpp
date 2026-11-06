@@ -2,6 +2,7 @@
 #include "cJSON.h"
 #include <cstdlib>
 #include <cstring>
+#include <strings.h>
 
 namespace config {
 
@@ -11,6 +12,8 @@ AudioConfig::AudioConfig() {
     descriptors_.push_back({"doutGPIO", ConfigValueType::I32, nullptr, true});
     descriptors_.push_back({"dinGPIO", ConfigValueType::I32, nullptr, true});
     descriptors_.push_back({"enableGPIO", ConfigValueType::I32, nullptr, true});
+    // Stream the mic over MQTT (sensor/<mac>/audio/mic)
+    descriptors_.push_back({"mic", ConfigValueType::Bool, "0", true});
 
     // Runtime (non-persisted) playback controls
     descriptors_.push_back({"url", ConfigValueType::String, nullptr, false});
@@ -44,6 +47,23 @@ esp_err_t AudioConfig::apply_update(const char* key, const char* value_str) {
     if (strcmp(key, "dinGPIO") == 0) return set_gpio(din_gpio_, value_str);
     if (strcmp(key, "enableGPIO") == 0) return set_gpio(enable_gpio_, value_str);
 
+    if (strcmp(key, "mic") == 0) {
+        if (value_str == nullptr || value_str[0] == '\0') {
+            mic_ = false;
+            return ESP_OK;
+        }
+        if (strcasecmp(value_str, "1") == 0 || strcasecmp(value_str, "true") == 0 ||
+            strcasecmp(value_str, "on") == 0 || strcasecmp(value_str, "yes") == 0) {
+            mic_ = true;
+            return ESP_OK;
+        }
+        if (strcasecmp(value_str, "0") == 0 || strcasecmp(value_str, "false") == 0 ||
+            strcasecmp(value_str, "off") == 0 || strcasecmp(value_str, "no") == 0) {
+            mic_ = false;
+            return ESP_OK;
+        }
+        return ESP_ERR_INVALID_ARG;
+    }
     if (strcmp(key, "url") == 0) {
         url_ = value_str ? value_str : "";
         ++url_requests_;
@@ -74,6 +94,7 @@ esp_err_t AudioConfig::to_json(cJSON* root_object) const {
     if (dout_gpio_ >= 0) cJSON_AddNumberToObject(obj, "doutGPIO", dout_gpio_);
     if (din_gpio_ >= 0) cJSON_AddNumberToObject(obj, "dinGPIO", din_gpio_);
     if (enable_gpio_ >= 0) cJSON_AddNumberToObject(obj, "enableGPIO", enable_gpio_);
+    if (din_gpio_ >= 0) cJSON_AddBoolToObject(obj, "mic", mic_);
     // url is left out so a config reset built from the published config can't start playback
     cJSON_AddNumberToObject(obj, "volume", volume_);
     cJSON_AddItemToObject(root_object, name(), obj);

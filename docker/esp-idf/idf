@@ -3,8 +3,7 @@
 #
 #   idf build                         -> idf.py build
 #   idf -p /dev/ttyACM0 flash monitor -> idf.py, with the serial port passed through
-#   idf run ./update_js.sh -p /dev/ttyACM0
-#                                     -> any command in the IDF environment
+#   idf run esptool.py version        -> any command in the IDF environment
 #   idf shell                         -> interactive shell in the IDF environment
 #
 # Environment:

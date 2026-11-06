@@ -12,7 +12,8 @@ namespace config {
 // I2S audio: a speaker amp (e.g. MAX98357A), a microphone (e.g. ICS-43434), and
 // playback control. Pins are persisted per board; url and volume are runtime
 // controls: setting url plays that MP3 over HTTP(S), and an empty url stops playback.
-// Volume starts at 0, so nothing is audible until it is set.
+// Volume starts at 0, so nothing is audible until it is set. mic (persisted, off by
+// default) streams the microphone over MQTT on sensor/<mac>/audio/mic.
 class AudioConfig : public ConfigurationModule {
 public:
     AudioConfig();
@@ -43,6 +44,8 @@ public:
     uint32_t url_requests() const { return url_requests_; }
     // 0..100
     int volume() const { return volume_; }
+    // Whether to stream the microphone over MQTT
+    bool mic() const { return mic_; }
 
 private:
     esp_err_t set_gpio(int& field, const char* value_str);
@@ -56,6 +59,7 @@ private:
     std::string url_;
     uint32_t url_requests_ = 0;
     int volume_ = 0;
+    bool mic_ = false;
 
     std::vector<ConfigurationValueDescriptor> descriptors_;
 };

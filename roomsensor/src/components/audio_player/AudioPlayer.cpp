@@ -36,6 +36,10 @@ esp_err_t AudioPlayer::init(config::ConfigurationManager& cfg_manager) {
     if (err != ESP_OK) return err;
     audio_io_set_volume(cfg.volume());
 
+    if (mic_stream_.init(cfg_manager) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start mic streaming");
+    }
+
     if (!cfg.has_output_pins()) return ESP_OK;
     set_amp_enabled(false);
 

@@ -14,7 +14,6 @@
 #include "gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "console_buffer.h"
 #include "esp_timer.h"
 #include <stdarg.h>
 #include <unistd.h>
@@ -50,38 +49,18 @@ static void configure_stdio_uart(void)
     esp_vfs_dev_uart_use_driver(UART_NUM_0);
 }
 
-// Record a typed line in the console buffer, which /console serves over HTTP. The
-// board's key that util/provision.py types in stays out of it.
-static void record_input(const char *line) {
-    static const char *const SECRET_PREFIX = "device_cert add key ";
-    if (strncmp(line, SECRET_PREFIX, strlen(SECRET_PREFIX)) == 0) {
-        static const char *const REDACTED = "device_cert add key <redacted>";
-        console_buffer_append(REDACTED, strlen(REDACTED), CONSOLE_DIR_IN);
-    } else {
-        console_buffer_append(line, strlen(line), CONSOLE_DIR_IN);
-    }
-    console_buffer_append("\\n", 1, CONSOLE_DIR_IN);
-}
-
 // Helper to run a command and handle errors
 static void run_command(char *line) {
     int return_code = 0;
     esp_err_t err = esp_console_run(line, &return_code);
     if (err == ESP_ERR_NOT_FOUND) {
         printf("Unrecognized command: \"%s\"\n", line);
-        console_buffer_append_str("Unrecognized command\n", CONSOLE_DIR_OUT);
     } else if (err == ESP_ERR_INVALID_ARG) {
         // Empty command
     } else if (err == ESP_OK && return_code != ESP_OK) {
         printf("Command returned non-zero error code: 0x%x\n", return_code);
-        char tmp[64];
-        int m = snprintf(tmp, sizeof(tmp), "Command returned error: 0x%x\n", return_code);
-        if (m > 0) console_buffer_append(tmp, (size_t)m, CONSOLE_DIR_OUT);
     } else if (err != ESP_OK) {
         printf("Internal error: 0x%x\n", err);
-        char tmp[64];
-        int m = snprintf(tmp, sizeof(tmp), "Internal error: 0x%x\n", err);
-        if (m > 0) console_buffer_append(tmp, (size_t)m, CONSOLE_DIR_OUT);
     }
 }
 
@@ -146,9 +125,6 @@ static void console_task(void *arg)
 {
     configure_stdio_uart();
 
-    // Initialize circular buffer in SPIRAM (128 KB)
-    (void)console_buffer_init(128 * 1024);
-
     esp_console_config_t console_config = {
         .max_cmdline_length = 256,
         .max_cmdline_args = 16,
@@ -192,7 +168,6 @@ static void console_task(void *arg)
                 continue;
             }
             
-            record_input(line);
             linenoiseHistoryAdd(line);
 
             run_command(line);
@@ -236,7 +211,6 @@ static void console_task(void *arg)
                 continue;
             }
             
-            record_input(line);
             run_command(line);
         }
     }

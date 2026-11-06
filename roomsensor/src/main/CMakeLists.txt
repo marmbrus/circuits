@@ -3,36 +3,26 @@ idf_component_register(
         "main.cpp"
         "wifi.cpp"
         "metrics.cpp"
-        "http.cpp"
         "ota.cpp"
         "telemetry.cpp"
         "netlog.cpp"
         "gpio.cpp"
-        "filesystem.cpp"
         "device_cert.cpp"
     INCLUDE_DIRS "."
-    REQUIRES i2c leds driver nvs_flash mqtt mbedtls json esp_wifi esp_app_format esp_http_server esp_http_client esp_https_ota app_update console vfs joltwallet__littlefs serial_console configuration status_led audio_player ble
+    REQUIRES i2c leds driver nvs_flash mqtt mbedtls json esp_wifi esp_app_format esp_http_client esp_https_ota app_update console vfs serial_console configuration status_led audio_player ble
     PRIV_REQUIRES espcoredump
 )
 
-# Generate build timestamp directly as compile definition (no header file)
-execute_process(
-    COMMAND date -u +%s
-    OUTPUT_VARIABLE BUILD_TIMESTAMP_EPOCH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    RESULT_VARIABLE DATE_RESULT
+# Stamp every build with its version and time (build_info.sh): compiled in as build_info.c
+# (main/build_info.h) and written to build/build_info.json for deploy_ota.sh's manifest.
+set(BUILD_INFO_C "${CMAKE_BINARY_DIR}/build_info.c")
+set(BUILD_INFO_JSON "${CMAKE_BINARY_DIR}/build_info.json")
+add_custom_target(build_info ALL
+    COMMAND bash "${CMAKE_CURRENT_LIST_DIR}/../build_info.sh" "${CMAKE_CURRENT_LIST_DIR}/.."
+            "${BUILD_INFO_C}" "${BUILD_INFO_JSON}"
+    BYPRODUCTS "${BUILD_INFO_C}" "${BUILD_INFO_JSON}"
+    COMMENT "Stamping the build's version and time"
+    VERBATIM
 )
-
-if(NOT DATE_RESULT EQUAL 0)
-    message(FATAL_ERROR "Failed to get current timestamp")
-endif()
-
-message(STATUS "Embedding build timestamp: ${BUILD_TIMESTAMP_EPOCH}")
-
-# Write timestamp to a file for deploy script to use
-file(WRITE "${CMAKE_BINARY_DIR}/firmware_build_timestamp.txt" "${BUILD_TIMESTAMP_EPOCH}")
-
-# Add timestamp as compile definition
-target_compile_definitions(${COMPONENT_LIB} PRIVATE
-    "FIRMWARE_BUILD_TIMESTAMP=${BUILD_TIMESTAMP_EPOCH}"
-)
+target_sources(${COMPONENT_LIB} PRIVATE "${BUILD_INFO_C}")
+add_dependencies(${COMPONENT_LIB} build_info)

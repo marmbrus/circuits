@@ -623,6 +623,12 @@ const uint8_t* get_device_mac(void)
 {
     return device_mac;
 }
+esp_err_t publish_binary(const char* topic, const void* data, int len, int qos) {
+    if (!mqtt_client || system_state != FULLY_CONNECTED) return ESP_ERR_INVALID_STATE;
+    int msg_id = esp_mqtt_client_publish(mqtt_client, topic, (const char*)data, len, qos, 0);
+    return msg_id < 0 ? ESP_FAIL : ESP_OK;
+}
+
 esp_err_t publish_to_topic(const char* subtopic, const char* message, int qos, int retain) {
     if (!mqtt_client || system_state != FULLY_CONNECTED) {
         ESP_LOGE(TAG, "MQTT publish failed: client not connected (state: %d)", system_state);

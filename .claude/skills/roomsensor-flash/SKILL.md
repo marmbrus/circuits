@@ -1,6 +1,6 @@
 ---
 name: roomsensor-flash
-description: How to build, flash, and provision roomsensor boards (ESP32-S3 firmware in roomsensor/src, also used by the lamp, LED, flipdot and window-sensor boards). Covers the files involved and their formats (partitions.csv, build images and offsets, fsdata/LittleFS, credentials.json and config_*.json), util/provision.py and its options, per-board certificates (--device-cert: approved on Brayden's dashboard and signed by a house YubiKey, or by one plugged in locally; the device_cert NVS namespace), update_js.sh, firmware-only esptool writes, OTA from updates.acgt.net via deploy_ota.sh, and the serial console's NVS and device_cert commands. Use it whenever the task involves flashing, reflashing, erasing, provisioning, giving a board its certificate, setting Wi-Fi or MQTT settings on a board, pushing an OTA update, or a board that boots the wrong firmware, has lost its web UI, or can't reach MQTT or OTA, even if "flash" isn't said.
+description: How to build, flash, and provision roomsensor boards (ESP32-S3 firmware in roomsensor/src, also used by the lamp, LED, flipdot and window-sensor boards). Covers the files involved and their formats (partitions.csv, build images and offsets, build_info.json, credentials.json and config_*.json), util/provision.py and its options, per-board certificates (--device-cert: approved on Brayden's dashboard and signed by a house YubiKey, or by one plugged in locally; the device_cert NVS namespace), firmware-only esptool writes, OTA from updates.acgt.net via deploy_ota.sh, and the serial console's NVS and device_cert commands. Use it whenever the task involves flashing, reflashing, erasing, provisioning, giving a board its certificate, setting Wi-Fi or MQTT settings on a board, pushing an OTA update, or a board that boots the wrong firmware, reports the wrong version, or can't reach MQTT or OTA, even if "flash" isn't said.
 ---
 
 # Flashing roomsensor boards
@@ -20,12 +20,11 @@ Everything runs from `roomsensor/src`. The target is an ESP32-S3 with 16 MB flas
 | File | Format | Role |
 |---|---|---|
 | `partitions.csv` | ESP-IDF partition CSV: `Name, Type, SubType, Offset, Size, Flags` | Flash layout (table below) |
-| `sdkconfig.defaults` | Kconfig lines (`CONFIG_X=y`) | Seed for the generated, gitignored `sdkconfig`, including the target (`esp32s3`; without it a fresh build targets the plain ESP32 and overflows IRAM). Delete `sdkconfig` to pick up changes. It also puts TLS, Wi-Fi and lwIP buffers in PSRAM: with them in internal RAM, MQTT over TLS leaves too little for the HTTP server, audio DMA (I2S aborts, a boot loop) and the OTA task. |
+| `sdkconfig.defaults` | Kconfig lines (`CONFIG_X=y`) | Seed for the generated, gitignored `sdkconfig`, including the target (`esp32s3`; without it a fresh build targets the plain ESP32 and overflows IRAM). Delete `sdkconfig` to pick up changes. It also puts TLS, Wi-Fi and lwIP buffers in PSRAM: with them in internal RAM, MQTT over TLS leaves too little for audio DMA (I2S aborts, a boot loop) and the OTA task. |
 | `build/*.bin` | Raw images | Written by `idf.py flash` / esptool |
 | `build/flash_args` | esptool args file (`--flash_mode …` then `offset file` pairs) | `esptool.py --chip esp32s3 -p PORT write_flash @flash_args`, run from `build/` |
-| `build/flasher_args.json` | JSON: `flash_files` maps offset→file, plus a per-image `{offset, file}` | Read by `update_js.sh` to find the `storage` offset |
+| `build/build_info.json` | JSON: `{version, git_describe, build_timestamp, build_timestamp_epoch}` | Written on every build by `build_info.sh`, which also compiles the same version and time into the firmware (`main/build_info.h`). The version is the short git hash, or `revYYYYMMDDHHMMSS-<hash>-dirty` from a modified tree. OTA compares the compiled-in time with the manifest's; `deploy_ota.sh` writes the manifest from this file. |
 | `flasher_args.json` (project root) | — | Stale leftover from another project (2MB, `surprise.bin`). Ignore it. |
-| `fsdata/` | Directory packed into a LittleFS image (`build/storage.bin`) | `index.html.gz` (gzipped single-file Vite build of `js/`), `webapp.json` and `firmware.json`. Each JSON is `{local_version, local_git_describe, local_build_timestamp, local_build_timestamp_epoch}`, regenerated on every build. Gitignored. |
 | `credentials.json` | Config JSON (below) | Gitignored. `provision.py` applies it before any other config. It normally holds `wifi.ssid`, `wifi.password` and `wifi.mqtt_broker`. |
 | `config_<board>.json` | Config JSON | Board-type settings: GPIOs, LEDs, sensors, `device.type` |
 | `certs/letsencrypt_gen_y_roots.pem` | PEM bundle | Added to ESP-IDF's CA bundle (`CONFIG_MBEDTLS_CUSTOM_CERTIFICATE_BUNDLE_PATH` in `sdkconfig.defaults`) so OTA keeps trusting `updates.acgt.net`'s Let's Encrypt chain |
@@ -42,7 +41,7 @@ Everything runs from `roomsensor/src`. The target is an ESP32-S3 with 16 MB flas
 | `factory` | `0x20000` | 4000K | `sensorv2.bin` |
 | `ota_0` / `ota_1` | `0x410000` / `0x800000` | 4000K each | OTA only |
 | `coredump` | `0xbe8000` | 128K | |
-| `storage` (LittleFS) | `0xc08000` | 4000K | `storage.bin` |
+| `storage` | `0xc08000` | 4000K | Unused. It held the web UI (LittleFS), which is gone; the partition table can't change over OTA, so it stays. Nothing writes it, and old contents are harmless. |
 
 ### Config JSON format
 
@@ -77,22 +76,15 @@ The top-level keys are NVS namespaces, one per config module: `device`, `wifi`, 
 ../../docker/esp-idf/idf -p /dev/ttyACM0 flash                    # Linux
 (cd build && esptool.py --chip esp32s3 -p PORT write_flash @flash_args)  # macOS
 ```
-This rewrites `otadata`, so the board boots `factory`. It also overwrites `storage` with whatever is in `fsdata/` (see the web UI caveat below). Follow it with `provision.py --skip-flash` if NVS is empty.
+This rewrites `otadata`, so the board boots `factory`. Follow it with `provision.py --skip-flash` if NVS is empty.
 
 **3. Firmware only:** write the OTA record along with the app. A board that has taken an OTA update boots from `ota_0`/`ota_1` and would ignore a new `factory` image.
 ```bash
 esptool.py --chip esp32s3 -p PORT write_flash 0x10000 build/ota_data_initial.bin 0x20000 build/sensorv2.bin
 ```
 
-**4. Web UI only:** `./update_js.sh [-p PORT] [--baud 460800] [--no-stub]`
-- The flags are parsed only in that order.
-- It runs `npm ci && npm run build` in `js/` and gzips `index.html` into a fresh `fsdata/`.
-- It runs `idf.py build` to repack `storage.bin`, then writes it at the `storage` offset.
-- If the stub fails, it retries at 115200 without the stub.
-- It needs `idf.py` and `esptool.py` on PATH: use `idf run ./update_js.sh -p PORT` on Linux, or a host IDF.
-
-**5. OTA, no cable:** `./deploy_ota.sh [prod]` (`OTA_SERVER=user@host` overrides `smll.home`)
-- It builds and uploads `firmware-<hash>.bin`, `index-<hash>.html.gz` and `manifest-dev.json` (or `manifest.json` for `prod`, which needs a clean tree) to `smll:/home/brayden/updates`. Uploading needs the `brayden` group.
+**4. OTA, no cable:** `./deploy_ota.sh [prod]` (`OTA_SERVER=user@host` overrides `smll.home`)
+- It builds and uploads `firmware-<version>.bin` and `manifest-dev.json` (or `manifest.json` for `prod`, which needs a clean tree) to `smll:/home/brayden/updates`. Uploading needs the `brayden` group. The manifest's `version` and `build_timestamp_epoch` come from `build/build_info.json`, the same values the firmware carries, so a board running that build reports `UP_TO_DATE`.
 - Brayden's nginx serves that directory as `https://updates.acgt.net`, and only to boards presenting a house certificate.
 - Boards with `wifi.channel` set read `manifest-<channel>.json`; boards without it read `manifest.json`. Leave `channel` unset for prod: `channel=prod` would look for `manifest-prod.json`, which nothing writes.
 - `force_ota [hash]` on the console forces an update now.
@@ -149,5 +141,4 @@ After the board connects, it publishes its effective config on MQTT at `sensor/<
 
 - **`erase-flash` wipes NVS,** including the Wi-Fi settings, tags, board config and the board certificate, which then needs a new one approved. `provision.py` only erases with `--erase --delete-cert`. Only do it on a blank board or when you have the JSON to replay, and add `--device-cert`. Don't run `idf.py erase-flash` or `esptool erase_flash` by hand on a provisioned board.
 - **A board without a certificate can't update itself.** `updates.acgt.net` refuses it, and an `mqtts://` broker refuses the connection. The boot log says which.
-- **A full flash can leave the board without its web UI.** `idf build` packs whatever is in `fsdata/`, and only `update_js.sh` puts `index.html.gz` there, so a fresh checkout has none. The build also stamps `webapp.json` with the build time, so OTA treats the missing UI as newer than the server's and won't fetch it. Run `update_js.sh` afterwards, or use path 3.
 - **If a flash appears to do nothing,** the board is booting an OTA slot. Write `ota_data_initial.bin` too.
