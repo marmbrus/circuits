@@ -1,4 +1,5 @@
-"""The boards' certificates, signed by the YubiKey plugged into this computer.
+"""The boards' certificates, signed by a house YubiKey: through Brayden, approved on its dashboard,
+or by one plugged into this computer.
 
 A board presents its certificate to the house's MQTT broker (brayden repo, docker/smll/mqtt) on its
 TLS listener (8883), and to updates.acgt.net for OTA updates (docker/smll/auth). Both take only
@@ -11,8 +12,20 @@ connects.
 A board's certificate is made like Brayden's own (server/crates/integrations/security/src/ca.rs):
 an EC P-256 key, CN=ESP_<mac> and O=acgt.net, good only for client authentication, for five
 years. The key is made here and goes only to the board; no copy is kept.
+
+By default Brayden signs it (BraydenAuthority, brayden's
+server/crates/integrations/security/src/board_certificates.rs): this sends Brayden the public key
+and the board's name, someone signed in approves the request on the dashboard while a house
+YubiKey is plugged into smll (or signs from a Mac), and Brayden answers with the certificate and
+the house's authorities. With a YubiKey plugged in here instead, YubiKeyAuthority signs it locally.
 """
+import base64
 import datetime
+import hashlib
+import json
+import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from typing import Callable, List, Optional
 
@@ -147,3 +160,99 @@ class YubiKeyAuthority:
 
         key_type = self._piv.get_slot_metadata(SLOT.AUTHENTICATION).key_type
         return sign_certificate_builder(self._piv, SLOT.AUTHENTICATION, key_type, builder)
+
+
+BRAYDEN_URL = "https://brayden.acgt.net"
+
+
+def public_key_sha256(public_key: ec.EllipticCurvePublicKey) -> str:
+    """The SHA-256 of the key's DER SubjectPublicKeyInfo, hex, as Brayden shows it."""
+    der = public_key.public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+    return hashlib.sha256(der).hexdigest()
+
+
+def fingerprint(sha256: str) -> str:
+    """The first 16 hex digits in groups of four, as the dashboard shows them."""
+    return " ".join(sha256[i:i + 4] for i in range(0, 16, 4))
+
+
+def check_issued(name: str, key: ec.EllipticCurvePrivateKey, certificate_pem: str, chain_pem: str) -> x509.Certificate:
+    """The certificate Brayden sent, once it names `name` for `key` and one of `chain_pem` signed it."""
+    certificate = x509.load_pem_x509_certificate(certificate_pem.encode())
+    expected = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, name), x509.NameAttribute(NameOID.ORGANIZATION_NAME, ORGANIZATION)])
+    if {a.oid: a.value for a in certificate.subject} != {a.oid: a.value for a in expected}:
+        raise RuntimeError(f"Brayden's certificate names {describe(certificate)}, not {name}")
+    if public_key_sha256(certificate.public_key()) != public_key_sha256(key.public_key()):
+        raise RuntimeError("Brayden's certificate is for another key")
+    for authority in authorities(chain_pem):
+        try:
+            certificate.verify_directly_issued_by(authority)
+            return certificate
+        except Exception:  # noqa: BLE001 - try the next authority
+            continue
+    raise RuntimeError("None of the authorities Brayden sent signed its certificate")
+
+
+class BraydenAuthority:
+    """Brayden, signing a board's certificate once someone approves it on the dashboard.
+
+    From the house only: Brayden takes these requests without a sign-in from the house's addresses.
+    """
+
+    def __init__(self, url: str = BRAYDEN_URL, poll_s: float = 2.0, timeout_s: float = 660.0) -> None:
+        self.url = url.rstrip("/")
+        self.poll_s = poll_s
+        self.timeout_s = timeout_s
+
+    def _call(self, method: str, path: str, body: Optional[dict] = None) -> dict:
+        data = json.dumps(body).encode() if body is not None else None
+        request = urllib.request.Request(f"{self.url}/api/security{path}", data=data, method=method,
+                                         headers={"Content-Type": "application/json", "Accept": "application/json"})
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return json.loads(response.read())
+        except urllib.error.HTTPError as e:
+            try:
+                why = json.loads(e.read()).get("error") or e.reason
+            except Exception:  # noqa: BLE001
+                why = e.reason
+            raise RuntimeError(f"Brayden refused ({e.code}): {why}") from e
+        except urllib.error.URLError as e:
+            raise RuntimeError(f"Can't reach {self.url}: {e.reason}") from e
+
+    @property
+    def dashboard(self) -> str:
+        return f"{self.url}/?tab=security&section=mqtt"
+
+    def mint(self, name: str, ca_pem: Optional[str] = None, say: Callable[[str], None] = print) -> BoardCertificate:
+        """A new key, and its certificate for `name` once someone approves the request.
+
+        `ca_pem` is what the board trusts for the broker's certificate; by default the authorities
+        Brayden sends.
+        """
+        key = ec.generate_private_key(ec.SECP256R1())
+        spki = key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+        created = self._call("POST", "/boards/requests", {"name": name, "public_key": base64.b64encode(spki).decode()})
+        sha256 = public_key_sha256(key.public_key())
+        if created.get("public_key_sha256") != sha256:
+            raise RuntimeError("Brayden heard another key than the one sent")
+        say(f"Asked Brayden for {name}'s certificate, key {fingerprint(sha256)}.")
+        say(f"Approve it at {self.dashboard} (Board certificates), with a YubiKey in smll.")
+        deadline = time.time() + self.timeout_s
+        while time.time() < deadline:
+            answer = self._call("GET", f"/boards/requests/{created['id']}")
+            state = answer.get("state")
+            if state == "issued":
+                chain = answer["chain"]
+                certificate = check_issued(name, key, answer["certificate"], chain)
+                say(f"  Approved by {answer.get('answered_by', 'someone')}.")
+                key_pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                            serialization.NoEncryption()).decode()
+                return BoardCertificate(certificate=certificate, key_pem=key_pem, ca_pem=ca_pem or chain)
+            if state == "denied":
+                raise RuntimeError(f"{answer.get('answered_by', 'Someone')} denied {name}'s certificate")
+            if state == "expired":
+                raise RuntimeError(f"Nobody approved {name}'s certificate in time")
+            time.sleep(self.poll_s)
+        raise RuntimeError(f"Nobody approved {name}'s certificate in time")
+

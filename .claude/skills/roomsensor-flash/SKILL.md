@@ -1,6 +1,6 @@
 ---
 name: roomsensor-flash
-description: How to build, flash, and provision roomsensor boards (ESP32-S3 firmware in roomsensor/src, also used by the lamp, LED, flipdot and window-sensor boards). Covers the files involved and their formats (partitions.csv, build images and offsets, fsdata/LittleFS, credentials.json and config_*.json), util/provision.py and its options, per-board certificates signed by a YubiKey (--device-cert, the device_cert NVS namespace), update_js.sh, firmware-only esptool writes, OTA from updates.acgt.net via deploy_ota.sh, and the serial console's NVS and device_cert commands. Use it whenever the task involves flashing, reflashing, erasing, provisioning, giving a board its certificate, setting Wi-Fi or MQTT settings on a board, pushing an OTA update, or a board that boots the wrong firmware, has lost its web UI, or can't reach MQTT or OTA, even if "flash" isn't said.
+description: How to build, flash, and provision roomsensor boards (ESP32-S3 firmware in roomsensor/src, also used by the lamp, LED, flipdot and window-sensor boards). Covers the files involved and their formats (partitions.csv, build images and offsets, fsdata/LittleFS, credentials.json and config_*.json), util/provision.py and its options, per-board certificates (--device-cert: approved on Brayden's dashboard and signed by a house YubiKey, or by one plugged in locally; the device_cert NVS namespace), update_js.sh, firmware-only esptool writes, OTA from updates.acgt.net via deploy_ota.sh, and the serial console's NVS and device_cert commands. Use it whenever the task involves flashing, reflashing, erasing, provisioning, giving a board its certificate, setting Wi-Fi or MQTT settings on a board, pushing an OTA update, or a board that boots the wrong firmware, has lost its web UI, or can't reach MQTT or OTA, even if "flash" isn't said.
 ---
 
 # Flashing roomsensor boards
@@ -12,7 +12,8 @@ Everything runs from `roomsensor/src`. The target is an ESP32-S3 with 16 MB flas
 - **Docker (preferred):** `../../docker/esp-idf/idf <idf.py args>`. It also takes `idf run <cmd>` and `idf shell`. See `docker/esp-idf/README.md`. If `build/` came from a host IDF, run `idf fullclean` once.
 - **macOS:** Docker can't reach USB serial ports, and the wrapper's `stat -c` is GNU-only, so `idf -p … flash` fails. Build in Docker, then flash from the host with `esptool` (`pip install esptool`). Ports look like `/dev/cu.usbserial-*` or `/dev/cu.usbmodem*`.
 - **Host IDF:** `util/provision.py`'s flash step hard-codes `. ~/esp/v5.3/esp-idf/export.sh && idf.py erase-flash flash`. Without that install, pass `--skip-flash`.
-- **Python utilities:** `cd util && python3 -m venv .venv && . .venv/bin/activate && pip install -e .` (installs pyserial, plus `cryptography` and `yubikey-manager` for `--device-cert`).
+- **Python utilities:** `cd util && python3 -m venv .venv && . .venv/bin/activate && pip install -e .` (pyserial and `cryptography`). Add `'.[yubikey]'` only to sign with a YubiKey plugged in locally (`--yubikey`); it builds `pyscard`, which needs `swig` and `libpcsclite-dev`.
+- **Serial port access (Linux):** the port belongs to `dialout`. Without that group, add it (`sudo usermod -aG dialout $USER`, then log in again) or run the serial steps with `sudo`.
 
 ## Files
 
@@ -62,8 +63,8 @@ The top-level keys are NVS namespaces, one per config module: `device`, `wifi`, 
 
 ## Ways to flash
 
-**1. Blank board, end to end:** `python util/provision.py [config.json ...] [--port PORT] [--skip-flash | --program] [--device-cert [--yubikey SERIAL] [--mqtt-ca FILE]]`
-- It validates every config file, and the YubiKey when `--device-cert` is given. Then it runs `idf.py erase-flash flash` (unless `--skip-flash`; `--program` is the same flag).
+**1. Blank board, end to end:** `python util/provision.py [config.json ...] [--port PORT] [--skip-flash | --program] [--device-cert [--yubikey [SERIAL]] [--brayden URL] [--mqtt-ca FILE]]`
+- It validates every config file, and the local YubiKey when `--yubikey` is given. Then it runs `idf.py erase-flash flash` (unless `--skip-flash`; `--program` is the same flag).
 - Then it resets the board over RTS/DTR and waits for `Console initialized` and `Startup sequence complete`.
 - It applies `credentials.json`, then each config file in order, then the certificate (see below), then sends `restart`.
 - If `--port` is missing it picks the most USB-looking serial port.
@@ -100,16 +101,17 @@ esptool.py --chip esp32s3 -p PORT write_flash 0x10000 build/ota_data_initial.bin
 Each board has its own client certificate. The MQTT broker's TLS listener (8883) needs it, and so does `updates.acgt.net`, which serves no OTA updates to a board without one.
 
 ```bash
-python util/provision.py --program --device-cert [--yubikey SERIAL] [--mqtt-ca FILE]
+python util/provision.py --program --device-cert [--yubikey [SERIAL]] [--brayden URL] [--mqtt-ca FILE]
 ```
 
-- **Needs:** a house YubiKey plugged in (the CA key in PIV slot 9a), and the `util/` package installed.
+- **Needs:** the `util/` package installed, a computer in the house, and someone who can sign in to Brayden's dashboard with a house YubiKey plugged into smll (or signing from a Mac).
 - **What it does:**
   - It reads the board's name from `device_cert status` and makes an EC P-256 key on the host.
-  - The YubiKey signs a certificate for it: `CN=ESP_<mac>`, `O=acgt.net`, client authentication only, valid five years.
-  - It writes the key, certificate and CA to the board. No copy of the key is kept, so re-provisioning makes a new key.
-- **`--yubikey SERIAL`:** which YubiKey to sign with, when more than one is plugged in.
-- **`--mqtt-ca FILE`:** a PEM bundle of the authorities the board checks the broker's certificate against. The default is the YubiKey's own CA certificate. To trust every house authority, use `~/.brayden/config/security/mqtt/broker/ca.pem` from smll. `updates.acgt.net` is checked with ESP-IDF's bundle instead.
+  - It asks Brayden for the certificate (`POST https://brayden.acgt.net/api/security/boards/requests`, house only, no sign-in) and prints the key's fingerprint and the dashboard link (`/?tab=security&section=mqtt`).
+  - Someone approves it under **Board certificates** after checking the fingerprint. Brayden signs `CN=ESP_<mac>`, `O=acgt.net`, client authentication only, valid five years, and raises a critical alert. The request waits 10 minutes; `provision.py` polls every 2 s.
+  - It checks the certificate is for its key and signed by one of the authorities Brayden sent, then writes the key, certificate and those authorities to the board. No copy of the key is kept, so re-provisioning makes a new key.
+- **`--yubikey [SERIAL]`:** sign with a YubiKey plugged into this computer instead (the serial picks one when several are). The board then trusts only that YubiKey's CA for the broker unless `--mqtt-ca` says otherwise.
+- **`--mqtt-ca FILE`:** a PEM bundle of the authorities the board checks the broker's certificate against, instead of the ones Brayden sends. `updates.acgt.net` is checked with ESP-IDF's bundle instead.
 - **Flashing too:** drop `--program` to flash first, and add config files to apply them in the same run. The board uses the certificate from its next boot. Brayden creates its broker account (limited to `sensor/<mac>/#`) the first time it connects.
 
 **Storage:** NVS namespace `device_cert`, as blobs `cert`, `key` and `ca`, each a PEM without its trailing NUL.

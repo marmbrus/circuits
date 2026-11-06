@@ -42,27 +42,31 @@ Board certificates
 
 Each board has a certificate of its own, which it presents to the house's MQTT broker (brayden
 repo, `docker/smll/mqtt`, TLS listener on 8883) and to `updates.acgt.net` for OTA updates
-(`docker/smll/auth`). Both take only certificates from one of the house's authorities. Each
-authority is a YubiKey holding the CA's key in PIV slot 9a (brayden's `docker/smll/yubikey/README.md`).
-With one of them plugged into the computer provisioning the board:
+(`docker/smll/auth`). Both take only certificates from one of the house's authorities, each a
+YubiKey holding the CA's key in PIV slot 9a (brayden's `docker/smll/yubikey/README.md`).
 
 ```bash
 python provision.py --program --device-cert
 ```
 
-reads the board's name from its console (`device_cert status`), makes an EC P-256 key and a
-certificate for it signed by the YubiKey, and writes the key, the certificate and the broker's
-authorities to the board's NVS (namespace `device_cert`). The key isn't kept anywhere else. The
-certificate has `CN=ESP_<mac>` (the station MAC as in the `sensor/<mac>/` topics) and `O=acgt.net`,
-is good for client authentication only, and lasts five years, like Brayden's own. The board uses
-it from its next boot.
+reads the board's name from its console (`device_cert status`) and makes an EC P-256 key for it.
+It sends Brayden the public key and the name (`POST https://brayden.acgt.net/api/security/boards/requests`,
+from the house only), and prints the key's fingerprint and the dashboard's link. On the Security
+tab's MQTT subtab, under Board certificates, check the fingerprint matches and approve: that takes
+the Google sign-in and a house YubiKey plugged into smll (or signing from a Mac). Brayden signs the
+certificate, and `provision.py`, which asks every 2 s for up to 11 minutes, writes the key, the
+certificate and the house's authorities to the board's NVS (namespace `device_cert`). The key isn't
+kept anywhere else. The certificate has `CN=ESP_<mac>` (the station MAC as in the `sensor/<mac>/`
+topics) and `O=acgt.net`, is good for client authentication only, and lasts five years, like
+Brayden's own. The board uses it from its next boot.
 
-- `--yubikey <serial>` picks the YubiKey when more than one is plugged in.
-- `--mqtt-ca <file>` sets the authorities the board checks the broker's certificate against. By
-  default it's only the YubiKey's own CA certificate. To trust every house authority (for example
-  when the other YubiKey might have signed the broker's certificate), copy
-  `~/.brayden/config/security/mqtt/broker/ca.pem` from smll. (`updates.acgt.net` has a public
-  certificate, which the board checks with ESP-IDF's bundle.)
+- `--yubikey [<serial>]` signs with a YubiKey plugged into this computer instead (`pip install -e
+  '.[yubikey]'`, which needs `swig` and `libpcsclite-dev` to build `pyscard`); the serial picks one
+  when more than one is plugged in. The board then trusts only that YubiKey's CA for the broker.
+- `--brayden <url>` asks another Brayden (default `https://brayden.acgt.net`).
+- `--mqtt-ca <file>` sets the authorities the board checks the broker's certificate against,
+  instead of the ones Brayden sends. (`updates.acgt.net` has a public certificate, which the board
+  checks with ESP-IDF's bundle.)
 
 OTA always goes to `updates.acgt.net`, which refuses a board without a certificate, so a board
 needs one before it can update itself. `deploy_ota.sh` uploads there (smll's `/home/brayden/updates`,

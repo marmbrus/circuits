@@ -149,7 +149,7 @@ def run_device_cert(console: SerialConsole, args: str, timeout_s: float = 10.0) 
 
 
 def provision_device_cert(console: SerialConsole, authority, ca_pem: Optional[str]) -> None:
-    """Mints the board's certificate with the YubiKey and stores it on the board."""
+    """Gets the board's certificate, from Brayden or the YubiKey plugged in here, and stores it on the board."""
     from roomsensor_util import device_cert
 
     status = run_device_cert(console, "status")
@@ -157,8 +157,11 @@ def provision_device_cert(console: SerialConsole, authority, ca_pem: Optional[st
     if not match:
         raise RuntimeError("The board didn't say its certificate name")
     name = match.group(1)
-    print(f"Minting a certificate for {name} with YubiKey {authority.serial}...")
-    cert = device_cert.mint(name, authority.certificate, authority.sign, ca_pem=ca_pem)
+    if isinstance(authority, device_cert.BraydenAuthority):
+        cert = authority.mint(name, ca_pem=ca_pem)
+    else:
+        print(f"Minting a certificate for {name} with YubiKey {authority.serial}...")
+        cert = device_cert.mint(name, authority.certificate, authority.sign, ca_pem=ca_pem)
 
     run_device_cert(console, "begin")
     for part, pem in (("cert", cert.certificate_pem), ("key", cert.key_pem), ("ca", cert.ca_pem)):
@@ -172,20 +175,28 @@ def provision_device_cert(console: SerialConsole, authority, ca_pem: Optional[st
           f"mqtts://mqtt.acgt.net:8883. Brayden names it O={device_cert.ORGANIZATION},CN={name}.")
 
 
-def open_authority(stack: contextlib.ExitStack, serial: Optional[int], ca_path: Optional[str]):
-    """The YubiKey's authority, held open on `stack`, and the CA bundle for the board (None: the
-    YubiKey's own CA certificate). Exits if either isn't usable."""
+def open_authority(stack: contextlib.ExitStack, yubikey: Optional[int], brayden_url: str, ca_path: Optional[str]):
+    """Who signs the board's certificate, and the CA bundle for the board (None: what the signer
+    trusts). Brayden, unless `yubikey` asks for the YubiKey plugged in here (0: the only one), which
+    is held open on `stack`. Exits if either isn't usable."""
     try:
         from roomsensor_util import device_cert
     except ImportError as e:
-        print(f"--device-cert needs yubikey-manager ({e}). Install with: pip install yubikey-manager", file=sys.stderr)
+        print(f"--device-cert needs the cryptography package ({e}). Install with: pip install -e util", file=sys.stderr)
         sys.exit(1)
-    try:
-        authority = stack.enter_context(device_cert.YubiKeyAuthority(serial))
-    except Exception as e:  # noqa: BLE001
-        print(f"Error: can't use the YubiKey: {e}", file=sys.stderr)
-        sys.exit(1)
-    print(f"Board certificates: YubiKey {authority.serial}, {device_cert.describe(authority.certificate)}")
+    if yubikey is None:
+        authority = device_cert.BraydenAuthority(brayden_url)
+        print(f"Board certificates: from {authority.url}, approved on its dashboard")
+    else:
+        try:
+            authority = stack.enter_context(device_cert.YubiKeyAuthority(yubikey or None))
+        except ImportError as e:
+            print(f"--yubikey needs yubikey-manager ({e}). Install with: pip install yubikey-manager", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:  # noqa: BLE001
+            print(f"Error: can't use the YubiKey: {e}", file=sys.stderr)
+            sys.exit(1)
+        print(f"Board certificates: YubiKey {authority.serial}, {device_cert.describe(authority.certificate)}")
 
     ca_pem = None
     if ca_path:
@@ -195,7 +206,7 @@ def open_authority(stack: contextlib.ExitStack, serial: Optional[int], ca_path: 
         except Exception as e:  # noqa: BLE001
             print(f"Error: can't read the authorities in {ca_path}: {e}", file=sys.stderr)
             sys.exit(1)
-        if authority.certificate not in bundle:
+        if isinstance(authority, device_cert.YubiKeyAuthority) and authority.certificate not in bundle:
             print(f"Warning: {ca_path} doesn't have YubiKey {authority.serial}'s CA certificate", file=sys.stderr)
     return authority, ca_pem
 
@@ -224,14 +235,21 @@ def main() -> None:
     parser.add_argument(
         "--device-cert",
         action="store_true",
-        help="Give the board a new certificate (CN=ESP_<mac>, O=acgt.net) for MQTT and OTA,\n"
-             "signed by the CA on the YubiKey plugged into this computer."
+        help="Give the board a new certificate (CN=ESP_<mac>, O=acgt.net) for MQTT and OTA.\n"
+             "Brayden signs it once someone approves the request on its dashboard, with a YubiKey\n"
+             "plugged into smll; or the YubiKey plugged in here, with --yubikey."
     )
-    parser.add_argument("--yubikey", type=int, help="Serial of the YubiKey to sign with, when more than one is plugged in")
+    parser.add_argument(
+        "--yubikey", type=int, nargs="?", const=0, metavar="SERIAL",
+        help="Sign with the YubiKey plugged into this computer instead of through Brayden\n"
+             "(its serial, when more than one is plugged in)"
+    )
+    parser.add_argument("--brayden", default="https://brayden.acgt.net", metavar="URL",
+                        help="Brayden, which signs boards' certificates (default: %(default)s)")
     parser.add_argument(
         "--mqtt-ca",
         help="PEM file of the authorities the board checks the broker's certificate against\n"
-             "(default: the YubiKey's CA certificate). On smll: ~/.brayden/config/security/mqtt/broker/ca.pem"
+             "(default: the house's authorities from Brayden, or the YubiKey's CA certificate)"
     )
     args = parser.parse_args()
     
@@ -257,7 +275,7 @@ def main() -> None:
     stack = contextlib.ExitStack()
     authority, mqtt_ca_pem = None, None
     if args.device_cert:
-        authority, mqtt_ca_pem = open_authority(stack, args.yubikey, args.mqtt_ca)
+        authority, mqtt_ca_pem = open_authority(stack, args.yubikey, args.brayden, args.mqtt_ca)
     # --- End: Fail-fast validation ---
 
     # The script is in util/, so the project root is one level up.

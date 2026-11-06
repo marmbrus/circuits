@@ -82,3 +82,117 @@ def test_mint_keeps_a_given_bundle(authority):
     bundle = ca.public_bytes(serialization.Encoding.PEM).decode() * 2
     board = device_cert.mint("ESP_aabbcc001122", ca, sign, ca_pem=bundle)
     assert board.ca_pem == bundle
+
+
+class FakeBrayden:
+    """Brayden's board certificate requests (brayden's board_certificates.rs), served on localhost:
+    each request is answered as `answer` says once asked about `polls` times."""
+
+    def __init__(self, ca, sign, answer="issued", name_on_cert=None, polls=2):
+        import base64
+        import http.server
+        import json
+        import threading
+        from cryptography.hazmat.primitives.serialization import load_der_public_key
+
+        fake = self
+        self.requests = []
+        ca_pem = ca.public_bytes(serialization.Encoding.PEM).decode()
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def reply(self, status, body):
+                data = json.dumps(body).encode()
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
+            def do_POST(self):
+                body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+                if self.path != "/api/security/boards/requests":
+                    return self.reply(404, {"error": "no such route"})
+                if not body["name"].startswith("ESP_"):
+                    return self.reply(400, {"error": "not a board's name"})
+                key = load_der_public_key(base64.b64decode(body["public_key"]))
+                fake.requests.append({"name": body["name"], "key": key, "polls": 0})
+                self.reply(200, {"id": str(len(fake.requests) - 1), "name": body["name"], "state": "pending",
+                                 "public_key_sha256": device_cert.public_key_sha256(key), "expires_at": "later"})
+
+            def do_GET(self):
+                request = fake.requests[int(self.path.rsplit("/", 1)[1])]
+                request["polls"] += 1
+                if request["polls"] < polls:
+                    return self.reply(200, {"state": "pending"})
+                if answer != "issued":
+                    return self.reply(200, {"state": answer, "answered_by": "m@example.com"})
+                now = datetime.datetime.now(datetime.timezone.utc)
+                cert = sign(device_cert.certificate_builder(name_on_cert or request["name"], request["key"], ca, now))
+                self.reply(200, {"state": "issued", "answered_by": "m@example.com", "chain": ca_pem,
+                                 "certificate": cert.public_bytes(serialization.Encoding.PEM).decode()})
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def close(self):
+        self.server.shutdown()
+
+
+def test_brayden_signs_once_approved(authority):
+    ca, sign = authority
+    brayden = FakeBrayden(ca, sign)
+    said = []
+    try:
+        board = device_cert.BraydenAuthority(brayden.url, poll_s=0.01).mint("ESP_aabbcc001122", say=said.append)
+    finally:
+        brayden.close()
+    cert = board.certificate
+    assert cert.subject.rfc4514_string() == "O=acgt.net,CN=ESP_aabbcc001122"
+    cert.verify_directly_issued_by(ca)
+    # The key made here, sent only as its public half
+    key = serialization.load_pem_private_key(board.key_pem.encode(), password=None)
+    assert device_cert.public_key_sha256(key.public_key()) == device_cert.public_key_sha256(cert.public_key())
+    assert device_cert.public_key_sha256(brayden.requests[0]["key"]) == device_cert.public_key_sha256(key.public_key())
+    # The board trusts the authorities Brayden sent, for the broker
+    assert device_cert.authorities(board.ca_pem) == [ca]
+    # What to look for on the dashboard
+    fingerprint = device_cert.fingerprint(device_cert.public_key_sha256(key.public_key()))
+    assert any(fingerprint in line for line in said)
+    assert any("/?tab=security&section=mqtt" in line for line in said)
+
+
+def test_brayden_refusals(authority):
+    ca, sign = authority
+    for answer, says in (("denied", "denied"), ("expired", "in time")):
+        brayden = FakeBrayden(ca, sign, answer=answer)
+        try:
+            with pytest.raises(RuntimeError, match=says):
+                device_cert.BraydenAuthority(brayden.url, poll_s=0.01).mint("ESP_aabbcc001122", say=lambda _: None)
+        finally:
+            brayden.close()
+    brayden = FakeBrayden(ca, sign, name_on_cert="ESP_000000000000")
+    try:
+        with pytest.raises(RuntimeError, match="names"):
+            device_cert.BraydenAuthority(brayden.url, poll_s=0.01).mint("ESP_aabbcc001122", say=lambda _: None)
+        with pytest.raises(RuntimeError, match="400.*not a board's name"):
+            device_cert.BraydenAuthority(brayden.url, poll_s=0.01).mint("board", say=lambda _: None)
+    finally:
+        brayden.close()
+
+
+def test_check_issued_wants_our_key_and_their_authority(authority):
+    ca, sign = authority
+    now = datetime.datetime.now(datetime.timezone.utc)
+    ours = ec.generate_private_key(ec.SECP256R1())
+    ca_pem = ca.public_bytes(serialization.Encoding.PEM).decode()
+    other = sign(device_cert.certificate_builder("ESP_aabbcc001122", ec.generate_private_key(ec.SECP256R1()).public_key(), ca, now))
+    with pytest.raises(RuntimeError, match="another key"):
+        device_cert.check_issued("ESP_aabbcc001122", ours, other.public_bytes(serialization.Encoding.PEM).decode(), ca_pem)
+    stranger_key = ec.generate_private_key(ec.SECP256R1())
+    stranger = device_cert.certificate_builder("ESP_aabbcc001122", ours.public_key(), ca, now).sign(stranger_key, hashes.SHA256())
+    with pytest.raises(RuntimeError, match="None of the authorities"):
+        device_cert.check_issued("ESP_aabbcc001122", ours, stranger.public_bytes(serialization.Encoding.PEM).decode(), ca_pem)

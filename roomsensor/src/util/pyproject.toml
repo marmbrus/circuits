@@ -13,8 +13,11 @@ dependencies = [
   "pyserial>=3.5",
   "pytest>=8.2",
   "cryptography>=42",
-  "yubikey-manager>=5",
 ]
+
+[project.optional-dependencies]
+# Only for provision.py --device-cert --yubikey, signing with a YubiKey plugged in here
+yubikey = ["yubikey-manager>=5"]
 
 [tool.setuptools]
 include-package-data = true
