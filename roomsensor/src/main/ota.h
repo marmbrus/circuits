@@ -48,7 +48,7 @@ void ota_report_status(void);
  * If version_hash is NULL or empty, downloads the manifest and updates to the
  * version specified there, regardless of local version/timestamp.
  * If version_hash is provided, attempts to download
- *   https://updates.gaia.bio/firmware-<hash>.bin
+ *   https://updates.acgt.net/firmware-<hash>.bin
  * and apply it.
  */
 esp_err_t ota_force_update(const char* version_hash);
