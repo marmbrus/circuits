@@ -2,9 +2,6 @@
 # this repo (roomsensor, espamp, surprise). Use it via the `idf` wrapper
 # next to this file.
 ARG IDF_VERSION=v5.3.2
-ARG NODE_VERSION=22.12.0
-
-FROM node:${NODE_VERSION}-bookworm-slim AS node
 
 FROM espressif/idf:${IDF_VERSION}
 ARG IDF_VERSION
@@ -22,14 +19,8 @@ RUN apt-get update -y \
     && apt-get install -y --no-install-recommends jq udev \
     && rm -rf /var/lib/apt/lists/*
 
-# Node is needed for roomsensor's web UI (js/), which is built into the LittleFS image.
-COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-
 # The repo and /opt/esp/idf are owned by different uids inside the container;
-# the CMake version scripts call git, so trust every directory.
+# the build's version stamping (roomsensor's build_info.sh) calls git, so trust every directory.
 RUN git config --system --add safe.directory '*'
 
 # ESP-ADF for I2S audio. Its bundled esp-idf submodule is skipped in favour

@@ -5,8 +5,7 @@ ESP-IDF on the host. The image contains:
 
 - ESP-IDF v5.3.2 (`espressif/idf`), patched with ESP-ADF's FreeRTOS patch
 - ESP-ADF v2.7 at `$ADF_PATH` (`/opt/esp/adf`), for the I2S audio parts
-- Node 22 (for roomsensor's web UI, which is gone; it can come out the next time
-  the Dockerfile changes, as changing it rebuilds the image) and `jq` (`deploy_ota.sh`)
+- `jq` (`deploy_ota.sh`)
 
 The image is built on first use, and rebuilt whenever this Dockerfile changes.
 

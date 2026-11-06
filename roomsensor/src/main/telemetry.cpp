@@ -92,7 +92,8 @@ static const char* reset_reason_to_str(esp_reset_reason_t reason) {
 }
 
 // The task closest to overflowing its stack (the least unused stack, by its high-water mark), and
-// how many tasks keep their stacks in internal RAM. Walking every stack pauses the scheduler for
+// how many tasks keep their stacks in internal RAM. ESP-IDF's IPC and idle tasks are left out:
+// they sit at a fixed minimum by design (ipc0 at about 440 bytes), which would hide ours. Walking every stack pauses the scheduler for
 // a moment, so this is refreshed once a minute rather than every heartbeat. The console's
 // `tasks` command lists every task's high-water mark.
 static void add_stack_summary(cJSON* root) {
@@ -111,13 +112,15 @@ static void add_stack_summary(cJSON* root) {
         s_min_free = UINT32_MAX;
         s_internal_tasks = 0;
         for (UBaseType_t i = 0; i < n; i++) {
+            if (esp_ptr_internal(tasks[i].pxStackBase)) s_internal_tasks++;
+            const char* name = tasks[i].pcTaskName;
+            if (strncmp(name, "ipc", 3) == 0 || strncmp(name, "IDLE", 4) == 0) continue;
             // On ESP-IDF stack high-water marks are in bytes
             uint32_t free_bytes = tasks[i].usStackHighWaterMark;
             if (free_bytes < s_min_free) {
                 s_min_free = free_bytes;
-                strlcpy(s_min_task, tasks[i].pcTaskName, sizeof(s_min_task));
+                strlcpy(s_min_task, name, sizeof(s_min_task));
             }
-            if (esp_ptr_internal(tasks[i].pxStackBase)) s_internal_tasks++;
         }
         heap_caps_free(tasks);
         s_last_us = now_us;

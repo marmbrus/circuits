@@ -41,7 +41,7 @@ Everything runs from `roomsensor/src`. The target is an ESP32-S3 with 16 MB flas
 | `factory` | `0x20000` | 4000K | `sensorv2.bin` |
 | `ota_0` / `ota_1` | `0x410000` / `0x800000` | 4000K each | OTA only |
 | `coredump` | `0xbe8000` | 128K | |
-| `storage` | `0xc08000` | 4000K | Unused. It held the web UI (LittleFS), which is gone; the partition table can't change over OTA, so it stays. Nothing writes it, and old contents are harmless. |
+| `storage` | `0xc08000` | 4000K | Unused, and kept for files the firmware may want later (short WAVs to play locally, say). It held the web UI's LittleFS, which is gone. Nothing writes it now, and old contents are harmless. |
 
 ### Config JSON format
 
