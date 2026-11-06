@@ -9,6 +9,8 @@
 #include "esp_timer.h"
 #include <time.h>
 #include "freertos/semphr.h"
+#include "freertos/idf_additions.h"
+#include "esp_heap_caps.h"
 
 // External function declarations from wifi.cpp
 extern const uint8_t* get_device_mac(void);
@@ -413,15 +415,13 @@ esp_err_t initialize_metrics_system(void) {
         return ESP_FAIL;
     }
 
-    // Create the reporting task
-    BaseType_t ret = xTaskCreate(
-        metrics_reporting_task,
-        "metrics_task",
-        4096,           // Stack size
-        NULL,           // Parameters
-        5,              // Priority
-        &metrics_task_handle
-    );
+    // Create the reporting task. Its stack goes in PSRAM to spare internal RAM; the task never
+    // touches flash, which would need it internal.
+    BaseType_t ret = xTaskCreateWithCaps(metrics_reporting_task, "metrics_task", 4096, NULL, 5,
+                                         &metrics_task_handle, MALLOC_CAP_SPIRAM);
+    if (ret != pdPASS) {
+        ret = xTaskCreate(metrics_reporting_task, "metrics_task", 4096, NULL, 5, &metrics_task_handle);
+    }
 
     if (ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create metrics reporting task");

@@ -50,6 +50,13 @@ extern "C" void app_main(void)
     // The board's certificate, for MQTT and OTA
     device_cert_init();
 
+    // Start the BLE scanner. On boards set up to scan this starts Bluetooth too, which has to
+    // come first: its controller needs internal RAM, which Wi-Fi, the console and audio use up.
+    if (ble::init_scanner(cfg) != ESP_OK) {
+        ESP_LOGE(TAG, "BLE scanner initialization failed");
+        log_memory_snapshot(TAG, "ble_scanner_init_failed");
+    }
+
     // Start the status LED task immediately after reading the configuration.
     init_status_led();
     
@@ -151,12 +158,6 @@ extern "C" void app_main(void)
     if (audio_player.init(cfg) != ESP_OK) {
         ESP_LOGE(TAG, "AudioPlayer initialization failed");
         log_memory_snapshot(TAG, "audio_player_init_failed");
-    }
-
-    // Start the BLE scanner (Bluetooth itself starts only once the ble module asks to scan)
-    if (ble::init_scanner(cfg) != ESP_OK) {
-        ESP_LOGE(TAG, "BLE scanner initialization failed");
-        log_memory_snapshot(TAG, "ble_scanner_init_failed");
     }
 
     // Initialize OTA update system

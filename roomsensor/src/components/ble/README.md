@@ -102,10 +102,27 @@ whether the tag is heard while the phone is nearby.
   switches it before starting Bluetooth. Expect a little more Wi-Fi latency, and less
   throughput the higher `duty` is; lower `duty` on boards that stream audio.
 - Building Bluetooth in costs every board about 180 KB of flash and 25 KB of internal RAM
-  (static code and data, measured with ESP-IDF v5.3.2), whether or not it scans; about 169 KB
-  of internal RAM stays free. Once started, NimBLE's host allocates from PSRAM
-  (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`) and the controller from internal RAM. The
-  discovery table (about 10 KB, only while `scan` is on) is kept in PSRAM too.
+  (static code and data, measured with ESP-IDF v5.3.2), whether or not it scans. Once started,
+  NimBLE's host allocates from PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`) and its task
+  stack is in PSRAM, as is the discovery table (about 10 KB, only while `scan` is on).
+- The controller takes about 30 KB of **internal** RAM at runtime, and internal RAM is what a
+  running board is short of: on a lamp with audio (measured on `ESP_9c139ebc0eb0`), Wi-Fi, MQTT,
+  the console, the HTTP server, the I2S DMA buffers and the OTA task left about 14 KB. To make
+  room:
+  - Bluetooth starts early in boot, before Wi-Fi and audio, on boards whose `ble` module is
+    already set up. Turning `scan` or `track` on later also works now, but it's the start at
+    boot that's sure of the memory.
+  - The stacks of tasks that never touch flash live in PSRAM: `ble-ctrl`, `nimble_host`,
+    `netlog`, `metrics_task`, `status_led_task` and `audio-mic`, and so does netlog's queue
+    (about 13 KB). A task that reads or writes flash (NVS, partitions, the core dump, LittleFS)
+    must keep an internal stack: IDF asserts otherwise.
+  - TLS uses software AES (`CONFIG_MBEDTLS_HARDWARE_AES` off). Hardware AES needs a DMA
+    bounce buffer in internal RAM for the TLS buffers, which are in PSRAM, and with Bluetooth
+    running MQTT and the OTA check ran out of it and dropped their connections.
+  - Audio no longer aborts when its I2S DMA buffers can't be allocated; the board comes up
+    without audio instead of rebooting in a loop.
+  With all that, the audio lamp above boots with about 18 KB of internal RAM free while
+  scanning (and 45 to 49 KB without Bluetooth), against 14 KB before Bluetooth was added.
 - Bluetooth is enabled in `sdkconfig.defaults`, which only applies when `sdkconfig` is
   generated. An existing build directory keeps Bluetooth off until `sdkconfig` is regenerated
   (delete it, or run `idf.py set-target esp32s3`). Firmware built without Bluetooth logs an

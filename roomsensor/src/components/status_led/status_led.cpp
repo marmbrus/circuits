@@ -6,6 +6,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "freertos/idf_additions.h"
+#include "esp_heap_caps.h"
 
 static const char* TAG = "StatusLED";
 static int status_gpio = -1;
@@ -36,7 +38,10 @@ esp_err_t init_status_led() {
         // Initial state: solid ON (active low)
         gpio_set_level((gpio_num_t)status_gpio, 0);
 
-        xTaskCreate(status_led_task, "status_led_task", 2048, NULL, 5, NULL);
+        // Stack in PSRAM to spare internal RAM; the task only drives a GPIO
+        if (xTaskCreateWithCaps(status_led_task, "status_led_task", 2048, NULL, 5, NULL, MALLOC_CAP_SPIRAM) != pdPASS) {
+            xTaskCreate(status_led_task, "status_led_task", 2048, NULL, 5, NULL);
+        }
     } else {
         ESP_LOGI(TAG, "Status LED not configured.");
     }

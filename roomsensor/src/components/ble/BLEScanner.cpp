@@ -14,6 +14,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "freertos/idf_additions.h"
 #include "sdkconfig.h"
 
 #include <math.h>
@@ -264,31 +265,40 @@ static void on_reset(int reason) {
 
 static void host_task(void* param) {
     (void)param;
-    // Returns only if nimble_port_stop() is called
+    // Returns only if nimble_port_stop() is called, which nothing does: Bluetooth runs until reboot
     nimble_port_run();
-    nimble_port_freertos_deinit();
+    vTaskSuspend(nullptr);
 }
 
 static bool start_nimble() {
     if (s_nimble_started) return true;
     if (s_nimble_failed) return false;
 
-    // Wi-Fi and Bluetooth share the radio, which needs Wi-Fi modem sleep (IDF aborts otherwise)
+    // Wi-Fi and Bluetooth share the radio, which needs Wi-Fi modem sleep (IDF aborts otherwise).
+    // At boot Wi-Fi isn't up yet, and wifi.cpp picks modem sleep itself when ble is configured.
     esp_err_t ps_err = esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
-    if (ps_err != ESP_OK) {
+    if (ps_err != ESP_OK && ps_err != ESP_ERR_WIFI_NOT_INIT) {
         ESP_LOGW(TAG, "Could not set Wi-Fi modem sleep: %s", esp_err_to_name(ps_err));
     }
 
     esp_err_t err = nimble_port_init();
     if (err != ESP_OK) {
-        // Most likely out of memory; don't retry every tick, only after a reboot
-        ESP_LOGE(TAG, "Bluetooth init failed: %s", esp_err_to_name(err));
+        // Most likely out of memory; don't retry every tick, only after a reboot. The controller
+        // needs internal RAM, which is gone once the rest of the firmware has started, so
+        // Bluetooth starts at boot on boards with ble configured (see init_scanner).
+        ESP_LOGE(TAG, "Bluetooth init failed: %s%s", esp_err_to_name(err),
+                 err == ESP_ERR_NO_MEM ? "; restart the board to start it at boot" : "");
         s_nimble_failed = true;
         return false;
     }
     ble_hs_cfg.sync_cb = on_sync;
     ble_hs_cfg.reset_cb = on_reset;
-    nimble_port_freertos_init(host_task);
+    // What nimble_port_freertos_init() does, with the stack in PSRAM to spare internal RAM: the
+    // host never touches flash (bonds aren't stored, CONFIG_BT_NIMBLE_NVS_PERSIST is off)
+    if (xTaskCreatePinnedToCoreWithCaps(host_task, "nimble_host", NIMBLE_HS_STACK_SIZE, nullptr,
+                                        configMAX_PRIORITIES - 4, nullptr, NIMBLE_CORE, MALLOC_CAP_SPIRAM) != pdPASS) {
+        nimble_port_freertos_init(host_task);
+    }
     s_nimble_started = true;
     ESP_LOGI(TAG, "Bluetooth started");
     return true;
@@ -412,7 +422,14 @@ esp_err_t init_scanner(config::ConfigurationManager& cfg) {
     s_cfg = &cfg;
     s_lock = xSemaphoreCreateMutex();
     if (s_lock == nullptr) return ESP_ERR_NO_MEM;
-    BaseType_t ok = xTaskCreate(control_task, "ble-ctrl", 6144, nullptr, 4, &s_task);
+#if CONFIG_BT_NIMBLE_ENABLED
+    // The Bluetooth controller allocates its memory from internal RAM only. Start it now, before
+    // Wi-Fi, the console and audio, while there's room; once they're up, too little is left.
+    if (cfg.ble().enabled()) start_nimble();
+#endif
+    // Its stack can live in PSRAM: the task never touches flash (which would need internal RAM)
+    BaseType_t ok = xTaskCreateWithCaps(control_task, "ble-ctrl", 6144, nullptr, 4, &s_task, MALLOC_CAP_SPIRAM);
+    if (ok != pdPASS) ok = xTaskCreate(control_task, "ble-ctrl", 6144, nullptr, 4, &s_task);
     if (ok != pdPASS) {
         ESP_LOGE(TAG, "Failed to create BLE control task");
         s_task = nullptr;

@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "console_buffer.h"
+#include "esp_heap_caps.h"
+#include "freertos/idf_additions.h"
 
 // Small log queue. Each item stores level, tag and a message string.
 // We keep messages reasonably small to avoid memory pressure.
@@ -204,14 +206,21 @@ static int netlog_vprintf_hook(const char* fmt, va_list args) {
 
 esp_err_t netlog_init_early(void) {
     if (s_log_queue == nullptr) {
-        s_log_queue = xQueueCreate(64, sizeof(netlog_item_t));
+        // 64 items of ~210 bytes: keep them in PSRAM, as internal RAM is short (Bluetooth, audio DMA)
+        s_log_queue = xQueueCreateWithCaps(64, sizeof(netlog_item_t), MALLOC_CAP_SPIRAM);
+        if (!s_log_queue) s_log_queue = xQueueCreate(64, sizeof(netlog_item_t));
         if (!s_log_queue) {
             return ESP_ERR_NO_MEM;
         }
     }
 
     if (s_netlog_task == nullptr) {
-        BaseType_t ok = xTaskCreatePinnedToCore(&netlog_task, "netlog", 4096, nullptr, tskIDLE_PRIORITY + 1, &s_netlog_task, tskNO_AFFINITY);
+        // Stack in PSRAM to spare internal RAM; the task never touches flash, which would need internal
+        BaseType_t ok = xTaskCreatePinnedToCoreWithCaps(&netlog_task, "netlog", 4096, nullptr, tskIDLE_PRIORITY + 1,
+                                                        &s_netlog_task, tskNO_AFFINITY, MALLOC_CAP_SPIRAM);
+        if (ok != pdPASS) {
+            ok = xTaskCreatePinnedToCore(&netlog_task, "netlog", 4096, nullptr, tskIDLE_PRIORITY + 1, &s_netlog_task, tskNO_AFFINITY);
+        }
         if (ok != pdPASS) {
             s_netlog_task = nullptr;
             return ESP_FAIL;

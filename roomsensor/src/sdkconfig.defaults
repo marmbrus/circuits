@@ -44,5 +44,10 @@ CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
 CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
 CONFIG_BT_NIMBLE_EXT_ADV=n
+# Scanning is the only Bluetooth activity, and each one allowed costs controller RAM
+CONFIG_BT_CTRL_BLE_MAX_ACT=1
 # Keep NimBLE's host allocations out of internal RAM
 CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=y
+# Software AES for TLS: hardware AES needs an internal DMA bounce buffer for the TLS buffers in
+# PSRAM, and with the Bluetooth controller also in internal RAM, MQTT and OTA ran out of it
+CONFIG_MBEDTLS_HARDWARE_AES=n

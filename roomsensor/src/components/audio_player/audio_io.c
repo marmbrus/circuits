@@ -9,6 +9,8 @@
 #include "freertos/semphr.h"
 #include "freertos/stream_buffer.h"
 #include "freertos/task.h"
+#include "freertos/idf_additions.h"
+#include "esp_heap_caps.h"
 
 static const char *TAG = "audio_io";
 
@@ -62,18 +64,41 @@ esp_err_t audio_io_init(const audio_io_pins_t *pins)
             .invert_flags = { 0 },
         },
     };
+    // Return errors rather than abort: the DMA buffers need internal RAM, and a board short of it
+    // should come up without audio instead of rebooting over and over
     if (s_tx) {
-        ESP_ERROR_CHECK(i2s_channel_init_std_mode(s_tx, &std_cfg));
-        ESP_ERROR_CHECK(i2s_channel_enable(s_tx));
+        err = i2s_channel_init_std_mode(s_tx, &std_cfg);
+        if (err == ESP_OK) err = i2s_channel_enable(s_tx);
     }
-    if (s_rx) {
-        ESP_ERROR_CHECK(i2s_channel_init_std_mode(s_rx, &std_cfg));
-        ESP_ERROR_CHECK(i2s_channel_enable(s_rx));
+    if (err == ESP_OK && s_rx) {
+        err = i2s_channel_init_std_mode(s_rx, &std_cfg);
+        if (err == ESP_OK) err = i2s_channel_enable(s_rx);
+    }
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "I2S setup failed: %s", esp_err_to_name(err));
+        if (s_tx) {
+            i2s_channel_disable(s_tx);
+            i2s_del_channel(s_tx);
+            s_tx = NULL;
+        }
+        if (s_rx) {
+            i2s_channel_disable(s_rx);
+            i2s_del_channel(s_rx);
+            s_rx = NULL;
+        }
+        return err;
     }
 
     if (s_rx) {
         s_clients_lock = xSemaphoreCreateMutex();
-        if (!s_clients_lock || xTaskCreatePinnedToCore(mic_task, "audio-mic", 4096, NULL, 6, NULL, 1) != pdPASS) {
+        // The mic task's stack can live in PSRAM (it only reads I2S into static buffers), sparing
+        // internal RAM for DMA
+        BaseType_t ok = pdFAIL;
+        if (s_clients_lock) {
+            ok = xTaskCreatePinnedToCoreWithCaps(mic_task, "audio-mic", 4096, NULL, 6, NULL, 1, MALLOC_CAP_SPIRAM);
+            if (ok != pdPASS) ok = xTaskCreatePinnedToCore(mic_task, "audio-mic", 4096, NULL, 6, NULL, 1);
+        }
+        if (ok != pdPASS) {
             ESP_LOGE(TAG, "Failed to start mic task");
             return ESP_FAIL;
         }

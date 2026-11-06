@@ -8,8 +8,11 @@ class ConfigurationManager;
 
 namespace ble {
 
-// Starts the BLE scanner's control task. Bluetooth itself (NimBLE, observer only) starts the
-// first time the ble config module asks for scanning, so boards that never scan never start it.
+// Starts the BLE scanner's control task. Bluetooth itself (NimBLE, observer only) starts only on
+// boards whose ble config module asks for scanning. Call this early in boot, right after the
+// configuration loads: the Bluetooth controller needs internal RAM, so on a board already set up
+// to scan it starts here, before the rest of the firmware has used that RAM. Turning scanning on
+// later may find too little left; the board then starts Bluetooth at its next boot.
 //
 // Each ble.interval seconds it publishes:
 // - for each tracked device heard: sensor/<mac>/metrics/ble_rssi, a metric reading whose value
