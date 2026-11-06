@@ -22,11 +22,13 @@ namespace ble {
 esp_err_t init_scanner(config::ConfigurationManager& cfg);
 
 // Shuts Bluetooth down, freeing the controller's internal RAM, and keeps it down until resume().
-// For OTA checks and downloads, which need that RAM and the radio for a few seconds.
-// Waits up to timeout for Bluetooth to stop; returns false if it didn't.
+// For OTA checks and downloads, and audio playback: their TLS connections need that RAM (about
+// 11 KB of it DMA-capable per handshake), and they all want the radio. Calls nest: Bluetooth
+// stays down until every suspend() has had its resume(). Waits up to timeout for Bluetooth to
+// stop; returns false if it didn't (the call still counts, so resume() it).
 bool suspend(TickType_t timeout);
 
-// Lets Bluetooth start again after suspend(), if the ble config still asks for it
+// Ends one suspend(). Bluetooth starts again once none is left, if the ble config asks for it.
 void resume();
 
 } // namespace ble

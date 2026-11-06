@@ -17,6 +17,7 @@
 #include "freertos/idf_additions.h"
 #include "sdkconfig.h"
 
+#include <atomic>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -69,9 +70,12 @@ using DiscoveryTable = DeviceTable<SpiramPreferredAllocator<SeenDevice>>;
 
 static config::ConfigurationManager* s_cfg = nullptr;
 static TaskHandle_t s_task = nullptr;
-// suspend() asks the control task to shut Bluetooth down, and waits for it on s_suspend_done
-static volatile bool s_suspend_requested = false;
+// How many callers (OTA, audio playback) currently want Bluetooth down. suspend() raises it and
+// waits on s_suspend_done for the control task to shut Bluetooth down; Bluetooth comes back once
+// every caller has called resume().
+static std::atomic<int> s_suspend_count{0};
 static SemaphoreHandle_t s_suspend_done = nullptr;
+static bool suspend_requested() { return s_suspend_count.load() > 0; }
 
 // Guards everything the BLE host task writes and the control task reads
 static SemaphoreHandle_t s_lock = nullptr;
@@ -358,10 +362,10 @@ static void start_scan(bool active, int duty_percent) {
 // unless OTA has asked for it to stop (suspend()). The scan runs only while MQTT is connected:
 // readings can't be published otherwise, and scanning slows Wi-Fi down while it (re)connects.
 static void reconcile_scan(const config::BLEConfig::Settings& s) {
-    bool want_bluetooth = s.enabled() && !s_suspend_requested;
+    bool want_bluetooth = s.enabled() && !suspend_requested();
     if (!want_bluetooth) {
         stop_nimble();
-        if (s_suspend_requested) xSemaphoreGive(s_suspend_done);
+        if (suspend_requested()) xSemaphoreGive(s_suspend_done);
         return;
     }
     if (!start_nimble()) return;
@@ -380,7 +384,7 @@ static void reconcile_scan(const config::BLEConfig::Settings& s) {
 #else  // !CONFIG_BT_NIMBLE_ENABLED
 
 static void reconcile_scan(const config::BLEConfig::Settings& s) {
-    if (s_suspend_requested) xSemaphoreGive(s_suspend_done);
+    if (suspend_requested()) xSemaphoreGive(s_suspend_done);
     static bool warned = false;
     if (s.enabled() && !warned) {
         ESP_LOGE(TAG, "ble is configured, but this firmware was built without Bluetooth (CONFIG_BT_NIMBLE_ENABLED)");
@@ -474,7 +478,7 @@ esp_err_t init_scanner(config::ConfigurationManager& cfg) {
 bool suspend(TickType_t timeout) {
     if (s_task == nullptr) return true;
     xSemaphoreTake(s_suspend_done, 0);  // drop a stale signal
-    s_suspend_requested = true;
+    s_suspend_count.fetch_add(1);
     xTaskNotifyGive(s_task);
     if (xSemaphoreTake(s_suspend_done, timeout) != pdTRUE) {
         ESP_LOGW(TAG, "Bluetooth didn't stop in time");
@@ -484,11 +488,14 @@ bool suspend(TickType_t timeout) {
 }
 
 void resume() {
-    if (s_task == nullptr || !s_suspend_requested) return;
+    if (s_task == nullptr) return;
+    int count = s_suspend_count.load();
+    while (count > 0 && !s_suspend_count.compare_exchange_weak(count, count - 1)) {
+    }
+    if (count != 1) return;  // never suspended, or someone else still wants Bluetooth down
 #if defined(CONFIG_BT_NIMBLE_ENABLED)
     s_nimble_failed = false;  // the RAM it lacked may be free now
 #endif
-    s_suspend_requested = false;
     xTaskNotifyGive(s_task);
 }
 

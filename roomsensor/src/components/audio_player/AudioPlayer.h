@@ -34,7 +34,9 @@ private:
     void run();
 
     esp_err_t start(const std::string& url);
+    // Ends playback, and hands the radio back to Bluetooth
     void stop();
+    void stop_pipeline();
     // Returns false once playback has finished or failed
     bool poll_pipeline_events();
     void set_amp_enabled(bool enabled);
@@ -48,6 +50,8 @@ private:
     audio_element* resampler_ = nullptr;
     audio_element* output_ = nullptr;
     audio_event_iface* events_ = nullptr;
+    // Whether this player holds Bluetooth down (ble::suspend) for the current playback
+    bool bluetooth_suspended_ = false;
 };
 
 } // namespace audio

@@ -1,4 +1,5 @@
 #include "AudioPlayer.h"
+#include "BLEScanner.h"
 
 #include "ConfigurationManager.h"
 #include "AudioConfig.h"
@@ -80,13 +81,26 @@ void AudioPlayer::run() {
         uint32_t url_requests = cfg.url_requests();
         if (url_requests == seen_url_requests) continue;
         seen_url_requests = url_requests;
-        stop();
-        if (!cfg.url().empty()) start(cfg.url());
+        if (cfg.url().empty()) {
+            stop();
+        } else {
+            // Replace the current stream without handing the radio back in between
+            stop_pipeline();
+            start(cfg.url());
+        }
     }
 }
 
 esp_err_t AudioPlayer::start(const std::string& url) {
     ESP_LOGI(TAG, "Playing %s", url.c_str());
+
+    // Playback is occasional and in the foreground, so Bluetooth scanning steps aside for it:
+    // the stream's TLS connection needs the internal RAM Bluetooth's controller holds (with both
+    // running, MQTT's TLS ran out of it), and streaming wants all of the radio.
+    if (!bluetooth_suspended_) {
+        ble::suspend(pdMS_TO_TICKS(5000));
+        bluetooth_suspended_ = true;
+    }
 
     pipeline_ = audio_elements_create_pipeline();
     if (!pipeline_) {
@@ -128,6 +142,14 @@ esp_err_t AudioPlayer::start(const std::string& url) {
 }
 
 void AudioPlayer::stop() {
+    stop_pipeline();
+    if (bluetooth_suspended_) {
+        bluetooth_suspended_ = false;
+        ble::resume();
+    }
+}
+
+void AudioPlayer::stop_pipeline() {
     if (!pipeline_) return;
 
     set_amp_enabled(false);

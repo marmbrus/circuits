@@ -12,8 +12,8 @@ does two things, each switched on through the `ble` config module:
 Bluetooth runs only while one of them is set: boards that never scan don't start the controller
 or the NimBLE host, use no airtime, and keep Wi-Fi out of modem sleep. Clearing both shuts it
 down again. It scans only while MQTT is connected (readings couldn't be published otherwise, and
-scanning slows Wi-Fi down while it connects), and it shuts down for a few seconds during each
-OTA check (see "Radio and memory").
+scanning slows Wi-Fi down while it connects). It shuts down for a few seconds during each OTA
+check, and while audio plays (see "Radio and memory").
 
 `BLEScanner.cpp` runs NimBLE as an observer and publishes; `../ble_logic` parses addresses,
 track lists and advertisements and keeps the per-window statistics, with host unit tests
@@ -128,6 +128,11 @@ whether the tag is heard while the phone is nearby.
     sleep meanwhile, so downloads run at full speed. Scanning pauses for 3 to 4 seconds per
     check; Bluetooth starts again after it, or not at all after a firmware update, which
     reboots.
+  - Audio playback shuts Bluetooth down too, for the same reason: its stream's TLS handshake
+    (HTTPS URLs) ran MQTT out of DMA-capable RAM while Bluetooth ran, and streaming wants the
+    radio. Playback is occasional and in the foreground, scanning is background. Suspensions
+    nest (`ble::suspend`/`ble::resume`), so an OTA check during playback, or the reverse,
+    doesn't bring Bluetooth back early; a replay keeps it down between streams.
   - Audio no longer aborts when its I2S DMA buffers can't be allocated; the board comes up
     without audio instead of rebooting in a loop.
 
