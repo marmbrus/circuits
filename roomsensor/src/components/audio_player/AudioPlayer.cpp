@@ -26,6 +26,16 @@ esp_err_t AudioPlayer::init(config::ConfigurationManager& cfg_manager) {
         return ESP_OK;
     }
 
+    // ESP-ADF narrates every playback at INFO (about 30 lines), and some of its tags warn on every
+    // normal teardown and end of stream ("Element already stopped", "No more data"), which netlog
+    // would publish each time. AudioPlayer reports real failures itself. The gpio driver logs a line
+    // each time the amp's enable pin is set up.
+    static const char* const kQuietTags[] = {"AUDIO_THREAD", "MP3_DECODER", "RSP_FILTER",
+                                             "CODEC_ELEMENT_HELPER", "gpio"};
+    for (const char* tag : kQuietTags) esp_log_level_set(tag, ESP_LOG_WARN);
+    static const char* const kTeardownTags[] = {"AUDIO_ELEMENT", "AUDIO_PIPELINE", "HTTP_STREAM"};
+    for (const char* tag : kTeardownTags) esp_log_level_set(tag, ESP_LOG_ERROR);
+
     audio_io_pins_t pins = {
         .bclk_gpio = cfg.bclk_gpio(),
         .ws_gpio = cfg.ws_gpio(),

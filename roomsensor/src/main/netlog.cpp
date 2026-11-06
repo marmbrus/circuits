@@ -1,6 +1,8 @@
 #include "netlog.h"
 
 #include "esp_log.h"
+#include "driver/uart.h"
+#include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -25,7 +27,6 @@ typedef struct {
 
 static QueueHandle_t s_log_queue = nullptr;
 static TaskHandle_t s_netlog_task = nullptr;
-static volatile bool s_in_publish = false;
 static volatile bool s_hook_enabled = true;
 static volatile uint32_t s_dropped_logs = 0;
 
@@ -124,7 +125,6 @@ static void netlog_task(void* arg) {
         snprintf(topic, sizeof(topic), "sensor/%s/logs/%s", mac_str, level_to_str(item.level));
 
         // Publish raw message text. Keep QoS 0 to avoid feedback loops; no retain.
-        s_in_publish = true;
         // If many logs were dropped due to backpressure, occasionally emit a summary
         uint32_t dropped = s_dropped_logs;
         if (dropped > 0) {
@@ -136,68 +136,132 @@ static void netlog_task(void* arg) {
             s_dropped_logs = 0;
         }
         publish_to_topic(topic, item.msg, 0, 0);
-        s_in_publish = false;
     }
 }
 
+// ESP_LOGx formats begin with the line's level letter ("I (%lu) %s: ...", after an optional colour
+// code), so the level is known before anything is formatted. Returns false for anything else (a
+// plain printf through esp_log_write, a library's own format), whose level the caller then reads
+// from the formatted line.
+static bool level_from_format(const char* fmt, esp_log_level_t* level) {
+    const char* p = fmt;
+    while (*p == '\x1b') {
+        const char* m = strchr(p, 'm');
+        if (!m) return false;
+        p = m + 1;
+    }
+    if (p[0] == '\0' || p[1] != ' ') return false;
+    switch (p[0]) {
+        case 'E': *level = ESP_LOG_ERROR; return true;
+        case 'W': *level = ESP_LOG_WARN; return true;
+        case 'I': *level = ESP_LOG_INFO; return true;
+        case 'D': *level = ESP_LOG_DEBUG; return true;
+        case 'V': *level = ESP_LOG_VERBOSE; return true;
+        default: return false;
+    }
+}
+
+// Writes a formatted line to the serial console. Once the console's UART driver is up, the line
+// goes to it in one piece: through stdio it would arrive one character at a time, and the driver
+// stores each write as its own ring-buffer item (about 30 bytes per character), so its transmit
+// buffer would fill within a line and the caller would wait for the UART after all. Newlines
+// become \r\n, as the console's stdio does.
+static void write_console(const char* text, size_t len) {
+    const uart_port_t port = (uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM;
+    if (!uart_is_driver_installed(port)) {
+        fwrite(text, 1, len, stdout);
+        return;
+    }
+    const char* p = text;
+    const char* end = text + len;
+    while (p < end) {
+        const char* nl = (const char*)memchr(p, '\n', (size_t)(end - p));
+        if (nl == nullptr) {
+            uart_write_bytes(port, p, (size_t)(end - p));
+            break;
+        }
+        if (nl > p && nl[-1] == '\r') {
+            uart_write_bytes(port, p, (size_t)(nl + 1 - p));
+        } else {
+            if (nl > p) uart_write_bytes(port, p, (size_t)(nl - p));
+            uart_write_bytes(port, "\r\n", 2);
+        }
+        p = nl + 1;
+    }
+}
+
+// Queues a formatted line for MQTT. Kept out of line so its queue item (about 210 bytes) is on the
+// stack only for the lines that get this far, never while a line is being formatted.
+static void __attribute__((noinline)) forward_line(const char* line, size_t len) {
+    netlog_item_t item = {};
+    parse_tag_level(line, item.tag, sizeof(item.tag), &item.level);
+    // Trim trailing newlines to keep the MQTT payload tidy
+    while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r')) len--;
+    size_t copy_len = len < sizeof(item.msg) - 1 ? len : sizeof(item.msg) - 1;
+    memcpy(item.msg, line, copy_len);
+    item.msg[copy_len] = '\0';
+    (void)xQueueSend(s_log_queue, &item, 0);
+}
+
+// Every log line comes through here, on the stack of the task that logs, so it formats each line
+// once: into a buffer that goes to the console (written as text, which skips the 1 KB buffer
+// newlib's vprintf puts on the stack for the unbuffered console, and doesn't wait for the UART;
+// see write_console) and, for lines at or above wifi.loglevel, to MQTT. That costs the caller
+// about one vsnprintf instead of two printf passes.
 static int netlog_vprintf_hook(const char* fmt, va_list args) {
-    // Always forward to the original sink first (keeps console behavior consistent)
-    int forwarded = 0;
-    if (s_prev_vprintf) {
-        va_list forward_args;
-        va_copy(forward_args, args);
-        forwarded = s_prev_vprintf(fmt, forward_args);
-        va_end(forward_args);
+    char line[256];
+    va_list format_args;
+    va_copy(format_args, args);
+    int n = vsnprintf(line, sizeof(line), fmt, format_args);
+    va_end(format_args);
+    if (n < 0) return n;
+
+    size_t len = (size_t)n;
+    if (len < sizeof(line)) {
+        // Lines end in \n; make it \r\n here so the console gets each line in one write
+        size_t console_len = len;
+        if (len > 0 && line[len - 1] == '\n' && (len < 2 || line[len - 2] != '\r') &&
+            len + 1 < sizeof(line)) {
+            line[len - 1] = '\r';
+            line[len] = '\n';
+            line[len + 1] = '\0';
+            console_len = len + 1;
+        }
+        write_console(line, console_len);
+    } else {
+        // Too long for the buffer (a JSON dump, say): print it in full the old way. MQTT gets the
+        // start of it either way.
+        len = sizeof(line) - 1;
+        if (s_prev_vprintf) {
+            va_list print_args;
+            va_copy(print_args, args);
+            s_prev_vprintf(fmt, print_args);
+            va_end(print_args);
+        }
     }
 
-    // Cheap fast-path exits: disabled, ISR, tiny-stack task, not connected, or no queue
-    if (!s_hook_enabled) return forwarded;
-    if (xPortInIsrContext()) return forwarded;
-    if (!s_log_queue) return forwarded;
+    // Lines the netlog task logs itself (publishing can log, on failure say) stay off MQTT, or a
+    // failing publish would feed itself. Every other task's lines go through, even while netlog
+    // is publishing: a global "publishing" flag here once dropped them all during each publish.
+    if (!s_hook_enabled || !s_log_queue || xPortInIsrContext() ||
+        xTaskGetCurrentTaskHandle() == s_netlog_task) {
+        return n;
+    }
 
-    // Drop immediately if queue is full
+    esp_log_level_t level;
+    if (!level_from_format(fmt, &level)) {
+        char tag[16];
+        parse_tag_level(line, tag, sizeof(tag), &level);
+    }
+    int net_level = config::GetConfigurationManager().wifi().loglevel();
+    if ((int)level > net_level) return n;
+
     if (uxQueueSpacesAvailable(s_log_queue) == 0) {
         s_dropped_logs++;
-        return forwarded;
+        return n;
     }
-
-    // Format into a small temporary buffer using a copy of args (avoid large stack)
-    char buffer[160];
-    va_list capture_args;
-    va_copy(capture_args, args);
-    int n = vsnprintf(buffer, sizeof(buffer), fmt, capture_args);
-    va_end(capture_args);
-    if (n < 0) n = 0;
-    buffer[sizeof(buffer) - 1] = '\0';
-
-    // Attempt to parse level and tag
-    netlog_item_t item = {};
-    item.level = ESP_LOG_INFO;
-    parse_tag_level(buffer, item.tag, sizeof(item.tag), &item.level);
-
-    // Apply wifi.loglevel filter for net publishing only (UART unaffected)
-    int net_level = ESP_LOG_WARN;
-    {
-        config::ConfigurationManager& cfg = config::GetConfigurationManager();
-        net_level = cfg.wifi().loglevel();
-    }
-    if ((int)item.level > net_level) {
-        return forwarded;
-    }
-
-    // Copy message, trimming trailing newlines to keep MQTT payload tidy
-    size_t len = strnlen(buffer, sizeof(buffer));
-    while (len > 0 && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r')) len--;
-    size_t copy_len = len < sizeof(item.msg) - 1 ? len : sizeof(item.msg) - 1;
-    memcpy(item.msg, buffer, copy_len);
-    item.msg[copy_len] = '\0';
-
-    // Avoid recursion when we publish logs (publishing may log internally). Non-blocking.
-    if (!s_in_publish) {
-        (void)xQueueSend(s_log_queue, &item, 0);
-    }
-
-    return forwarded;
+    forward_line(line, len);
+    return n;
 }
 
 esp_err_t netlog_init_early(void) {

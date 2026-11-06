@@ -457,6 +457,10 @@ static void control_task(void* arg) {
 esp_err_t init_scanner(config::ConfigurationManager& cfg) {
     if (s_task != nullptr) return ESP_OK;
     s_cfg = &cfg;
+    // NimBLE and the controller log 7 lines at INFO each time Bluetooth starts, which is around
+    // every OTA check and playback (ble::suspend). BLEScanner logs the starts and stops itself.
+    esp_log_level_set("NimBLE", ESP_LOG_WARN);
+    esp_log_level_set("BLE_INIT", ESP_LOG_WARN);
     s_lock = xSemaphoreCreateMutex();
     s_suspend_done = xSemaphoreCreateBinary();
     if (s_lock == nullptr || s_suspend_done == nullptr) return ESP_ERR_NO_MEM;

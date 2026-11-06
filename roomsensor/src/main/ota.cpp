@@ -217,7 +217,7 @@ static void get_current_version() {
         return;
     }
 
-    ESP_LOGI(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
+    ESP_LOGD(TAG, "Running partition type %d subtype %d (offset 0x%08lx)",
              running->type, running->subtype, running->address);
 
     load_local_firmware_info();
@@ -674,7 +674,7 @@ extern "C" esp_err_t ota_force_update(const char* version_hash) {
 
 // OTA update task that runs in the background
 static void ota_update_task(void *pvParameter) {
-    ESP_LOGI(TAG, "OTA update task started - task handle: %p", xTaskGetCurrentTaskHandle());
+    ESP_LOGD(TAG, "OTA update task started - task handle: %p", xTaskGetCurrentTaskHandle());
     
     // Minimal startup diagnostics
     UBaseType_t stack_high_water = uxTaskGetStackHighWaterMark(NULL);
@@ -688,9 +688,6 @@ static void ota_update_task(void *pvParameter) {
     }
     ESP_LOGD(TAG, "Network event group validated: %p", network_event_group);
 
-    // Get current version on startup
-    // Major transition: capture current version
-    get_current_version();
 
     // Track a 5-minute validation window for PENDING_VERIFY images
     TickType_t validation_deadline = 0;
@@ -710,7 +707,7 @@ static void ota_update_task(void *pvParameter) {
     bool was_connected = false;
     TickType_t last_network_check_time = 0;
 
-    ESP_LOGI(TAG, "OTA monitoring loop started");
+    ESP_LOGD(TAG, "OTA monitoring loop started");
 
     // Main OTA loop - runs forever
     while (1) {
@@ -729,7 +726,7 @@ static void ota_update_task(void *pvParameter) {
         if (current_state != last_logged_state) {
             const char* state_names[] = {"STARTING", "WIFI_CONNECTING", "WIFI_CONNECTED", "MQTT_CONNECTING", "FULLY_CONNECTED"};
             const char* state_name = (current_state >= 0 && current_state <= 4) ? state_names[current_state] : "UNKNOWN";
-            ESP_LOGI(TAG, "System state: %s", state_name);
+            ESP_LOGD(TAG, "System state: %s", state_name);
             last_logged_state = current_state;
         }
 
@@ -861,11 +858,11 @@ static void ota_update_task(void *pvParameter) {
 
 // Initialize OTA module and start background task
 esp_err_t ota_init(void) {
-    ESP_LOGI(TAG, "Initializing OTA module");
+    ESP_LOGD(TAG, "Initializing OTA module");
 
     // Create event group for network synchronization if it doesn't exist
     if (network_event_group == NULL) {
-        ESP_LOGI(TAG, "Creating network event group for OTA");
+        ESP_LOGD(TAG, "Creating network event group for OTA");
         network_event_group = xEventGroupCreate();
         if (network_event_group == NULL) {
             ESP_LOGE(TAG, "Failed to create event group - insufficient memory?");
@@ -873,13 +870,13 @@ esp_err_t ota_init(void) {
             ESP_LOGE(TAG, "Free heap after event group creation failure: %zu bytes", free_heap);
             return ESP_FAIL;
         }
-        ESP_LOGI(TAG, "Created network event group for OTA successfully");
+        ESP_LOGD(TAG, "Created network event group for OTA successfully");
     } else {
-        ESP_LOGI(TAG, "Network event group already exists");
+        ESP_LOGD(TAG, "Network event group already exists");
     }
 
     // Get current firmware version and partition info
-    ESP_LOGI(TAG, "Getting current firmware version");
+    ESP_LOGD(TAG, "Getting current firmware version");
     get_current_version();
 
     // Check if we're running from factory partition (for future use)
@@ -895,12 +892,12 @@ esp_err_t ota_init(void) {
 
     // Debug: Check memory before task creation
     size_t free_heap_mid = esp_get_free_heap_size();
-    ESP_LOGI(TAG, "Free heap before task creation: %zu bytes", free_heap_mid);
-    ESP_LOGI(TAG, "OTA task stack size: %d bytes, priority: %d", OTA_TASK_STACK_SIZE, OTA_TASK_PRIORITY);
+    ESP_LOGD(TAG, "Free heap before task creation: %zu bytes", free_heap_mid);
+    ESP_LOGD(TAG, "OTA task stack size: %d bytes, priority: %d", OTA_TASK_STACK_SIZE, OTA_TASK_PRIORITY);
 
     // Start OTA task if not already running
     if (!ota_running || ota_task_handle == NULL) {
-        ESP_LOGI(TAG, "Creating OTA background task");
+        ESP_LOGD(TAG, "Creating OTA background task");
         ota_running = true;
         
         // Debug: Validate stack size requirements and memory fragmentation
@@ -911,7 +908,7 @@ esp_err_t ota_init(void) {
         // Check for heap fragmentation by trying to allocate the required stack size
         void* test_alloc = malloc(OTA_TASK_STACK_SIZE);
         if (test_alloc) {
-            ESP_LOGI(TAG, "Memory test: Successfully allocated %d bytes for stack test", OTA_TASK_STACK_SIZE);
+            ESP_LOGD(TAG, "Memory test: Successfully allocated %d bytes for stack test", OTA_TASK_STACK_SIZE);
             free(test_alloc);
         } else {
             ESP_LOGE(TAG, "Memory test: Failed to allocate %d bytes - heap fragmentation likely", OTA_TASK_STACK_SIZE);
@@ -931,7 +928,7 @@ esp_err_t ota_init(void) {
         
         // Check largest free block
         size_t largest_free_block = heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
-        ESP_LOGI(TAG, "Largest contiguous free block: %zu bytes (need %d bytes)", 
+        ESP_LOGD(TAG, "Largest contiguous free block: %zu bytes (need %d bytes)", 
                  largest_free_block, OTA_TASK_STACK_SIZE);
         
         if (largest_free_block < OTA_TASK_STACK_SIZE) {
@@ -954,7 +951,7 @@ esp_err_t ota_init(void) {
             log_memory_snapshot(TAG, "ota_task_create_failed");
             return ESP_FAIL;
         }
-        ESP_LOGI(TAG, "OTA task created");
+        ESP_LOGD(TAG, "OTA task created");
         
     } else {
         ESP_LOGW(TAG, "OTA task already running (handle: %p), skipping creation", ota_task_handle);
@@ -962,7 +959,7 @@ esp_err_t ota_init(void) {
 
     // Final: success
 
-    ESP_LOGI(TAG, "OTA module initialized successfully");
+    ESP_LOGD(TAG, "OTA module initialized successfully");
     return ESP_OK;
 }
 

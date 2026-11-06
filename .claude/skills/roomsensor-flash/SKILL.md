@@ -131,6 +131,9 @@ Each step answers with a line starting `DEVICE CERT ok` or `DEVICE CERT error`.
 | `nvs_list nvs -n <ns>` | Show what's stored |
 | `device_cert status` / `device_cert erase` | Show the board's name (`ESP_<mac>`) and its certificate, or remove it |
 | `restart`, `version`, `force_ota [hash]` | NVS changes take effect after `restart` |
+| `tasks` | Every task's state and stack high-water mark (bytes it never used) |
+| `log_bench` | What one log call costs the task that makes it: stack and time, for INFO (console only) and WARN (console and MQTT, so it publishes 20 lines on `logs/warn`) |
+| `log_level <tag> <level>` | Raise a tag's level while debugging; a few chatty tags (ESP-ADF, NimBLE) are lowered at boot |
 
 After the board connects, it publishes its effective config on MQTT at `sensor/<mac>/config/current`.
 
@@ -142,3 +145,4 @@ After the board connects, it publishes its effective config on MQTT at `sensor/<
 - **`erase-flash` wipes NVS,** including the Wi-Fi settings, tags, board config and the board certificate, which then needs a new one approved. `provision.py` only erases with `--erase --delete-cert`. Only do it on a blank board or when you have the JSON to replay, and add `--device-cert`. Don't run `idf.py erase-flash` or `esptool erase_flash` by hand on a provisioned board.
 - **A board without a certificate can't update itself.** `updates.acgt.net` refuses it, and an `mqtts://` broker refuses the connection. The boot log says which.
 - **If a flash appears to do nothing,** the board is booting an OTA slot. Write `ota_data_initial.bin` too.
+- **DEBUG-level builds:** put `CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y` in a file of your own and build with `idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;<that file>" build` after deleting `sdkconfig`. CMake caches `SDKCONFIG_DEFAULTS`, so run `idf.py fullclean` (and delete `sdkconfig`) before building normally again, or the next build keeps DEBUG or fails if that file is gone. Setting `wifi.loglevel` to 4 forwards DEBUG lines over MQTT too (about 10 a second, mostly the LIS2DH driver).
