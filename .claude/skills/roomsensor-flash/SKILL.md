@@ -11,7 +11,7 @@ Everything runs from `roomsensor/src`. The target is an ESP32-S3 with 16 MB flas
 
 - **Docker (preferred):** `../../docker/esp-idf/idf <idf.py args>`. It also takes `idf run <cmd>` and `idf shell`. See `docker/esp-idf/README.md`. If `build/` came from a host IDF, run `idf fullclean` once. You need the `docker` group. The image is tagged by its Dockerfile alone and built with the UID of whoever built it first, so on a shared machine it may not be able to write `build/` for you (`Permission denied` on `build`). Run it as yourself instead of rebuilding someone else's tag: `docker run --rm -u $(id -u):$(id -g) -e HOME=/tmp/idfhome -v $REPO:$REPO -w $PWD <image> idf.py build` (add `--group-add dialout --device PORT:PORT` to flash).
 - **macOS:** Docker can't reach USB serial ports, and the wrapper's `stat -c` is GNU-only, so `idf -p … flash` fails. Build in Docker, then flash from the host with `esptool` (`pip install esptool`). Ports look like `/dev/cu.usbserial-*` or `/dev/cu.usbmodem*`.
-- **Host IDF:** `util/provision.py`'s flash step hard-codes `. ~/esp/v5.3/esp-idf/export.sh && idf.py erase-flash flash`. Without that install, pass `--skip-flash`.
+- **Host IDF:** `util/provision.py`'s flash step hard-codes `. ~/esp/v5.3/esp-idf/export.sh && idf.py flash` (`erase-flash flash` with `--erase`). Without that install, pass `--skip-flash`.
 - **Python utilities:** `cd util && python3 -m venv .venv && . .venv/bin/activate && pip install -e .` (pyserial and `cryptography`). Add `'.[yubikey]'` only to sign with a YubiKey plugged in locally (`--yubikey`); it builds `pyscard`, which needs `swig` and `libpcsclite-dev`.
 - **Serial port access (Linux):** the port belongs to `dialout`. Without that group, add it (`sudo usermod -aG dialout $USER`, then log in again) or run the serial steps with `sudo`.
 
@@ -63,8 +63,10 @@ The top-level keys are NVS namespaces, one per config module: `device`, `wifi`, 
 
 ## Ways to flash
 
-**1. Blank board, end to end:** `python util/provision.py [config.json ...] [--port PORT] [--skip-flash | --program] [--device-cert [--yubikey [SERIAL]] [--brayden URL] [--mqtt-ca FILE]]`
-- It validates every config file, and the local YubiKey when `--yubikey` is given. Then it runs `idf.py erase-flash flash` (unless `--skip-flash`; `--program` is the same flag).
+**1. End to end:** `python util/provision.py [config.json ...] [--port PORT] [--skip-flash | --program | --erase --delete-cert] [--device-cert [--replace-cert] [--yubikey [SERIAL]] [--brayden URL] [--mqtt-ca FILE]]`
+- It validates every config file, and the local YubiKey when `--yubikey` is given. Then it runs `idf.py flash` (unless `--skip-flash`; `--program` is the same flag), which keeps NVS: the settings and the certificate survive.
+- `--erase` runs `idf.py erase-flash flash` instead, wiping NVS and the board's certificate for good. It refuses unless `--delete-cert` is given too, and can't go with `--skip-flash`.
+- `--device-cert` checks `device_cert status` right after the board starts, before applying anything, and stops if the board already has a certificate, unless `--replace-cert` is given.
 - Then it resets the board over RTS/DTR and waits for `Console initialized` and `Startup sequence complete`.
 - It applies `credentials.json`, then each config file in order, then the certificate (see below), then sends `restart`.
 - If `--port` is missing it picks the most USB-looking serial port.
@@ -145,7 +147,7 @@ After the board connects, it publishes its effective config on MQTT at `sensor/<
 - **Boards on the IoT network (`10.13.0.0/24`) reach smll through the firewall:** 8883 for the TLS broker and 443 for `updates.acgt.net`. A blocked port shows as `esp-tls: select() timeout` before any TLS.
 - **Startup waits up to 70 s for its boot message to reach MQTT,** so a board whose broker or certificate isn't right yet takes that long to say `Startup sequence complete`. The console works from about 1.5 s.
 
-- **`erase-flash` wipes NVS,** including the Wi-Fi settings, tags, board config and the board certificate. Only use it on a blank board or when you have the JSON to replay, and add `--device-cert`.
+- **`erase-flash` wipes NVS,** including the Wi-Fi settings, tags, board config and the board certificate, which then needs a new one approved. `provision.py` only erases with `--erase --delete-cert`. Only do it on a blank board or when you have the JSON to replay, and add `--device-cert`. Don't run `idf.py erase-flash` or `esptool erase_flash` by hand on a provisioned board.
 - **A board without a certificate can't update itself.** `updates.acgt.net` refuses it, and an `mqtts://` broker refuses the connection. The boot log says which.
 - **A full flash can leave the board without its web UI.** `idf build` packs whatever is in `fsdata/`, and only `update_js.sh` puts `index.html.gz` there, so a fresh checkout has none. The build also stamps `webapp.json` with the build time, so OTA treats the missing UI as newer than the server's and won't fetch it. Run `update_js.sh` afterwards, or use path 3.
 - **If a flash appears to do nothing,** the board is booting an OTA slot. Write `ota_data_initial.bin` too.

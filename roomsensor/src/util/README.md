@@ -80,3 +80,10 @@ name the board `O=acgt.net,CN=ESP_<mac>`, and Brayden makes its broker account, 
 
 `device_cert status` on the console shows the board's name and its certificate, and
 `device_cert erase` removes it.
+
+`provision.py` never deletes a certificate unless asked to:
+
+- Flashing (without `--skip-flash`) runs `idf.py flash`, which leaves NVS and the certificate alone.
+  `--erase` erases the whole flash first, and refuses unless `--delete-cert` is given as well.
+- `--device-cert` stops before changing anything if the board already has a certificate, unless
+  `--replace-cert` is given.

@@ -168,15 +168,25 @@ def send_device_cert(console: SerialConsole, parts) -> None:
     run_device_cert(console, "commit")
 
 
-def provision_device_cert(console: SerialConsole, authority, ca_pem: Optional[str]) -> None:
-    """Gets the board's certificate, from Brayden or the YubiKey plugged in here, and stores it on the board."""
-    from roomsensor_util import device_cert
-
+def board_certificate(console: SerialConsole):
+    """The board's name (ESP_<mac>) and the subject of the certificate it holds, or None when it has none."""
     status = run_device_cert(console, "status")
     match = re.search(r"DEVICE CERT name: (ESP_[0-9a-f]{12})", status)
     if not match:
         raise RuntimeError("The board didn't say its certificate name")
-    name = match.group(1)
+    held = re.search(r"DEVICE CERT certificate: (.*)", status)
+    subject = held.group(1).strip() if held else None
+    return match.group(1), (None if subject in (None, "none") else subject)
+
+
+def provision_device_cert(console: SerialConsole, authority, ca_pem: Optional[str], replace: bool = False) -> None:
+    """Gets the board's certificate, from Brayden or the YubiKey plugged in here, and stores it on the board.
+    Refuses to replace one the board already holds unless `replace`."""
+    from roomsensor_util import device_cert
+
+    name, held = board_certificate(console)
+    if held and not replace:
+        raise RuntimeError(f"{name} already has a certificate ({held}); pass --replace-cert to replace it")
     if isinstance(authority, device_cert.BraydenAuthority):
         cert = authority.mint(name, ca_pem=ca_pem)
     else:
@@ -250,8 +260,18 @@ def main() -> None:
     parser.add_argument(
         "--skip-flash",
         action="store_true",
-        help="Skip the 'erase-flash' and 'flash' steps."
+        help="Skip the 'flash' step."
     )
+    parser.add_argument(
+        "--erase",
+        action="store_true",
+        help="Erase the whole flash before flashing: every setting and the board's certificate,\n"
+             "which can't be recovered. Needs --delete-cert too. Without it, flashing keeps them."
+    )
+    parser.add_argument("--delete-cert", action="store_true",
+                        help="Confirms that --erase may delete the board's certificate")
+    parser.add_argument("--replace-cert", action="store_true",
+                        help="Lets --device-cert replace a certificate the board already has")
     parser.add_argument(
         "--program",
         action="store_true",
@@ -281,6 +301,17 @@ def main() -> None:
     # --program implies --skip-flash
     if args.program:
         args.skip_flash = True
+    # A board's certificate is only ever deleted when asked for twice over
+    if args.erase and args.skip_flash:
+        print("Error: --erase erases before flashing, so it can't go with --skip-flash or --program.", file=sys.stderr)
+        sys.exit(1)
+    if args.erase and not args.delete_cert:
+        print("Error: --erase deletes the board's certificate along with its settings, and it can't be recovered;\n"
+              "a new one needs approving again. Pass --delete-cert as well to go ahead.", file=sys.stderr)
+        sys.exit(1)
+    if args.replace_cert and not args.device_cert:
+        print("Error: --replace-cert only goes with --device-cert.", file=sys.stderr)
+        sys.exit(1)
 
     # --- Start: Fail-fast validation ---
     for config_file in args.config_files:
@@ -307,10 +338,11 @@ def main() -> None:
     project_root = pathlib.Path(__file__).resolve().parent.parent
 
     if not args.skip_flash:
-        print("Erasing and flashing device...")
+        # Flashing alone leaves NVS, with the settings and the certificate, as it is
+        print("Erasing and flashing device (settings and certificate deleted)..." if args.erase else "Flashing device...")
         try:
             # Source the ESP-IDF environment script and run idf.py
-            cmd = ". ~/esp/v5.3/esp-idf/export.sh && idf.py erase-flash flash"
+            cmd = ". ~/esp/v5.3/esp-idf/export.sh && idf.py " + ("erase-flash flash" if args.erase else "flash")
             process = subprocess.Popen(
                 ["bash", "-c", cmd],
                 cwd=project_root,
@@ -349,7 +381,19 @@ def main() -> None:
             console.dump_recent_output()
             sys.exit(1)
 
-        print("Device initialized. Applying configuration...")
+        print("Device initialized.")
+        # Before changing anything: a certificate already there stays unless --replace-cert
+        if authority is not None and not args.replace_cert:
+            try:
+                name, held = board_certificate(console)
+            except RuntimeError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
+            if held:
+                print(f"Error: {name} already has a certificate ({held}). Pass --replace-cert to replace it,\n"
+                      "or leave out --device-cert to keep it.", file=sys.stderr)
+                sys.exit(1)
+        print("Applying configuration...")
 
         # 1. Apply credentials.json (if it exists in the project root)
         credentials_path = project_root / 'credentials.json'
@@ -366,7 +410,7 @@ def main() -> None:
         # 3. Give the board its certificate
         if authority is not None:
             try:
-                provision_device_cert(console, authority, mqtt_ca_pem)
+                provision_device_cert(console, authority, mqtt_ca_pem, replace=args.replace_cert)
             except Exception as e:  # noqa: BLE001
                 # No dump of the serial output here: it has the key in it
                 print(f"Error: certificate not stored: {e}", file=sys.stderr)
