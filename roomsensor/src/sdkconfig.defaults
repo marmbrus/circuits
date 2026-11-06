@@ -61,3 +61,6 @@ CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=3584
 # lwIP's TCP/IP task ("tiT") came within 536 bytes of its 3 KB under TLS and mic streaming
 CONFIG_LWIP_TCPIP_TASK_STACK_SIZE=4096
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096
+
+# No ANSI colours in log lines: fewer bytes on the console, and none in the logs netlog publishes
+CONFIG_LOG_COLORS=n

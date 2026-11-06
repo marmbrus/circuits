@@ -131,6 +131,9 @@ Each step answers with a line starting `DEVICE CERT ok` or `DEVICE CERT error`.
 | `nvs_list nvs -n <ns>` | Show what's stored |
 | `device_cert status` / `device_cert erase` | Show the board's name (`ESP_<mac>`) and its certificate, or remove it |
 | `restart`, `version`, `force_ota [hash]` | NVS changes take effect after `restart` |
+| `tasks` | Every task's state and stack high-water mark (bytes it never used) |
+| `log_bench` | What one log call costs the task that makes it: stack and time, for INFO (console only) and WARN (console and MQTT, so it publishes 20 lines on `logs/warn`) |
+| `log_level <tag> <level>` | Raise a tag's level while debugging; a few chatty tags (ESP-ADF, NimBLE) are lowered at boot |
 
 After the board connects, it publishes its effective config on MQTT at `sensor/<mac>/config/current`.
 

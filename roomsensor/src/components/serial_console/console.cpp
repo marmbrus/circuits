@@ -10,6 +10,7 @@
 #include "cmd_nvs.h"
 #include "cmd_system.h"
 #include "cmd_ota.h"
+#include "cmd_log_bench.h"
 #include "cmd_device_cert.h"
 #include "gpio.h"
 #include "freertos/FreeRTOS.h"
@@ -32,6 +33,9 @@ typedef enum {
 // Global variable to hold the current console mode, defaulting to simple
 static console_mode_t s_console_mode = CONSOLE_MODE_SIMPLE;
 
+// Console output waiting to leave over the UART (see configure_stdio_uart)
+#define CONSOLE_TX_BUFFER_BYTES 2048
+
 static void configure_stdio_uart(void)
 {
     const uart_config_t uart_config = {
@@ -42,7 +46,10 @@ static void configure_stdio_uart(void)
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_DEFAULT,
     };
-    ESP_ERROR_CHECK(uart_driver_install(UART_NUM_0, 256, 0, 0, NULL, 0));
+    // A transmit buffer lets a log call return once its line is copied in, instead of waiting
+    // while it drains at 115200 baud (about 7 ms for a typical line). The cost: up to this much
+    // output that hasn't left yet when the board panics is lost from the serial console.
+    ESP_ERROR_CHECK(uart_driver_install(UART_NUM_0, 256, CONSOLE_TX_BUFFER_BYTES, 0, NULL, 0));
     ESP_ERROR_CHECK(uart_param_config(UART_NUM_0, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(UART_NUM_0, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE,
                                  UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
@@ -128,7 +135,7 @@ static void console_task(void *arg)
     esp_console_config_t console_config = {
         .max_cmdline_length = 256,
         .max_cmdline_args = 16,
-        .hint_color = atoi(LOG_COLOR_CYAN),
+        .hint_color = 36,  // cyan (ANSI); log colours are off, so LOG_COLOR_CYAN is undefined
         .hint_bold = 0,
     };
     ESP_ERROR_CHECK(esp_console_init(&console_config));
@@ -142,6 +149,7 @@ static void console_task(void *arg)
     register_gpio();
     register_ota();
     register_device_cert();
+    register_log_bench();
     register_console_commands();
 
     ESP_LOGI(TAG_CONSOLE, "Console initialized. Type 'help' to list commands.");

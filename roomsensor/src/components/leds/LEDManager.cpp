@@ -351,7 +351,7 @@ void LEDManager::run_update_loop() {
 
                 if (rmt) {
                     const auto& st = rmt->stats();
-                    ESP_LOGI(TAG,
+                    ESP_LOGD(TAG,
                              "Strip %u: frames=%u fps=%.2f avg_period_ms=%.2f "
                              "last_tx_us=%u max_tx_us=%u late_tx=%u backpressure_ticks=%u "
                              "tx_errs=%u last_err=%d",
@@ -369,7 +369,7 @@ void LEDManager::run_update_loop() {
                     // Reset per-window stats after logging.
                     rmt->reset_window_stats();
                 } else {
-                    ESP_LOGI(TAG, "Strip %u: frames=%u fps=%.2f avg_period_ms=%.2f",
+                    ESP_LOGD(TAG, "Strip %u: frames=%u fps=%.2f avg_period_ms=%.2f",
                              idx, frames, fps, avg_period_ms);
                 }
             }
