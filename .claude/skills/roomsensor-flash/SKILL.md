@@ -89,7 +89,7 @@ esptool.py --chip esp32s3 -p PORT write_flash 0x10000 build/ota_data_initial.bin
 - If the stub fails, it retries at 115200 without the stub.
 - It needs `idf.py` and `esptool.py` on PATH: use `idf run ./update_js.sh -p PORT` on Linux, or a host IDF.
 
-**5. OTA, no cable:** `./deploy_ota.sh [prod]`
+**5. OTA, no cable:** `./deploy_ota.sh [prod]` (`OTA_SERVER=user@host` overrides `smll.home`)
 - It builds and uploads `firmware-<hash>.bin`, `index-<hash>.html.gz` and `manifest-dev.json` (or `manifest.json` for `prod`, which needs a clean tree) to `smll:/home/brayden/updates`. Uploading needs the `brayden` group.
 - Brayden's nginx serves that directory as `https://updates.acgt.net`, and only to boards presenting a house certificate.
 - Boards with `wifi.channel` set read `manifest-<channel>.json`; boards without it read `manifest.json`. Leave `channel` unset for prod: `channel=prod` would look for `manifest-prod.json`, which nothing writes.
